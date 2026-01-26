@@ -1,7 +1,6 @@
 package com.crowndine.controller;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.user.UserService;
@@ -12,9 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.security.Principal;
-import java.util.Map;
 
 @RestController
 @Validated
@@ -40,17 +37,13 @@ public class ApiUserController {
         return ApiResponse.builder().build();
     }
 
-    @PutMapping("upload-avatar")
-    public ApiResponse uploadAvatar(@RequestParam("image") MultipartFile file, Principal principal) throws IOException {
-        Map params = ObjectUtils.asMap(
-                "folder", "crown_dine_avatars",
-                "resource_type", "image"
-        );
-        Map result = cloudinary.uploader().upload(file.getBytes(), params);
+    @PatchMapping("upload-avatar")
+    public ApiResponse uploadAvatar(@RequestParam("image") MultipartFile file, Principal principal) {
+        String avatarUrl = userService.updateAvatar(file, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Update avatar successfully")
-                .data(String.valueOf(result.get("secure_url")))
+                .data(avatarUrl)
                 .build();
     }
 }

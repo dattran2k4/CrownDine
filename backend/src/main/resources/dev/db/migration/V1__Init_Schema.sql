@@ -41,17 +41,6 @@ CREATE TABLE `restaurant_tables` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
--- crowndine.reviews definition
-
-CREATE TABLE `reviews` (
-                           `created_at` datetime(6) DEFAULT NULL,
-                           `id` bigint NOT NULL AUTO_INCREMENT,
-                           `updated_at` datetime(6) DEFAULT NULL,
-                           `comment` varchar(255) DEFAULT NULL,
-                           PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
-
 -- crowndine.roles definition
 
 CREATE TABLE `roles` (
@@ -86,19 +75,21 @@ CREATE TABLE `users` (
                          `id` bigint NOT NULL AUTO_INCREMENT,
                          `updated_at` datetime(6) DEFAULT NULL,
                          `phone` varchar(11) NOT NULL,
-                         `avatar_url` varchar(50),
-                         `email` varchar(50) NOT NULL,
+                         `avatar_url` varchar(200) DEFAULT NULL,
+                         `email` varchar(255) NOT NULL,
                          `first_name` varchar(50) NOT NULL,
                          `last_name` varchar(50) NOT NULL,
                          `username` varchar(50) NOT NULL,
                          `password` varchar(255) NOT NULL,
                          `gender` enum('FEMALE','MALE','OTHER') NOT NULL,
                          `status` enum('ACTIVE','INACTIVE') NOT NULL,
+                         `verification_code` varchar(255) DEFAULT NULL,
+                         `verification_expiration` datetime(6) DEFAULT NULL,
                          PRIMARY KEY (`id`),
                          UNIQUE KEY `UKdu5v5sr43g5bfnji4vb8hg5s3` (`phone`),
-                         UNIQUE KEY `UKma1e5g5a354bb93w98c8366ik` (`avatar_url`),
-                         UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+                         UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`),
+                         UNIQUE KEY `UKma1e5g5a354bb93w98c8366ik` (`avatar_url`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 
 
 -- crowndine.vouchers definition
@@ -315,6 +306,7 @@ CREATE TABLE `payments` (
                             `method` enum('BANK_TRANSFER','CASH','CREDIT_CARD') DEFAULT NULL,
                             `status` enum('FAILED','SUCCESS') DEFAULT NULL,
                             `type` enum('DEPOSIT','REFUND','SETTLEMENT') DEFAULT NULL,
+                            `target` enum('RESERVATION','ORDER') DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             KEY `FK81gagumt0r8y3rmudcgpbk42l` (`order_id`),
                             KEY `FKp8yh4sjt3u0g6aru1oxfh3o14` (`reservation_id`),
@@ -327,7 +319,7 @@ CREATE TABLE `payments` (
 
 CREATE TABLE `order_details` (
                                  `quantity` int DEFAULT NULL,
-                                 `total_price` int DEFAULT NULL,
+                                 `total_price` decimal(38,2) DEFAULT NULL,
                                  `combo_id` bigint DEFAULT NULL,
                                  `created_at` datetime(6) DEFAULT NULL,
                                  `id` bigint NOT NULL AUTO_INCREMENT,
@@ -342,4 +334,19 @@ CREATE TABLE `order_details` (
                                  CONSTRAINT `FKgdw8tvw472t9vkp1bk2ksaj47` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`),
                                  CONSTRAINT `FKjyu2qbqt8gnvno9oe9j2s2ldk` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
                                  CONSTRAINT `FKnfrrgu0scdkwpptvs5gx6m6o9` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+
+
+-- crowndine.reviews definition
+
+CREATE TABLE `reviews` (
+                           `created_at` datetime(6) DEFAULT NULL,
+                           `id` bigint NOT NULL AUTO_INCREMENT,
+                           `updated_at` datetime(6) DEFAULT NULL,
+                           `comment` varchar(255) DEFAULT NULL,
+                           `customer_id` bigint DEFAULT NULL,
+                           PRIMARY KEY (`id`),
+                           KEY `FKcgy7qjc1r99dp117y9en6lxye` (`customer_id`),
+                           CONSTRAINT `FKcgy7qjc1r99dp117y9en6lxye` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;

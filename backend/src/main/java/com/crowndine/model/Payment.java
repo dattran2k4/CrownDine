@@ -32,6 +32,10 @@ public class Payment extends AbstractEntity<Long> {
     @Column(name = "type")
     private EPaymentType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target")
+    private EPaymentTarget target;
+
     @ManyToOne
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;

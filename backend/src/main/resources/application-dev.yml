@@ -21,7 +21,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -60,3 +60,7 @@ jwt:
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
   access-key-expiration: 1000000
   refresh-key-expiration: 100000000
+
+logging:
+  level:
+    org.flywaydb: DEBUG

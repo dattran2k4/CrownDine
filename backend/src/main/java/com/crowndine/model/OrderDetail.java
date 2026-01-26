@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,7 +33,7 @@ public class OrderDetail extends AbstractEntity<Long> {
     private Integer quantity;
 
     @Column(name = "total_price")
-    private Integer totalPrice;
+    private BigDecimal totalPrice;
 
     @Column(name = "note")
     private String note;

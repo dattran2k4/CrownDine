@@ -28,14 +28,14 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
-    @Column(name = "avatar_url", unique = true, length = 50)
+    @Column(name = "avatar_url", length = 200)
     private String avatarUrl;
 
     @Column(name = "password", nullable = false)
     @JsonIgnore
     private String password;
 
-    @Column(name = "email", nullable = false, length = 50)
+    @Column(name = "email", unique = true, nullable = false, length = 255)
     private String email;
 
     @Column(name = "first_name", nullable = false, length = 50)
@@ -69,6 +69,9 @@ public class User extends AbstractEntity<Long> implements UserDetails {
 
     @OneToMany(mappedBy = "staff")
     private List<WorkSchedule> workSchedules = new ArrayList<>();
+
+    @OneToMany(mappedBy = "customer")
+    private List<Review> reviews = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

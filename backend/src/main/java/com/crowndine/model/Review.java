@@ -1,8 +1,6 @@
 package com.crowndine.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
@@ -15,4 +13,8 @@ public class Review extends AbstractEntity<Long> {
 
     @Column(name = "comment")
     private String comment;
+
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    private User customer;
 }

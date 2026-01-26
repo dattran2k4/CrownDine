@@ -1,0 +1,62 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  devtools:
+    add-properties: true
+  datasource:
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/crowndine
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:123456}
+    hikari: # Connection poll
+      max-lifetime: 300000 # 5 phút
+      idle-timeout: 60000 # 1 phút
+      validation-timeout: 5000 # 5 giây
+      minimum-idle: 5
+      maximum-pool-size: 20
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:dev/db/migration
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  mail:
+    from: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
+    password: ${MAIL_PASSWORD:krdmwfrkaizzvgwb}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+openapi:
+  service:
+    api-docs: backend-service
+    server: http://localhost:${server.port}
+    title: Backend service
+    version: 1.0.0
+
+
+jwt:
+  access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
+  refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
+  access-key-expiration: 1000000
+  refresh-key-expiration: 100000000

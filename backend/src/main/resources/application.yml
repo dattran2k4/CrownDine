@@ -1,0 +1,26 @@
+server:
+  port: 8080
+app:
+  base-url: ${APP_BASE_URL:http://localhost:${SERVER_PORT:8080}}
+  token:
+    expiry-minutes: 10
+spring:
+  application:
+    name: backend-service
+  profiles:
+    active: @spring.profiles.active@
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+endpoint:
+  confirmUser: ${app.base-url}/auth/verify-register
+  endPointResetPassword: ${app.base-url}/api/auth/reset-password
+
+logging:
+  level:
+    root: INFO
+    web: INFO

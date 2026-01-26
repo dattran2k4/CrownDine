@@ -1,0 +1,54 @@
+package com.crowndine.service.impl.mail;
+
+import com.crowndine.service.mail.MailService;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j(topic = "MAIL-SERVICE")
+public class MailServiceImpl implements MailService {
+
+    private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
+
+    @Value("${spring.mail.from}")
+    private String emailFrom;
+
+    @Override
+    public void sendConfirmLink(String emailTo, String template, String endPointConfirmUser, String verifyCode) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED, StandardCharsets.UTF_8.name());
+            Context context = new Context();
+
+            String confirmLink = String.format("%s?verifyCode=%s", endPointConfirmUser, URLEncoder.encode(verifyCode, StandardCharsets.UTF_8));
+
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("confirmLink", confirmLink);
+            properties.put("verifyCode", verifyCode);
+            context.setVariables(properties);
+
+            helper.setFrom(emailFrom, "Đạt Trần");
+            helper.setTo(emailTo);
+            helper.setSubject("Xác nhận tài khoản");
+            String html = templateEngine.process(template, context);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Failed to send confirm link email to {}: {}", emailTo, e.getMessage(), e);
+        }
+    }
+}

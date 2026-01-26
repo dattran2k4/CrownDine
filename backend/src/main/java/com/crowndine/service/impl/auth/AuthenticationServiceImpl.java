@@ -136,18 +136,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public boolean confirmRegister(String verifyCode) {
-
         log.info("Processing verify code for register");
 
-        User user = userRepository.findByVerificationCode(verifyCode)
-                .orElse(null);
+        User user = userRepository.findByVerificationCode(verifyCode).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
 
         if (user == null) {
             log.error("User {} has been verification failed", user.getUsername());
             return false;
         }
 
-        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
+        if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
             log.error("Verification code expired for user {}", user.getUsername());
             return false;
         }

@@ -51,8 +51,8 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
+        user.setFirstName(request.getFirstName().trim().toUpperCase());
+        user.setLastName(request.getLastName().trim().toUpperCase());
         user.setGender(request.getGender());
         user.setDateOfBirth(request.getDateOfBirth());
         userRepository.save(user);

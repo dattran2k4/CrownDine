@@ -59,10 +59,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public void deleteCategory(Long id) {
-        if (!categoryRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id);
-        }
-        categoryRepository.deleteById(id);
+        categoryRepository.delete(getCategoryOrThrow(id));
     }
 
     private Category getCategoryOrThrow(Long id) {

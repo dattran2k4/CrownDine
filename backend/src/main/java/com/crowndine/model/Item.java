@@ -26,8 +26,8 @@ public class Item extends AbstractEntity<Long> {
     private String description;
 
     @Column(name = "price")
-    private BigDecimal price;
 
+    private BigDecimal price;
     @Column(name = "price_after_discount")
     private BigDecimal priceAfterDiscount;
 

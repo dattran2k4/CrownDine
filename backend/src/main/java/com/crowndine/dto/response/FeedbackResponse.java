@@ -10,5 +10,4 @@ public class FeedbackResponse {
     private String comment;
     private String username;
 
-
 }

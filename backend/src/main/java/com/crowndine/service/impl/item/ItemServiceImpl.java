@@ -2,6 +2,7 @@ package com.crowndine.service.impl.item;
 
 import com.crowndine.dto.response.FeedbackResponse;
 import com.crowndine.dto.response.ItemRespone;
+import com.crowndine.dto.response.PageResponse;
 import com.crowndine.model.Feedback;
 import com.crowndine.model.Item;
 import com.crowndine.repository.FeedbackRepository;
@@ -26,10 +27,23 @@ public class ItemServiceImpl implements ItemService {
     private final FeedbackRepository feedbackRepository;
 
     @Override
-    public Page<ItemRespone> findAllItems(Pageable pageable){
-        Page<Item> items=itemRepository.findAll(pageable);
-        return items.map(this::convertToDTO);
+    public PageResponse<ItemRespone> findAllItems(Pageable pageable) {
+        Page<Item> page = itemRepository.findAll(pageable);
+
+        List<ItemRespone> data = page.getContent()
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+
+        return PageResponse.<ItemRespone>builder()
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .data(data)
+                .build();
     }
+
 
     private ItemRespone convertToDTO(Item item) {
         ItemRespone response = new ItemRespone();

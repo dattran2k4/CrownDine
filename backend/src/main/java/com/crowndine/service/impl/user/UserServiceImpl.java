@@ -1,6 +1,7 @@
 package com.crowndine.service.impl.user;
 
 import com.crowndine.dto.request.ChangePasswordRequest;
+import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.User;
@@ -41,5 +42,20 @@ public class UserServiceImpl implements UserService {
         log.info("Successfully updated avatar for user {}", name);
 
         return avatarUrl;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateProfile(UpdateProfileRequest request, String name) {
+        log.info("Processing for updating profile for user {}", name);
+
+        User user = userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
+
+        user.setFirstName(request.getFirstName().trim().toUpperCase());
+        user.setLastName(request.getLastName().trim().toUpperCase());
+        user.setGender(request.getGender());
+        user.setDateOfBirth(request.getDateOfBirth());
+        userRepository.save(user);
+        log.info("Successfully updated profile for user {}", name);
     }
 }

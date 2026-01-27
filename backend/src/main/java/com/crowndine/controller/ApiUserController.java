@@ -2,6 +2,7 @@ package com.crowndine.controller;
 
 import com.cloudinary.Cloudinary;
 import com.crowndine.dto.request.ChangePasswordRequest;
+import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.user.UserService;
 import jakarta.validation.Valid;
@@ -44,6 +45,16 @@ public class ApiUserController {
                 .status(200)
                 .message("Update avatar successfully")
                 .data(avatarUrl)
+                .build();
+    }
+
+    @PutMapping
+    public ApiResponse updateProfile(@RequestBody UpdateProfileRequest request, Principal principal) {
+        log.info("Request update profile for user {}", principal.getName());
+        userService.updateProfile(request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Update avatar successfully")
                 .build();
     }
 }

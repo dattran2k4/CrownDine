@@ -21,9 +21,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryResponse> getAllCategories() {
-        return categoryRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return categoryRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
@@ -63,23 +61,16 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private Category getCategoryOrThrow(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id));
+        return categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id));
     }
 
     private CategoryResponse mapToResponse(Category category) {
-        return CategoryResponse.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .slug(category.getSlug())
-                .description(category.getDescription())
-                .build();
+        return CategoryResponse.builder().id(category.getId()).name(category.getName()).slug(category.getSlug()).description(category.getDescription()).build();
     }
 
     // Basic slug generation - can be improved with a proper utility
     private String generateSlug(String name) {
-        if (name == null)
-            return "";
+        if (name == null) return "";
         return name.toLowerCase().replace(" ", "-");
     }
 }

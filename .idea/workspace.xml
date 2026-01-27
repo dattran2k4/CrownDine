@@ -6,7 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="8bf31e10-912d-4993-a082-64b5ee16b083" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/controller/ApiItemController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/controller/ApiItemController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/repository/ItemRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/repository/ItemRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/impl/item/ItemServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/impl/item/ItemServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/impl/user/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/impl/user/UserServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/item/ItemService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/crowndine/service/item/ItemService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -95,6 +98,7 @@
       <updated>1769446863583</updated>
       <workItem from="1769446864882" duration="5269000" />
       <workItem from="1769493652518" duration="12091000" />
+      <workItem from="1769525793346" duration="4596000" />
     </task>
     <servers />
   </component>

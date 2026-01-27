@@ -78,5 +78,44 @@ public class ItemServiceImpl implements ItemService {
 
         return response;
     }
+    @Override
+    public PageResponse<ItemRespone> searchItems(String name, Pageable pageable){
+        Page<Item> page;
+        if (name==null || name.trim().isEmpty()){
+            page = itemRepository.findAll(pageable);
+        } else {
+            String k = name.trim();
+            page = itemRepository.findByNameContainingIgnoreCase(k, pageable);
+        }
+        List<ItemRespone> data = page.getContent()
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
 
+        return PageResponse.<ItemRespone>builder()
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .data(data)
+                .build();
+    }
+
+    @Override
+    public PageResponse<ItemRespone> filterByCategory(Long categoryId, Pageable pageable) {
+        Page<Item> page = itemRepository.findByCategory_Id(categoryId, pageable);
+
+        List<ItemRespone> data = page.getContent()
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+
+        return PageResponse.<ItemRespone>builder()
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .data(data)
+                .build();
+    }
 }

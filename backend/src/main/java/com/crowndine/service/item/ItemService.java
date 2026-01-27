@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface ItemService {
     PageResponse<ItemRespone> findAllItems(Pageable pageable);
+    PageResponse<ItemRespone> searchItems(String name, Pageable pageable);
+    PageResponse<ItemRespone> filterByCategory(Long categoryId, Pageable pageable);
 }

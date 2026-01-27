@@ -3,24 +3,19 @@ package com.crowndine.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "restaurant_tables")
-public class RestaurantTable extends AbstractEntity<Long> {
+@Table(name = "floor_features")
+public class FloorFeature extends AbstractEntity<Long> {
 
-    @Column(name = "name", length = 50)
-    private String name;
+    @Column(name = "type", nullable = false, length = 50)
+    private String type; // WALL, DOOR, WINDOW, ...
 
-    @Column(name = "capacity")
-    private Integer capacity;
-
-    @Column(name = "base_deposit", precision = 12, scale = 2)
-    private BigDecimal baseDeposit;
+    @Column(name = "label", length = 100)
+    private String label;
 
     @Column(name = "position_x")
     private Integer positionX;
@@ -37,10 +32,7 @@ public class RestaurantTable extends AbstractEntity<Long> {
     @Column(name = "rotation")
     private Integer rotation;
 
-    @Column(name = "shape", length = 50)
-    private String shape;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id")
+    @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 }

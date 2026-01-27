@@ -24,8 +24,7 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     public ShiftResponse getShiftById(Long id) {
         Shift shift = getShift(id);
-        ShiftResponse response = toResponse(shift);
-        return response;
+        return toResponse(shift);
     }
 
     @Override
@@ -35,32 +34,47 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveShift(ShiftRequest request, String username) {
-        log.info("Processing saving shift by user: {}: ", username);
+    public void saveShift(ShiftRequest request) {
+        log.info("Processing saving shift: ");
 
         validate(request);
 
         Shift shift;
-        if (request.getId() != null) {
+        if (request.getId() != null && request.getId() > 0) {
+            log.info("Updating shift with id={}", request.getId());
             shift = getShift(request.getId());
-
-            log.info("Saved shift by user: {}: ", username);
         } else {
+            log.info("Creating new shift");
             shift = new Shift();
         }
         shift.setName(request.getName());
         shift.setStartTime(request.getStartTime());
         shift.setEndTime(request.getEndTime());
         shiftRepository.save(shift);
+
         log.info("Saved shift successfully");
     }
 
+    @Override
+    public void delete(Long id) {
+        log.info("Deleting shift by id: {}: ", id);
+        shiftRepository.delete(getShift(id));
+
+        log.info("Deleted shift successfully");
+    }
+
     private void validate(ShiftRequest request) {
+        log.info("Validating shift request");
 
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new InvalidDataException("Start time must be before end time");
         }
-        
+
+        if (shiftRepository.existsOverlap(request.getStartTime(), request.getEndTime(), request.getId())) {
+            throw new InvalidDataException("Shift already exists");
+        }
+
+        log.info("Validating shift request successfully");
     }
 
     private ShiftResponse toResponse(Shift shift) {

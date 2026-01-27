@@ -11,5 +11,7 @@ public interface ShiftService {
 
     List<ShiftResponse> getAllShifts();
 
-    void saveShift(ShiftRequest request, String username);
+    void saveShift(ShiftRequest request);
+
+    void delete(Long id);
 }

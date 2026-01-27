@@ -63,6 +63,8 @@ public class UserServiceImpl implements UserService {
 
         log.info("Successfully retrieved profile for user {}", name);
         return response;
+    }
+    
     @Transactional(rollbackFor = Exception.class)
     public void updateProfile(UpdateProfileRequest request, String name) {
         log.info("Processing for updating profile for user {}", name);

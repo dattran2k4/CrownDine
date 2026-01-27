@@ -11,5 +11,6 @@ public interface UserService {
     String updateAvatar(MultipartFile file, String name);
 
     ProfileResponse getProfile(String name);
+    
     void updateProfile(UpdateProfileRequest request, String name);
 }

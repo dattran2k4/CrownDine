@@ -56,6 +56,9 @@ public class ApiUserController {
                 .status(200)
                 .message("Get profile successfully")
                 .data(response)
+                .build();
+    }
+
     @PutMapping
     public ApiResponse updateProfile(@RequestBody UpdateProfileRequest request, Principal principal) {
         log.info("Request update profile for user {}", principal.getName());

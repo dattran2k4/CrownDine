@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,13 @@ public class ApiUserController {
                 .build();
     }
 
+    @GetMapping("/profile")
+    public ApiResponse getProfile(Principal principal) {
+        ProfileResponse response = userService.getProfile(principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get profile successfully")
+                .data(response)
     @PutMapping
     public ApiResponse updateProfile(@RequestBody UpdateProfileRequest request, Principal principal) {
         log.info("Request update profile for user {}", principal.getName());

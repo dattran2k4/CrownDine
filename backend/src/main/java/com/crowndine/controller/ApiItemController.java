@@ -27,7 +27,7 @@ public class ApiItemController {
 
     @GetMapping
     public ApiResponse getAllItems() {
-        log.info("Gell all items request");
+        log.info("Get all items request");
         List<ItemResponse> items = itemService.getAlItems();
         return ApiResponse.builder().status(HttpStatus.OK.value()).message("Lấy danh sách item thành công").data(items).build();
     }

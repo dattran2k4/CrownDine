@@ -1,5 +1,7 @@
 package com.crowndine.model;
 
+import com.crowndine.common.enums.ETableShape;
+import com.crowndine.common.enums.ETableStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +24,14 @@ public class RestaurantTable extends AbstractEntity<Long> {
     @Column(name = "base_deposit", precision = 12, scale = 2)
     private BigDecimal baseDeposit;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shape", nullable = false)
+    private ETableShape shape;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private ETableStatus status;
+
     @Column(name = "position_x")
     private Integer positionX;
 
@@ -36,9 +46,6 @@ public class RestaurantTable extends AbstractEntity<Long> {
 
     @Column(name = "rotation")
     private Integer rotation;
-
-    @Column(name = "shape", length = 50)
-    private String shape;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "area_id")

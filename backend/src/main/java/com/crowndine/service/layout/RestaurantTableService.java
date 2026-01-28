@@ -1,12 +1,15 @@
 package com.crowndine.service.layout;
 
-import com.crowndine.model.RestaurantTable;
+import com.crowndine.dto.request.TableRequest;
+import com.crowndine.dto.response.TableLayoutResponse;
 
 public interface RestaurantTableService {
 
-    RestaurantTable create(RestaurantTable table, Long areaId);
+    TableLayoutResponse create(Long areaId, TableRequest request);
 
-    RestaurantTable update(Long id, RestaurantTable table);
+    TableLayoutResponse update(Long id, TableRequest request);
 
     void delete(Long id);
 }
+
+

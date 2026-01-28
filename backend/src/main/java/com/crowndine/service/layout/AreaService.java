@@ -1,15 +1,14 @@
 package com.crowndine.service.layout;
 
-import com.crowndine.model.Area;
-import java.util.List;
+import com.crowndine.dto.request.AreaRequest;
+import com.crowndine.dto.response.AreaResponse;
 
 public interface AreaService {
 
-    Area create(Area area, Long floorId);
+    AreaResponse create(Long floorId, AreaRequest request);
 
-    Area update(Long id, Area area);
+    AreaResponse update(Long id, AreaRequest request);
 
     void delete(Long id);
-
-    List<Area> getByFloor(Long floorId);
 }
+

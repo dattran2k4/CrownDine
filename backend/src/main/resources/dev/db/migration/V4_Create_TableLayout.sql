@@ -23,7 +23,7 @@ CREATE TABLE `areas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 ALTER TABLE `restaurant_tables`
-    ADD COLUMN `base_deposit` DECIMAL(12,2) DEFAULT NULL,
+  ADD COLUMN `base_deposit` DECIMAL(12,2) DEFAULT NULL,
   ADD COLUMN `position_x` INT DEFAULT NULL,
   ADD COLUMN `position_y` INT DEFAULT NULL,
   ADD COLUMN `width` INT DEFAULT NULL,
@@ -35,22 +35,3 @@ ALTER TABLE `restaurant_tables`
     FOREIGN KEY (`area_id`)
     REFERENCES `areas`(`id`)
     ON DELETE CASCADE;
-
-CREATE TABLE `floor_features` (
-                                  `id` BIGINT NOT NULL AUTO_INCREMENT,
-                                  `type` VARCHAR(50) NOT NULL,
-                                  `label` VARCHAR(100) DEFAULT NULL,
-                                  `position_x` INT DEFAULT NULL,
-                                  `position_y` INT DEFAULT NULL,
-                                  `width` INT DEFAULT NULL,
-                                  `height` INT DEFAULT NULL,
-                                  `rotation` INT DEFAULT NULL,
-                                  `area_id` BIGINT NOT NULL,
-                                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                  PRIMARY KEY (`id`),
-                                  CONSTRAINT `fk_floor_feature_area`
-                                      FOREIGN KEY (`area_id`)
-                                          REFERENCES `areas`(`id`)
-                                          ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;

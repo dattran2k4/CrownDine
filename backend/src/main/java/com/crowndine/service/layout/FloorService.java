@@ -1,17 +1,21 @@
 package com.crowndine.service.layout;
-import com.crowndine.model.Floor;
+import com.crowndine.dto.request.FloorRequest;
+import com.crowndine.dto.response.FloorResponse;
+
 import java.util.List;
 
 public interface FloorService {
 
-    Floor create(Floor floor);
+    FloorResponse create(FloorRequest request);
 
-    Floor update(Long id, Floor floor);
+    FloorResponse update(Long id, FloorRequest request);
+
+    List<FloorResponse> getAll();
+
+    FloorResponse getById(Long id);
 
     void delete(Long id);
-
-    Floor getById(Long id);
-
-    List<Floor> getAll();
 }
+
+
 

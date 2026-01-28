@@ -1,13 +1,12 @@
 package com.crowndine.controller;
 
+import com.crowndine.dto.request.AreaRequest;
+import com.crowndine.dto.request.FloorRequest;
+import com.crowndine.dto.request.TableRequest;
+import com.crowndine.dto.request.LayoutSaveRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.FloorLayoutResponse;
-import com.crowndine.model.Area;
-import com.crowndine.model.Floor;
-import com.crowndine.model.FloorFeature;
-import com.crowndine.model.RestaurantTable;
 import com.crowndine.service.layout.AreaService;
-import com.crowndine.service.layout.FloorFeatureService;
 import com.crowndine.service.layout.FloorLayoutService;
 import com.crowndine.service.layout.FloorService;
 import com.crowndine.service.layout.RestaurantTableService;
@@ -27,7 +26,6 @@ public class ApiFloorLayoutController {
     private final FloorService floorService;
     private final AreaService areaService;
     private final RestaurantTableService tableService;
-    private final FloorFeatureService featureService;
     private final FloorLayoutService floorLayoutService;
 
     /* ======================= FLOOR ======================= */
@@ -43,25 +41,25 @@ public class ApiFloorLayoutController {
     }
 
     @PostMapping("/floors")
-    public ApiResponse createFloor(@Valid @RequestBody Floor floor) {
-        log.info("Create floor name={}", floor.getName());
+    public ApiResponse createFloor(@Valid @RequestBody FloorRequest request) {
+        log.info("Create floor name={}", request.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Create floor successfully")
-                .data(floorService.create(floor))
+                .data(floorService.create(request))
                 .build();
     }
 
     @PutMapping("/floors/{id}")
     public ApiResponse updateFloor(
             @PathVariable Long id,
-            @Valid @RequestBody Floor floor) {
+            @Valid @RequestBody FloorRequest request) {
 
         log.info("Update floor id={}", id);
         return ApiResponse.builder()
                 .status(200)
                 .message("Update floor successfully")
-                .data(floorService.update(id, floor))
+                .data(floorService.update(id, request))
                 .build();
     }
 
@@ -80,26 +78,26 @@ public class ApiFloorLayoutController {
     @PostMapping("/floors/{floorId}/areas")
     public ApiResponse createArea(
             @PathVariable Long floorId,
-            @Valid @RequestBody Area area) {
+            @Valid @RequestBody AreaRequest request) {
 
         log.info("Create area for floorId={}", floorId);
         return ApiResponse.builder()
                 .status(200)
                 .message("Create area successfully")
-                .data(areaService.create(area, floorId))
+                .data(areaService.create(floorId, request))
                 .build();
     }
 
     @PutMapping("/areas/{id}")
     public ApiResponse updateArea(
             @PathVariable Long id,
-            @Valid @RequestBody Area area) {
+            @Valid @RequestBody AreaRequest request) {
 
         log.info("Update area id={}", id);
         return ApiResponse.builder()
                 .status(200)
                 .message("Update area successfully")
-                .data(areaService.update(id, area))
+                .data(areaService.update(id, request))
                 .build();
     }
 
@@ -118,26 +116,26 @@ public class ApiFloorLayoutController {
     @PostMapping("/areas/{areaId}/tables")
     public ApiResponse createTable(
             @PathVariable Long areaId,
-            @Valid @RequestBody RestaurantTable table) {
+            @Valid @RequestBody TableRequest request) {
 
         log.info("Create table for areaId={}", areaId);
         return ApiResponse.builder()
                 .status(200)
                 .message("Create table successfully")
-                .data(tableService.create(table, areaId))
+                .data(tableService.create(areaId, request))
                 .build();
     }
 
     @PutMapping("/tables/{id}")
     public ApiResponse updateTable(
             @PathVariable Long id,
-            @Valid @RequestBody RestaurantTable table) {
+            @Valid @RequestBody TableRequest request) {
 
         log.info("Update table id={}", id);
         return ApiResponse.builder()
                 .status(200)
                 .message("Update table successfully")
-                .data(tableService.update(id, table))
+                .data(tableService.update(id, request))
                 .build();
     }
 
@@ -148,44 +146,6 @@ public class ApiFloorLayoutController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Delete table successfully")
-                .build();
-    }
-
-    /* ======================= FEATURE ======================= */
-
-    @PostMapping("/areas/{areaId}/features")
-    public ApiResponse createFeature(
-            @PathVariable Long areaId,
-            @Valid @RequestBody FloorFeature feature) {
-
-        log.info("Create feature for areaId={}", areaId);
-        return ApiResponse.builder()
-                .status(200)
-                .message("Create feature successfully")
-                .data(featureService.create(feature, areaId))
-                .build();
-    }
-
-    @PutMapping("/features/{id}")
-    public ApiResponse updateFeature(
-            @PathVariable Long id,
-            @Valid @RequestBody FloorFeature feature) {
-
-        log.info("Update feature id={}", id);
-        return ApiResponse.builder()
-                .status(200)
-                .message("Update feature successfully")
-                .data(featureService.update(id, feature))
-                .build();
-    }
-
-    @DeleteMapping("/features/{id}")
-    public ApiResponse deleteFeature(@PathVariable Long id) {
-        log.info("Delete feature id={}", id);
-        featureService.delete(id);
-        return ApiResponse.builder()
-                .status(200)
-                .message("Delete feature successfully")
                 .build();
     }
 
@@ -201,6 +161,25 @@ public class ApiFloorLayoutController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get floor layout successfully")
+                .data(response)
+                .build();
+    }
+
+    /* ======================= SAVE FULL LAYOUT ======================= */
+
+    @PostMapping("/floors/{floorId}/save")
+    public ApiResponse saveLayout(
+            @PathVariable Long floorId,
+            @Valid @RequestBody LayoutSaveRequest request) {
+
+        log.info("Save layout for floorId={}", floorId);
+
+        FloorLayoutResponse response =
+                floorLayoutService.saveLayout(floorId, request);
+
+        return ApiResponse.builder()
+                .status(200)
+                .message("Save layout successfully")
                 .data(response)
                 .build();
     }

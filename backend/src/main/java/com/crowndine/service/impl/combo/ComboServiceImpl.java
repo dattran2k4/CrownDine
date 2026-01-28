@@ -3,6 +3,7 @@ package com.crowndine.service.impl.combo;
 import com.crowndine.dto.request.ComboRequest;
 import com.crowndine.dto.response.ComboItemResponse;
 import com.crowndine.dto.response.ComboResponse;
+import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Combo;
 import com.crowndine.model.ComboItem;
@@ -20,11 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ComboServiceImpl implements ComboService {
 
     private final ComboRepository comboRepository;
@@ -35,7 +34,7 @@ public class ComboServiceImpl implements ComboService {
     public List<ComboResponse> getAllCombos() {
         return comboRepository.findAll()
                 .stream().map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -56,7 +55,7 @@ public class ComboServiceImpl implements ComboService {
     @Transactional
     public ComboResponse createCombo(ComboRequest req) {
         if (comboRepository.findByName(req.getName()).isPresent()) {
-            throw new RuntimeException("Tên combo đã tồn tại");
+            throw new InvalidDataException("Tên combo đã tồn tại");
         }
 
         Combo combo = new Combo();
@@ -83,7 +82,7 @@ public class ComboServiceImpl implements ComboService {
                 ci.setItem(item);
                 ci.setQuantity(ciReq.getQuantity());
                 return ci;
-            }).collect(Collectors.toList());
+            }).toList();
             comboItemRepository.saveAll(comboItems);
         }
 
@@ -113,7 +112,8 @@ public class ComboServiceImpl implements ComboService {
         if (req.getItems() != null) {
             for (var ciReq : req.getItems()) {
                 Item item = itemRepository.findById(ciReq.getItemId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với id: " + ciReq.getItemId()));
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Không tìm thấy item với id: " + ciReq.getItemId()));
 
                 ComboItem ci = new ComboItem();
                 ci.setCombo(combo);
@@ -127,7 +127,6 @@ public class ComboServiceImpl implements ComboService {
         Combo saved = comboRepository.save(combo);
         return mapToResponse(saved);
     }
-
 
     @Override
     @Transactional
@@ -143,7 +142,7 @@ public class ComboServiceImpl implements ComboService {
         List<ComboItemResponse> items = (combo.getComboItems() == null) ? new ArrayList<>()
                 : combo.getComboItems().stream()
                         .map(this::mapComboItemToResponse)
-                        .collect(Collectors.toList());
+                        .toList();
 
         return ComboResponse.builder()
                 .id(combo.getId())

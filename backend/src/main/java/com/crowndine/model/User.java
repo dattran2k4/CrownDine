@@ -115,4 +115,8 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

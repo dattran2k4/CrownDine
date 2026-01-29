@@ -54,7 +54,6 @@ openapi:
     title: Backend service
     version: 1.0.0
 
-
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=

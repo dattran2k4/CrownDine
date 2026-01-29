@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -37,6 +39,9 @@ public class Item extends AbstractEntity<Long> {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private EItemStatus status;
+
+    @OneToMany(mappedBy = "item")
+    private List<ComboItem> comboItems = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "category_id")

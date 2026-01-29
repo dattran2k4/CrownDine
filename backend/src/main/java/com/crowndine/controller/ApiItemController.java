@@ -1,11 +1,9 @@
 package com.crowndine.controller;
 
-import com.crowndine.dto.request.CategoryRequest;
 import com.crowndine.dto.request.ItemRequest;
 import com.crowndine.dto.response.ApiResponse;
-import com.crowndine.dto.response.CategoryResponse;
 import com.crowndine.dto.response.ItemResponse;
-import com.crowndine.model.Item;
+import com.crowndine.dto.response.PageResponse;
 import com.crowndine.service.item.ItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +25,7 @@ public class ApiItemController {
 
     @GetMapping
     public ApiResponse getAllItems() {
-        log.info("Gell all items request");
+        log.info("Get all items request");
         List<ItemResponse> items = itemService.getAlItems();
         return ApiResponse.builder().status(HttpStatus.OK.value()).message("Lấy danh sách item thành công").data(items).build();
     }
@@ -84,6 +82,21 @@ public class ApiItemController {
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("Xóa danh mục thành công")
+                .build();
+    }
+
+    @GetMapping("/list")
+    public ApiResponse getAllItems(@RequestParam(required = false) Long categoryId,
+                                   @RequestParam(required = false) String search,
+                                   @RequestParam(required = false) String dir,
+                                   @RequestParam(required = false) String sortBy,
+                                   @RequestParam(required = false, defaultValue = "1") int page,
+                                   @RequestParam(required = false, defaultValue = "5") int size) {
+        PageResponse<ItemResponse> response = itemService.getListItems(categoryId, search, dir, sortBy, page, size);
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Get list items successfully")
+                .data(response)
                 .build();
     }
 }

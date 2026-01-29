@@ -7,12 +7,12 @@ import lombok.Setter;
 import java.util.List;
 
 @Getter
-@Setter
 @Builder
+@Setter
 public class PageResponse<T> {
-    private int pageNumber;
+    private int page;
     private int pageSize;
-    private Long totalElements;
     private int totalPages;
-    private transient List<T> data;
+    private long totalItems;
+    private List<T> data;
 }

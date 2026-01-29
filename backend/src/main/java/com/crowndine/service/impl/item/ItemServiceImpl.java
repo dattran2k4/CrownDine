@@ -3,6 +3,7 @@ package com.crowndine.service.impl.item;
 import com.crowndine.common.enums.EItemStatus;
 import com.crowndine.dto.request.ItemRequest;
 import com.crowndine.dto.response.ItemResponse;
+import com.crowndine.dto.response.PageResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Category;
 import com.crowndine.model.Item;
@@ -11,15 +12,22 @@ import com.crowndine.repository.ComboItemRepository;
 import com.crowndine.repository.ItemRepository;
 import com.crowndine.service.item.ItemService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Service
 @RequiredArgsConstructor
+@Slf4j(topic = "ITEM-SERVICE")
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
@@ -27,7 +35,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemResponse> getAlItems() {
-        return itemRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
+        return itemRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     private ItemResponse mapToResponse(Item item) {
@@ -64,7 +72,6 @@ public class ItemServiceImpl implements ItemService {
 
     private Item getItemByNameOrThrow(String name) {
         return itemRepository.findByName(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy item với tên: " + name));
-
     }
 
     @Override
@@ -115,6 +122,33 @@ public class ItemServiceImpl implements ItemService {
         Item item = getItemByIdOrThrow(id);
         item.setStatus(EItemStatus.UNAVAILABLE);
         itemRepository.save(item);
+    }
+
+    @Override
+    public PageResponse<ItemResponse> getListItems(Long categoryId, String search, String dir, String sortBy, int page, int size) {
+        log.info("Get list items");
+
+        int pageNumber = (page > 0) ? page - 1 : 0;
+
+        Specification<Item> spec = ItemSpecification.filterItem(categoryId, search);
+
+        String sortField = StringUtils.hasLength(sortBy) ? sortBy : "id";
+
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(pageNumber, size, Sort.by(sortDirection, sortField));
+
+        Page<Item> itemPage = itemRepository.findAll(spec, pageable);
+
+        List<ItemResponse> response = itemPage.stream().map(this::mapToResponse).toList();
+
+        return PageResponse.<ItemResponse>builder()
+                .page(pageNumber + 1)
+                .pageSize(itemPage.getSize())
+                .totalPages(itemPage.getTotalPages())
+                .totalItems(itemPage.getTotalElements())
+                .data(response)
+                .build();
     }
 
 

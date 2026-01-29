@@ -19,7 +19,7 @@ const router = createBrowserRouter([
       // Thêm các trang Dashboard, Profile... ở đây
     ]
   },
-  
+
   // Nhóm 2: Các trang Auth (Cần nền Gradient chuyển động, không cần Header chung)
   {
     path: path.login,

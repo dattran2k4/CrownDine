@@ -4,9 +4,6 @@ import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.reservation.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -25,33 +22,20 @@ public class ApiReservationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(
-                        Sort.Order.desc("date"),
-                        Sort.Order.desc("startTime"),
-                        Sort.Order.desc("createdAt")
-                )
-        );
-
         return ApiResponse.builder()
                 .status(200)
                 .message("Get reservation history successfully")
-                .data(reservationService.getReservationHistory(principal.getName(), pageable))
+                .data(reservationService.getReservationHistory(principal.getName(), page, size))
                 .build();
     }
 
     @GetMapping("/{reservationId}/order-details")
     public ApiResponse getReservationOrderDetails(
-        @PathVariable Long reservationId,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size ){
-        Pageable pageable = PageRequest.of(page, size);
+        @PathVariable Long reservationId){
         return ApiResponse.builder()
                 .status(200)
                 .message("Get reservation order details successfully")
-                .data(reservationService.getReservationOrderDetails(reservationId, pageable))
+                .data(reservationService.getReservationOrderDetails(reservationId))
                 .build();
     }
 }

@@ -17,7 +17,9 @@ import com.crowndine.service.reservation.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,21 +33,30 @@ public class ReservationServiceImpl implements ReservationService {
     private final OrderDetailRepository orderDetailRepository;
 
     @Override
-    public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, Pageable pageable) {
+    public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                        Sort.Order.desc("date"),
+                        Sort.Order.desc("startTime"),
+                        Sort.Order.desc("createdAt")
+                )
+        );
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Page<Reservation> page = reservationRepository.findByCustomer_Id(user.getId(), pageable);
+        Page<Reservation> reservationPage = reservationRepository.findByCustomer_Id(user.getId(), pageable);
 
-        List<ReservationHistoryResponse> data = page.getContent().stream()
+        List<ReservationHistoryResponse> data = reservationPage.getContent().stream()
                 .map(this::toHistoryResponse)
                 .toList();
 
         return PageResponse.<ReservationHistoryResponse>builder()
-                .pageNumber(page.getNumber())
-                .pageSize(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
+                .pageNumber(reservationPage.getNumber())
+                .pageSize(reservationPage.getSize())
+                .totalElements(reservationPage.getTotalElements())
+                .totalPages(reservationPage.getTotalPages())
                 .data(data)
                 .build();
     }
@@ -70,7 +81,7 @@ public class ReservationServiceImpl implements ReservationService {
         return resp;
     }
 
-    public OrderDetailPageResponse getReservationOrderDetails(Long reservationId, Pageable pageable) {
+    public OrderDetailPageResponse getReservationOrderDetails(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
 
@@ -79,19 +90,11 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ResourceNotFoundException("Order not found for reservation");
         }
 
-        Page<OrderDetail> page = orderDetailRepository.findByOrder_Id(order.getId(), pageable);
+        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
 
-        List<OrderLineResponse> data = page.getContent().stream()
+        List<OrderLineResponse> data = orderDetails.stream()
                 .map(this::toLineResponse)
                 .toList();
-
-        PageResponse<OrderLineResponse> itemPage = PageResponse.<OrderLineResponse>builder()
-                .pageNumber(page.getNumber())
-                .pageSize(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .data(data)
-                .build();
 
         OrderDetailPageResponse resp = new OrderDetailPageResponse();
         resp.setOrderId(order.getId());
@@ -101,7 +104,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setDiscountPrice(order.getDiscountPrice());
         resp.setFinalPrice(order.getFinalPrice());
         resp.setCreatedAt(order.getCreatedAt());
-        resp.setItems(itemPage);
+        resp.setItems(data);
 
         return resp;
 

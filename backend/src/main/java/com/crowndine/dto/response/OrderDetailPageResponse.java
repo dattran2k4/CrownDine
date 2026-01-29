@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,5 +19,5 @@ public class OrderDetailPageResponse {
     private BigDecimal finalPrice;
     private LocalDateTime createdAt;
 
-    private PageResponse<OrderLineResponse> items;
+    private List<OrderLineResponse> items;
 }

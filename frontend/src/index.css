@@ -6,8 +6,8 @@
 @layer base {
   :root {
     /* Màu nền kem/beige sang trọng*/
-    --background: 30, 84%, 60%;
-    --foreground: 20, 20%, 12%;
+    --background: oklch(0.98 0.01 80);
+    --foreground: oklch(0.18 0.04 25);
 
     --muted: 260 30% 95%;
     --muted-foreground: 240 15% 50%;

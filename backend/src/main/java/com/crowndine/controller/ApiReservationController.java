@@ -41,4 +41,17 @@ public class ApiReservationController {
                 .data(reservationService.getReservationHistory(principal.getName(), pageable))
                 .build();
     }
+
+    @GetMapping("/{reservationId}/order-details")
+    public ApiResponse getReservationOrderDetails(
+        @PathVariable Long reservationId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size ){
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get reservation order details successfully")
+                .data(reservationService.getReservationOrderDetails(reservationId, pageable))
+                .build();
+    }
 }

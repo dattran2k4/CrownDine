@@ -10,4 +10,5 @@ import org.springframework.stereotype.Repository;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     Page<Reservation> findByCustomer_Id(Long customerId, Pageable pageable);
 
+
 }

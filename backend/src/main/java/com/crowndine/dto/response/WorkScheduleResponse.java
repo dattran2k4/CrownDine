@@ -26,5 +26,6 @@ public class WorkScheduleResponse {
         private Long id;
         private String fullName;
         private EGender gender;
+        private String avatarUrl;
     }
 }

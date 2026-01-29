@@ -141,8 +141,8 @@ public class ComboServiceImpl implements ComboService {
     private ComboResponse mapToResponse(Combo combo) {
         List<ComboItemResponse> items = (combo.getComboItems() == null) ? new ArrayList<>()
                 : combo.getComboItems().stream()
-                        .map(this::mapComboItemToResponse)
-                        .toList();
+                .map(this::mapComboItemToResponse)
+                .toList();
 
         return ComboResponse.builder()
                 .id(combo.getId())

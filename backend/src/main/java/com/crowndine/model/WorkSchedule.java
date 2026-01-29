@@ -15,7 +15,7 @@ import java.time.LocalDate;
 @Table(name = "work_schedules")
 public class WorkSchedule extends AbstractEntity<Long> {
 
-    @Column(name = "work_date")
+    @Column(name = "work_date", nullable = false)
     private LocalDate workDate;
 
     @Enumerated(EnumType.STRING)

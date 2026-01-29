@@ -53,10 +53,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .toList();
 
         return PageResponse.<ReservationHistoryResponse>builder()
-                .pageNumber(reservationPage.getNumber())
+                .page(reservationPage.getNumber() + 1)
                 .pageSize(reservationPage.getSize())
-                .totalElements(reservationPage.getTotalElements())
                 .totalPages(reservationPage.getTotalPages())
+                .totalItems(reservationPage.getTotalElements())
                 .data(data)
                 .build();
     }

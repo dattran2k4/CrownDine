@@ -1,54 +1,52 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
-
 @layer base {
-:root {
-  /* Màu nền kem/beige sang trọng*/
-  --background: 30, 84%, 60%;
-  --foreground: 20, 20%, 12%;
+  :root {
+    /* Màu nền kem/beige sang trọng*/
+    --background: 30, 84%, 60%;
+    --foreground: 20, 20%, 12%;
 
-  --muted: 260 30% 95%;
-  --muted-foreground: 240 15% 50%;
+    --muted: 260 30% 95%;
+    --muted-foreground: 240 15% 50%;
 
-  /* Destructive */
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
 
-  /* Màu chính: Cam rực rỡ*/
-  --primary:16,100%,60%;
-  --primary-foreground: 0,0%,100%;
+    /* Màu chính: Cam rực rỡ*/
+    --primary: 16, 100%, 60%;
+    --primary-foreground: 0, 0%, 100%;
 
-  /* Màu bổ trợ: Nâu trầm/Đen nhạt để làm Border hoặc Text phụ */
-  --secondary: 20,10%,90%;
-  --secondary-foreground: 20,20%,20%;
-  /* Status colors */
+    /* Màu bổ trợ: Nâu trầm/Đen nhạt để làm Border hoặc Text phụ */
+    --secondary: 20, 10%, 90%;
+    --secondary-foreground: 20, 20%, 20%;
+    /* Status colors */
     --online: 140 100% 50%;
     --offline: 0 0% 70%;
 
-  /* Warning */
-  --warning: 37.7 92.1% 50.2%;
-  --warning-foreground: 0 0% 100%;
+    /* Warning */
+    --warning: 37.7 92.1% 50.2%;
+    --warning-foreground: 0 0% 100%;
 
-  /* Card - nền trắng cho form/login nổi bật trên nền kem */
-  --card: 0, 0%, 100%;
-  --card-foreground:340, 9%, 13%;
+    /* Card - nền trắng cho form/login nổi bật trên nền kem */
+    --card: 0, 0%, 100%;
+    --card-foreground: 340, 9%, 13%;
 
-  /* Border mỏng và sắc nét theo phong cách hiện đại */
-  --border:348, 7%, 85%;
-  --input: 0, 8%, 95%;
-  --ring: 16, 100%, 60%;
+    /* Border mỏng và sắc nét theo phong cách hiện đại */
+    --border: 348, 7%, 85%;
+    --input: 0, 8%, 95%;
+    --ring: 16, 100%, 60%;
 
-  --radius: 0.5rem;
-  /* Gradient Cam cho nút "Book a Table" */
+    --radius: 0.5rem;
+    /* Gradient Cam cho nút "Book a Table" */
   }
 }
 @layer components {
-  .btn-auth{
-    @apply bg-primary text-primary-foreground font-bold py-3 px-6 rounded-md 
-           transition-all duration-200 active:translate-y-1 active:shadow-none;
+  .btn-auth {
+    @apply bg-primary text-primary-foreground rounded-md px-6 py-3 font-bold transition-all duration-200 active:translate-y-1 active:shadow-none;
   }
   .btn-auth:hover {
     @apply brightness-110;
@@ -57,20 +55,20 @@
 
   .glass {
     /* Hiệu ứng kính mờ trắng đục cho các ô menu */
-    @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-sm;
+    @apply border border-white/20 bg-white/70 shadow-sm backdrop-blur-md;
   }
 
   /* Tạo hiệu ứng nút bấm có bóng đổ cứng (Neubrutalism nhẹ) như hình f7b2e0 */
   .btn-restaurant {
     @apply relative transition-all duration-200 active:translate-y-0.5;
-    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.9);
   }
-  
+
   .bg-gradient-orange {
     background: var(--gradient-orange);
   }
 }
-@theme{
+@theme {
   /* --- Breakpoints & Container --- */
   --breakpoint-2xl: 1400px;
 
@@ -83,9 +81,8 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-
   --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground:hsl(var(--destructive-foreground));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
   /* Border & Input - Cốt lõi của Form */
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -96,11 +93,8 @@
 
   /* Spotlight tinh tế hơn cho Crowndine */
   --background-image-gradient-orange: radial-gradient(
-      125% 125% at 50% 10%,
-      hsla(0, 0%, 100%, 1) 40%,
-      hsla(38,92%,50%,0.5)100%
+    125% 125% at 50% 10%,
+    hsla(0, 0%, 100%, 1) 40%,
+    hsla(38, 92%, 50%, 0.5) 100%
   );
 }
-
-
-

@@ -13,6 +13,7 @@ import com.crowndine.service.layout.RestaurantTableService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +41,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/floors")
     public ApiResponse createFloor(@Valid @RequestBody FloorRequest request) {
         log.info("Create floor name={}", request.getName());
@@ -50,6 +52,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/floors/{id}")
     public ApiResponse updateFloor(
             @PathVariable Long id,
@@ -63,6 +66,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/floors/{id}")
     public ApiResponse deleteFloor(@PathVariable Long id) {
         log.info("Delete floor id={}", id);
@@ -75,6 +79,7 @@ public class ApiFloorLayoutController {
 
     /* ======================= AREA ======================= */
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/floors/{floorId}/areas")
     public ApiResponse createArea(
             @PathVariable Long floorId,
@@ -88,6 +93,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/areas/{id}")
     public ApiResponse updateArea(
             @PathVariable Long id,
@@ -101,6 +107,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/areas/{id}")
     public ApiResponse deleteArea(@PathVariable Long id) {
         log.info("Delete area id={}", id);
@@ -113,6 +120,7 @@ public class ApiFloorLayoutController {
 
     /* ======================= TABLE ======================= */
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/areas/{areaId}/tables")
     public ApiResponse createTable(
             @PathVariable Long areaId,
@@ -126,6 +134,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/tables/{id}")
     public ApiResponse updateTable(
             @PathVariable Long id,
@@ -139,6 +148,7 @@ public class ApiFloorLayoutController {
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/tables/{id}")
     public ApiResponse deleteTable(@PathVariable Long id) {
         log.info("Delete table id={}", id);
@@ -167,6 +177,7 @@ public class ApiFloorLayoutController {
 
     /* ======================= SAVE FULL LAYOUT ======================= */
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/floors/{floorId}/save")
     public ApiResponse saveLayout(
             @PathVariable Long floorId,

@@ -1,13 +1,6 @@
 import RatingStart from '@/components/RatingStart'
-export interface Item {
-  id: number
-  name: string
-  description: string
-  price: number
-  image: string
-  rating: number
-  category: string
-}
+import type { Item } from '@/types/item.type'
+import { Heart, ShoppingCart } from 'lucide-react'
 
 interface Props {
   item: Item
@@ -15,19 +8,43 @@ interface Props {
 }
 
 const ItemCard = ({ item, onAddToCart }: Props) => {
+  const discountPercent = item.priceAfterDiscount
+    ? Math.round(((item.price - item.priceAfterDiscount) / item.price) * 100)
+    : 0
   return (
-    <div className='group bg-card border-border flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md'>
+    <div className='group bg-card border-border hover:border-primary/50 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md'>
+      {/* --- BADGES (New, Best Seller, Discount) --- */}
+      <div className='absolute top-3 left-3 z-10 flex flex-col gap-1'>
+        {discountPercent > 0 && (
+          <span className='bg-destructive text-destructive-foreground rounded px-2 py-1 text-xs font-bold shadow-sm'>
+            -{discountPercent}%
+          </span>
+        )}
+        {item.tags?.includes('BEST_SELLER') && (
+          <span className='rounded bg-yellow-500 px-2 py-1 text-xs font-bold text-white shadow-sm'>BEST SELLER</span>
+        )}
+        {item.tags?.includes('NEW') && (
+          <span className='rounded bg-blue-500 px-2 py-1 text-xs font-bold text-white shadow-sm'>NEW</span>
+        )}
+      </div>
+
+      {/* Button Like (Optional) */}
+      <button className='text-muted-foreground absolute top-3 right-3 z-10 rounded-full bg-white/80 p-2 shadow-sm backdrop-blur-sm transition-colors hover:text-red-500'>
+        <Heart size={18} />
+      </button>
       {/* Image Area */}
       <div className='relative h-56 overflow-hidden'>
         <img
-          src={item.image}
+          src={item.imageUrl}
           alt={item.name}
           className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-110'
         />
         {/* Badge category */}
-        <div className='absolute top-3 left-3 rounded bg-black/50 px-2 py-1 text-xs text-white backdrop-blur-md'>
-          {item.category}
-        </div>
+        {item.status === 'SOLD_OUT' && (
+          <div className='absolute inset-0 flex items-center justify-center bg-black/50'>
+            <span className='rotate-12 border-2 border-white px-4 py-1 text-lg font-bold text-white'>SOLD OUT</span>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -45,14 +62,25 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
         </div>
 
         {/* Price & Action */}
-        <div className='border-border/50 mt-auto flex items-center justify-between border-t pt-4'>
-          <span className='text-primary text-2xl font-bold'>${item.price}</span>
+        <div className='border-border mt-auto flex items-center justify-between border-t border-dashed pt-3'>
+          <div className='flex flex-col'>
+            {item.priceAfterDiscount ? (
+              <>
+                <span className='text-muted-foreground text-xs line-through'>${item.price}</span>
+                <span className='text-primary text-xl font-bold'>${item.priceAfterDiscount}</span>
+              </>
+            ) : (
+              <span className='text-primary text-xl font-bold'>${item.price}</span>
+            )}
+          </div>
 
           <button
             onClick={() => onAddToCart && onAddToCart(item)}
-            className='bg-primary text-primary-foreground rounded-lg px-5 py-2 text-sm font-semibold shadow-sm transition-all hover:brightness-110 active:scale-95'
+            disabled={item.status === 'SOLD_OUT'}
+            className='btn-auth flex items-center gap-2 px-4! py-2! text-sm! disabled:cursor-not-allowed disabled:opacity-50'
           >
-            Thêm
+            <ShoppingCart size={16} />
+            Add
           </button>
         </div>
       </div>

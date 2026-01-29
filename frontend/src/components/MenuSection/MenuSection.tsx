@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Item } from '@/components/MenuSection/ItemCard/ItemCard'
 import ItemCard from '@/components/MenuSection/ItemCard/ItemCard'
+import type { Item } from '@/types/item.type'
 
 const MOCK_MENU: Item[] = [
   {
@@ -8,8 +8,8 @@ const MOCK_MENU: Item[] = [
     name: 'Truffle Burrata',
     description: 'Fresh burrata with black truffle, heirloom tomatoes',
     price: 18,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
-    rating: 5,
+    status: 'AVAILABLE',
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
     category: 'Starters'
   },
   {
@@ -17,7 +17,8 @@ const MOCK_MENU: Item[] = [
     name: 'Tuna Tartare',
     description: 'Yellowfin tuna, avocado, lemon, crispy wontons',
     price: 22,
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Starters'
   },
@@ -26,7 +27,8 @@ const MOCK_MENU: Item[] = [
     name: 'Wagyu Ribeye',
     description: 'Japanese Wagyu, brown butter, roasted vegetables',
     price: 55,
-    image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Mains'
   },
@@ -35,7 +37,8 @@ const MOCK_MENU: Item[] = [
     name: 'Lobster Risotto',
     description: 'Maine lobster, saffron arborio, parmesan foam',
     price: 48,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 4,
     category: 'Mains'
   },
@@ -44,7 +47,8 @@ const MOCK_MENU: Item[] = [
     name: 'Truffle Burrata',
     description: 'Fresh burrata with black truffle, heirloom tomatoes',
     price: 18,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Starters'
   },
@@ -53,7 +57,8 @@ const MOCK_MENU: Item[] = [
     name: 'Tuna Tartare',
     description: 'Yellowfin tuna, avocado, lemon, crispy wontons',
     price: 22,
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Starters'
   },
@@ -62,7 +67,8 @@ const MOCK_MENU: Item[] = [
     name: 'Wagyu Ribeye',
     description: 'Japanese Wagyu, brown butter, roasted vegetables',
     price: 55,
-    image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Mains'
   },
@@ -71,7 +77,8 @@ const MOCK_MENU: Item[] = [
     name: 'Lobster Risotto',
     description: 'Maine lobster, saffron arborio, parmesan foam',
     price: 48,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 4,
     category: 'Mains'
   },
@@ -80,7 +87,8 @@ const MOCK_MENU: Item[] = [
     name: 'Truffle Burrata',
     description: 'Fresh burrata with black truffle, heirloom tomatoes',
     price: 18,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop', // Ảnh minh họa
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Starters'
   },
@@ -89,7 +97,8 @@ const MOCK_MENU: Item[] = [
     name: 'Tuna Tartare',
     description: 'Yellowfin tuna, avocado, lemon, crispy wontons',
     price: 22,
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Starters'
   },
@@ -98,7 +107,8 @@ const MOCK_MENU: Item[] = [
     name: 'Wagyu Ribeye',
     description: 'Japanese Wagyu, brown butter, roasted vegetables',
     price: 55,
-    image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 5,
     category: 'Mains'
   },
@@ -107,7 +117,8 @@ const MOCK_MENU: Item[] = [
     name: 'Lobster Risotto',
     description: 'Maine lobster, saffron arborio, parmesan foam',
     price: 48,
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800&auto=format&fit=crop',
+    status: 'AVAILABLE',
     rating: 4,
     category: 'Mains'
   }

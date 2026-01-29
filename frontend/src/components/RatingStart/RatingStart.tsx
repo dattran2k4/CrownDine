@@ -1,13 +1,16 @@
 import { Star } from 'lucide-react'
 
 interface RatingStarsProps {
-  rating: number
+  rating?: number
   maxStars?: number
   size?: number
   className?: string
 }
 
 const RatingStart = ({ rating, maxStars = 5, size, className = '' }: RatingStarsProps) => {
+  if (rating == null) {
+    return <span className={`text-sm text-gray-400 italic ${className}`}>Chưa có đánh giá</span>
+  }
   // Tính phần trăm độ rộng của lớp màu cam
   // Ví dụ: rating 4.3 / 5 = 0.86 => 86%
   const widthPercentage = (rating / maxStars) * 100

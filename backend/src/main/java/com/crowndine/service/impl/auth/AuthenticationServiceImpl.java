@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,7 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -53,25 +55,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public TokenResponse login(LoginRequest request) {
-        List<String> authorities = new ArrayList<>();
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        var user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            authorities.add(authentication.getAuthorities().toString());
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (BadCredentialsException e) {
-            log.error("errorMessage: {}", e.getMessage());
-            throw new BadCredentialsException(e.getMessage());
-        }
-
-        String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
-        String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .userId(user.getId())
                 .build();
     }
 
@@ -140,11 +136,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public boolean confirmRegister(String verifyCode) {
+
         log.info("Processing verify code for register");
 
-        User user = userRepository.findByVerificationCode(verifyCode).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
+        User user = userRepository.findByVerificationCode(verifyCode)
+                .orElse(null);
 
-        if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
+        if (user == null) {
+            log.error("User {} has been verification failed", user.getUsername());
+            return false;
+        }
+
+        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());
             return false;
         }
@@ -163,10 +166,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String verifyCode, ResetPasswordRequest request) {
 
         User user = userRepository.findByVerificationCode(verifyCode).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
+
+        if (user == null) {
+            log.error("User {} has been verification failed", user.getUsername());
+            return;
+        }
 
         if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());

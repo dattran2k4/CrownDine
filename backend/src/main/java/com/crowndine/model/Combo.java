@@ -40,6 +40,4 @@ public class Combo extends AbstractEntity<Long> {
     @Column(name = "status")
     private EComboStatus status;
 
-    @OneToMany(mappedBy = "combo", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ComboItem> comboItems;
 }

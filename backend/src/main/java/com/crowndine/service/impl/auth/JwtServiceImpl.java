@@ -5,6 +5,7 @@ import com.crowndine.exception.InvalidDataException;
 import com.crowndine.service.auth.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -77,22 +77,29 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateAccessToken(String username, List<String> authorities) {
-        return buildToken(username, authorities, accessExpiration, ETokenType.ACCESS_TOKEN);
+    public String generateAccessToken(UserDetails user) {
+        return generateAccessToken(new HashMap<>(), user);
+    }
+
+    private String generateAccessToken(Map<String, Object> claims, UserDetails user) {
+        log.info("---------- Generate Access Token ----------");
+        return buildToken(claims, user, accessExpiration, ETokenType.ACCESS_TOKEN);
     }
 
     @Override
-    public String generateRefreshToken(String username, List<String> authorities) {
-        return buildToken(username, authorities, refreshExpiration, ETokenType.REFRESH_TOKEN);
+    public String generateRefreshToken(UserDetails user) {
+        return generateRefreshToken(new HashMap<>(), user);
     }
 
-    private String buildToken(String username, List<String> authorities, long expiration, ETokenType type) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("username", username);
-        claims.put("role", authorities);
+    private String generateRefreshToken(Map<String, Object> claims, UserDetails user) {
+        log.info("---------- Generate Refresh Token ----------");
+        return buildToken(claims, user, refreshExpiration, ETokenType.REFRESH_TOKEN);
+    }
+
+    private String buildToken(Map<String, Object> claims, UserDetails user, long expiration, ETokenType type) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(username)
+                .setSubject(user.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(type), SignatureAlgorithm.HS256)

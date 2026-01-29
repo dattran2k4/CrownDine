@@ -6,13 +6,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.UnexpectedTypeException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
@@ -34,7 +32,6 @@ public class GlobalExceptionHandler {
      * @param request
      * @return errorResponse
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler({ConstraintViolationException.class,
             MissingServletRequestParameterException.class, MethodArgumentNotValidException.class, UnexpectedTypeException.class})
     @ApiResponses(value = {
@@ -89,10 +86,9 @@ public class GlobalExceptionHandler {
      * @param request
      * @return
      */
-    @ResponseStatus(NOT_FOUND)
     @ExceptionHandler(ResourceNotFoundException.class)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "Not found",
+            @ApiResponse(responseCode = "404", description = "Bad Request",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
                                     name = "404 Response",
@@ -126,7 +122,6 @@ public class GlobalExceptionHandler {
      * @param request
      * @return
      */
-    @ResponseStatus(CONFLICT)
     @ExceptionHandler(InvalidDataException.class)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "409", description = "Conflict",
@@ -163,7 +158,6 @@ public class GlobalExceptionHandler {
      * @param request
      * @return error
      */
-    @ResponseStatus(UNAUTHORIZED)
     @ExceptionHandler(BadCredentialsException.class)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "401", description = "Unauthorized",
@@ -199,7 +193,6 @@ public class GlobalExceptionHandler {
      * @param request
      * @return error
      */
-    @ResponseStatus(FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Forbidden",

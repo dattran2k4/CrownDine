@@ -44,14 +44,14 @@ VALUES ('Súp cua', 'Súp cua trứng', '/img/items/sup-cua.jpg', 35000.00, NULL
 INSERT INTO combos (name, slug, description, price, price_after_discount, sold_count, status, created_at,
                     updated_at)
 VALUES ('Combo Lẩu Thái 2N', 'combo-lau-thai-2n', 'Lẩu Thái + Rau muống xào + 2 Coca', 306000.00, 289000.00, 20,
-        'TEST', NOW(), NOW()),
+        'AVAILABLE', NOW(), NOW()),
        ('Combo Gà Mắm Nhẹ Nhàng', 'combo-ga-mam-nhe-nhang', 'Gà chiên mắm + Salad cá ngừ + Trà đào', 169000.00,
-        159000.00, 35, 'TEST', NOW(), NOW()),
+        159000.00, 35, 'AVAILABLE', NOW(), NOW()),
        ('Combo Beef Steak Set', 'combo-beef-steak-set', 'Bò bít tết + Súp cua + Coca', 243000.00, 229000.00, 12,
-        'TEST', NOW(), NOW()),
+        'AVAILABLE', NOW(), NOW()),
        ('Combo Hải Sản Healthy', 'combo-hai-san-healthy', 'Tôm hấp + Salad cá ngừ + Trà đào', 239000.00, 219000.00,
-        18, 'TEST', NOW(), NOW()),
-       ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Bánh flan + Trà đào', 60000.00, 55000.00, 50, 'TEST',
+        18, 'AVAILABLE', NOW(), NOW()),
+       ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Bánh flan + Trà đào', 60000.00, 55000.00, 50, 'AVAILABLE',
         NOW(), NOW());
 
 INSERT INTO combo_items (combo_id, item_id, quantity, created_at, updated_at)
@@ -90,11 +90,11 @@ VALUES ('Giảm 10%', 'CD10', 'Giảm 10% tổng bill', 'PERCENTAGE', 10.00, 500
 INSERT INTO users (id, username, password, avatar_url, email, first_name, last_name, date_of_birth, gender, status, phone, created_at, updated_at)
 VALUES
 -- Gán cứng ID = 1
-(1, 'johndoe', '$2a$10$s3go5e...', '/img/avatars/john.png', 'johndoe@gmail.com', 'John', 'Doe', '2002-05-10', 'MALE', 'ACTIVE', '0912345678', NOW(), NOW()),
+(1, 'johndoe', '$2a$10$s3go5e.GYivSMmrJXG6jceddjfSAbg6O832Sip8XIVNRRLIjXNP6G', '/img/avatars/john.png', 'johndoe@gmail.com', 'John', 'Doe', '2002-05-10', 'MALE', 'ACTIVE', '0912345678', NOW(), NOW()),
 -- Gán cứng ID = 2
-(2, 'alice', '$2a$10$TTfo0Zpg...', '/img/avatars/alice.png', '0901dattran@gmail.com', 'Alice', 'Nguyen', '2003-05-14', 'FEMALE', 'ACTIVE', '0913443344', NOW(), NOW()),
+(2, 'alice', '$2a$10$EeSehs49igNMz6Vuk69cDuaAGHFrWSjeOvMmNkaAr6ZwyZtltKStS', '/img/avatars/alice.png', '0901dattran@gmail.com', 'Alice', 'Nguyen', '2003-05-14', 'FEMALE', 'ACTIVE', '0913443344', NOW(), NOW()),
 -- Gán cứng ID = 3
-(3, 'johncena', '$2a$10$bxaCEqc...', '/img/avatars/cena.png', 'johncena@gmail.com', 'John', 'Cena', '1998-05-14', 'MALE', 'ACTIVE', '0913324344', NOW(), NOW());
+(3, 'johncena', '$2a$10$llGgE5VlZzM0.pCzbOLGWev.cqdovrjSsq0lGM87wo0FVgATXsh12', '/img/avatars/cena.png', 'johncena@gmail.com', 'John', 'Cena', '1998-05-14', 'MALE', 'ACTIVE', '0913324344', NOW(), NOW());
 
 INSERT INTO user_roles (user_id, role_id)
 VALUES (1, 1),

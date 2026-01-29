@@ -45,14 +45,15 @@ public class ApiAuthController {
     }
 
     @PostMapping("verify-register")
-    public ResponseEntity<?> verifyRegister(@RequestParam String verifyCode) {
+    public ApiResponse verifyRegister(@RequestParam String verifyCode) {
         log.info("Verify register request for user, verify code: {}", verifyCode);
 
         boolean isSuccess = authenticationService.confirmRegister(verifyCode);
-        if (isSuccess) {
-            return ResponseEntity.ok("Kích hoạt tài khoản thành công! Bạn có thể đăng nhập.");
-        }
-        return ResponseEntity.badRequest().body("Mã xác nhận không hợp lệ hoặc đã được sử dụng.");
+        
+        return ApiResponse.builder()
+                .status(isSuccess ? 200 : 404)
+                .message(isSuccess ? "Verify successfully" : "Verify register failed")
+                .build();
     }
 
     //Nhap email

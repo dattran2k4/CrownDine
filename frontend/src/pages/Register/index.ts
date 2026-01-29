@@ -1,3 +1,3 @@
-import Register from '@/pages/Register/Register'
+import Register from './Register'
 
 export default Register

@@ -64,3 +64,8 @@ jwt:
 logging:
   level:
     org.flywaydb: DEBUG
+
+cloudinary:
+  cloud_name: dk1urarrc
+  api_key: 654243287352318
+  api_secret: IJAoDwzp8EaLRI7KJKYwYHqXqbo

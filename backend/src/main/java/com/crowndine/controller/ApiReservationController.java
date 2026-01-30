@@ -81,7 +81,7 @@ public class ApiReservationController {
     ) {
         return ApiResponse.builder()
                 .status(200)
-                .message("Select table successfully")
+                .message("Hold table successfully")
                 .data(reservationService.createReservation(principal.getName(), request))
                 .build();
     }

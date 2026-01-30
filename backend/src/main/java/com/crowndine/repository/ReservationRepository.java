@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -24,6 +25,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
               and r.status in :statuses
               and r.startTime < :endTime
               and r.endTime > :startTime
+              and (r.status <> 'PENDING' or (r.expiratedAt is not null and r.expiratedAt > :now))
             """)
-    List<Long> findReservedTableIds(LocalDate date, LocalTime startTime, LocalTime endTime, List<EReservationStatus> statuses);
+    List<Long> findReservedTableIds(
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime,
+            List<EReservationStatus> statuses,
+            LocalDateTime now
+    );
+
+    List<Reservation> findByStatusAndExpiratedAtBefore(EReservationStatus status, LocalDateTime now);
 }

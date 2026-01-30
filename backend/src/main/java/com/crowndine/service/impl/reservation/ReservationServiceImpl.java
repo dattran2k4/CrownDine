@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.Set;
 public class ReservationServiceImpl implements ReservationService {
     private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
     private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
+    private static final long HOLD_TABLE_MINUTES = 10;
 
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
@@ -162,8 +164,9 @@ public class ReservationServiceImpl implements ReservationService {
                 EReservationStatus.CHECKED_IN
         );
 
+        LocalDateTime now = LocalDateTime.now();
         List<Long> reservedIds =
-                reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses);
+                reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses, now);
 
         Set<Long> reservedSet = new HashSet<>(reservedIds);
 
@@ -215,11 +218,13 @@ public class ReservationServiceImpl implements ReservationService {
                 EReservationStatus.CHECKED_IN
         );
 
+        LocalDateTime now = LocalDateTime.now();
         List<Long> reservedIds = reservationRepository.findReservedTableIds(
                 request.getDate(),
                 request.getStartTime(),
                 request.getEndTime(),
-                blockingStatuses
+                blockingStatuses,
+                now
         );
 
         if (reservedIds.contains(table.getId())) {
@@ -233,20 +238,22 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setGuestNumber(request.getGuestNumber());
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
+        reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
         reservation.setCustomer(user);
         reservation.setTable(table);
+        table.setStatus(ETableStatus.RESERVED);
 
         Reservation saved = reservationRepository.save(reservation);
 
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
-        response.setTableId(table.getId());
         response.setDate(saved.getDate());
         response.setStartTime(saved.getStartTime());
         response.setEndTime(saved.getEndTime());
         response.setGuestNumber(saved.getGuestNumber());
         response.setNote(saved.getNote());
         response.setStatus(saved.getStatus());
+        response.setExpiratedAt(saved.getExpiratedAt());
         response.setTableName(table.getName());
         if (table.getArea() != null && table.getArea().getFloor() != null) {
             response.setFloorNumber(table.getArea().getFloor().getFloorNumber());

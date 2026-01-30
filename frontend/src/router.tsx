@@ -4,6 +4,9 @@ import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Menu from '@/pages/Menu'
 import Register from '@/pages/Register' // Giả sử bạn có trang này
+import Reservation from '@/pages/Reservation'
+import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
+import CategoryList from '@/pages/Admin/Category/CategoryList'
 import { createBrowserRouter } from 'react-router-dom'
 
 const router = createBrowserRouter([
@@ -20,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: '/menu',
         element: <Menu />
+      },
+      {
+        path: path.reservation,
+        element: <Reservation />
       }
       // Thêm các trang Dashboard, Profile... ở đây
     ]
@@ -33,6 +40,18 @@ const router = createBrowserRouter([
   {
     path: path.register, // Ví dụ cho trang đăng ký
     element: <Register />
+  },
+
+  // Nhóm 3: Admin
+  {
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
+      {
+        path: 'categories',
+        element: <CategoryList />
+      }
+    ]
   }
 ])
 

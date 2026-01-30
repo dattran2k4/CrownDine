@@ -203,6 +203,7 @@ CREATE TABLE `work_schedules` (
                                   `id` bigint NOT NULL AUTO_INCREMENT,
                                   `shift_id` bigint DEFAULT NULL,
                                   `staff_id` bigint DEFAULT NULL,
+                                  `work_date` DATE NOT NULL,
                                   `updated_at` datetime(6) DEFAULT NULL,
                                   `status` enum('APPROVED','CANCELLED','PENDING','REJECTED') DEFAULT NULL,
                                   PRIMARY KEY (`id`),

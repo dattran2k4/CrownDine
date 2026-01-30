@@ -145,9 +145,9 @@ VALUES
 -- Settlement cho order 2
 (NULL, 2, 'ORDER',       'SETTLEMENT', 'CASH',        'SUCCESS', 189000.00, 'ORD-SETTLE-0002',  NOW(), NOW());
 
-INSERT INTO work_schedules (staff_id, shift_id, status, created_at, updated_at) VALUES
-                                                                                        (2, 1, 'APPROVED', NOW(), NOW()),
-                                                                                        (2, 2, 'APPROVED', NOW(), NOW());
+INSERT INTO work_schedules (staff_id, shift_id, status, work_date, created_at, updated_at) VALUES
+                                                                                        (2, 1, 'APPROVED', '2026-02-28', NOW(), NOW()),
+                                                                                        (2, 2, 'APPROVED', '2026-02-28', NOW(), NOW());
 
 INSERT INTO attendances (user_id, work_schedule_id, check_in_time, check_out_time, note, created_at, updated_at) VALUES
                                                                                                                          (2, 1, '08:05:00', '14:00:00', 'Đúng giờ', NOW(), NOW()),

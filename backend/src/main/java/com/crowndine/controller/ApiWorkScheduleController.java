@@ -2,6 +2,7 @@ package com.crowndine.controller;
 
 import com.crowndine.common.enums.EWorkScheduleStatus;
 import com.crowndine.dto.request.WorkScheduleCreateRequest;
+import com.crowndine.dto.request.WorkScheduleUpdateRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.repository.ShiftRepository;
@@ -35,6 +36,7 @@ public class ApiWorkScheduleController {
     private final ShiftRepository shiftRepository;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse getWorkSchedules(@RequestParam(required = false) LocalDate fromDate,
                                         @RequestParam(required = false) LocalDate toDate,
                                         @RequestParam(required = false) LocalDate date,
@@ -62,21 +64,25 @@ public class ApiWorkScheduleController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse updateWorkSchedules(@PathVariable Long id, @RequestBody WorkScheduleCreateRequest request) {
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ApiResponse updateWorkSchedules(@PathVariable Long id, @RequestBody WorkScheduleUpdateRequest request) {
         log.info("Request to update work schedules");
+        workScheduleService.reassignWorkSchedules(request, id);
 
-
-        return null;
+        return ApiResponse.builder()
+                .status(HttpStatus.ACCEPTED.value())
+                .message("Update work schedules by date successfully")
+                .build();
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse approveWorkSchedule(@PathVariable("id") Long id, @RequestParam EWorkScheduleStatus status) {
         workScheduleService.changeWorkScheduleStatus(id, status);
 
         return ApiResponse.builder()
                 .status(200)
-                .message("Get work schedules successfully")
+                .message("Update work schedule status successfully")
                 .build();
     }
 

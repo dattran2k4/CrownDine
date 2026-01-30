@@ -4,7 +4,6 @@ import com.crowndine.common.enums.EWorkScheduleStatus;
 import com.crowndine.model.Shift;
 import com.crowndine.model.User;
 import com.crowndine.model.WorkSchedule;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,8 +32,10 @@ public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Long
             @Param("status") EWorkScheduleStatus status
     );
 
-    boolean findByStaff(User staff);
 
+    List<WorkSchedule> findByStaffInAndShiftAndWorkDate(List<User> staffs, Shift shift, LocalDate workDate);
 
-    List<WorkSchedule> findByStaffInAndShiftAndWorkDate(List<User> attr0, Shift shift, LocalDate workDate);
+    List<WorkSchedule> findByStaffAndShiftAndWorkDate(User staff, Shift shift, LocalDate workDate);
+
+    boolean existsByStaffAndShiftAndWorkDateAndIdNot(User staff, Shift shift, LocalDate workDate, Long id);
 }

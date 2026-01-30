@@ -59,7 +59,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     @Transactional(rollbackFor = Exception.class)
     public void changeWorkScheduleStatus(Long id, EWorkScheduleStatus status) {
         log.info("Processing approve work schedule id {}", id);
-        WorkSchedule entity = workScheduleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found"));
+        WorkSchedule entity = getWorkSchedule(id);
 
         if (entity.getWorkDate().isBefore(LocalDate.now()) && EWorkScheduleStatus.APPROVED.equals(status)) {
             throw new InvalidDataException("Không thể chấp nhận lịch quá khứ");
@@ -75,7 +75,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long createWorkSchedule(WorkScheduleCreateRequest request) {
-        log.info("Proccessing to create work schedule in: {} ", request.getWorkDate());
+        log.info("Processing to create work schedule in: {} ", request.getWorkDate());
         Shift shift = shiftRepository.findById(request.getShiftId()).orElseThrow(() -> new ResourceNotFoundException("Shift Not Found"));
 
 
@@ -117,17 +117,26 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     }
 
     @Override
-    public void updateWorkSchedule(WorkScheduleUpdateRequest request, Long id) {
+    @Transactional(rollbackFor = Exception.class)
+    public void reassignWorkSchedules(WorkScheduleUpdateRequest request, Long id) {
         log.info("Processing to update work schedule");
-        WorkSchedule workSchedule = workScheduleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found"));
+        WorkSchedule workSchedule = getWorkSchedule(id);
 
         Shift shift = shiftRepository.findById(request.getShiftId()).orElseThrow(() -> new ResourceNotFoundException("Shift Not Found"));
 
         User staff = userRepository.findById(request.getStaffId()).orElseThrow(() -> new ResourceNotFoundException("Staff Not Found"));
 
+        //Check request.staff existed in this shift and date
+        if (workScheduleRepository.existsByStaffAndShiftAndWorkDateAndIdNot(staff, shift, request.getWorkDate(), id)) {
+            throw new InvalidDataException("Nhân viên đã được xếp lịch cho ca này");
+        }
+
+        //TODO Nếu đổi sang nhân viên KHÁC, cần kiểm tra xem lịch cũ đã có chấm công chưa?
+
         workSchedule.setWorkDate(request.getWorkDate());
         workSchedule.setShift(shift);
         workSchedule.setStaff(staff);
+        workSchedule.setStatus(EWorkScheduleStatus.APPROVED);
 
         workScheduleRepository.save(workSchedule);
         log.info("Updated work schedule id {}", id);
@@ -136,8 +145,13 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteWorkSchedule(Long id) {
-        workScheduleRepository.delete(workScheduleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found")));
+        workScheduleRepository.delete(getWorkSchedule(id));
         log.info("Delete work schedule id {} successfully", id);
+    }
+
+    @Override
+    public WorkSchedule getWorkSchedule(Long id) {
+        return workScheduleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found"));
     }
 
     private ShiftResponse toShiftResponse(Shift shift) {

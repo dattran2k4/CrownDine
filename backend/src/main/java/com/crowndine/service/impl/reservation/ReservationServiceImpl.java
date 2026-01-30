@@ -1,16 +1,15 @@
 package com.crowndine.service.impl.reservation;
 
-import com.crowndine.dto.response.OrderDetailPageResponse;
-import com.crowndine.dto.response.OrderLineResponse;
-import com.crowndine.dto.response.PageResponse;
-import com.crowndine.dto.response.ReservationHistoryResponse;
+import com.crowndine.common.enums.EReservationStatus;
+import com.crowndine.common.enums.ETableStatus;
+import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.response.*;
+import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
-import com.crowndine.model.Order;
-import com.crowndine.model.OrderDetail;
-import com.crowndine.model.Reservation;
-import com.crowndine.model.User;
+import com.crowndine.model.*;
 import com.crowndine.repository.OrderDetailRepository;
 import com.crowndine.repository.ReservationRepository;
+import com.crowndine.repository.RestaurantTableRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.service.reservation.ReservationService;
 
@@ -21,16 +20,27 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "RESERVATION-SERVICE")
 public class ReservationServiceImpl implements ReservationService {
+    private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
+    private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
+    private static final long HOLD_TABLE_MINUTES = 10;
+
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final RestaurantTableRepository tableRepository;
 
     @Override
     public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {
@@ -126,4 +136,153 @@ public class ReservationServiceImpl implements ReservationService {
         return r;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<AvailableTableResponse> findAvailableTables(
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime,
+            Integer guestNumber
+    ) {
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
+        validateReservationTime(startDateTime, endDateTime, true);
+        if (guestNumber == null || guestNumber < 1) {
+            throw new InvalidDataException("Số lượng khách phải lớn hơn 0");
+        }
+
+        List<RestaurantTable> candidates =
+                tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(
+                        guestNumber, ETableStatus.AVAILABLE
+                );
+
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+
+        List<EReservationStatus> blockingStatuses = List.of(
+                EReservationStatus.PENDING,
+                EReservationStatus.CONFIRMED,
+                EReservationStatus.CHECKED_IN
+        );
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> reservedIds =
+                reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses, now);
+
+        Set<Long> reservedSet = new HashSet<>(reservedIds);
+
+        return candidates.stream()
+                .filter(t -> !reservedSet.contains(t.getId()))
+                .map(this::toAvailableTableResponse)
+                .toList();
+    }
+
+    private AvailableTableResponse toAvailableTableResponse(RestaurantTable table) {
+        AvailableTableResponse resp = new AvailableTableResponse();
+        resp.setId(table.getId());
+        resp.setName(table.getName());
+        resp.setCapacity(table.getCapacity());
+        if (table.getArea() != null) {
+            resp.setAreaId(table.getArea().getId());
+            resp.setAreaName(table.getArea().getName());
+            if (table.getArea().getFloor() != null) {
+                resp.setFloorId(table.getArea().getFloor().getId());
+                resp.setFloorName(table.getArea().getFloor().getName());
+                resp.setFloorNumber(table.getArea().getFloor().getFloorNumber());
+            }
+        }
+        return resp;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
+        LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
+        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
+        validateReservationTime(startDateTime, endDateTime, true);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        RestaurantTable table = tableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
+
+        if (table.getStatus() != ETableStatus.AVAILABLE) {
+            throw new InvalidDataException("Bàn không khả dụng");
+        }
+
+        if (table.getCapacity() != null && table.getCapacity() < request.getGuestNumber()) {
+            throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
+        }
+
+        List<EReservationStatus> blockingStatuses = List.of(
+                EReservationStatus.PENDING,
+                EReservationStatus.CONFIRMED,
+                EReservationStatus.CHECKED_IN
+        );
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> reservedIds = reservationRepository.findReservedTableIds(
+                request.getDate(),
+                request.getStartTime(),
+                request.getEndTime(),
+                blockingStatuses,
+                now
+        );
+
+        if (reservedIds.contains(table.getId())) {
+            throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
+        }
+
+        Reservation reservation = new Reservation();
+        reservation.setDate(request.getDate());
+        reservation.setStartTime(request.getStartTime());
+        reservation.setEndTime(request.getEndTime());
+        reservation.setGuestNumber(request.getGuestNumber());
+        reservation.setNote(request.getNote());
+        reservation.setStatus(EReservationStatus.PENDING);
+        reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
+        reservation.setCustomer(user);
+        reservation.setTable(table);
+        table.setStatus(ETableStatus.RESERVED);
+
+        Reservation saved = reservationRepository.save(reservation);
+
+        ReservationCreateResponse response = new ReservationCreateResponse();
+        response.setReservationId(saved.getId());
+        response.setDate(saved.getDate());
+        response.setStartTime(saved.getStartTime());
+        response.setEndTime(saved.getEndTime());
+        response.setGuestNumber(saved.getGuestNumber());
+        response.setNote(saved.getNote());
+        response.setStatus(saved.getStatus());
+        response.setExpiratedAt(saved.getExpiratedAt());
+        response.setTableName(table.getName());
+        if (table.getArea() != null && table.getArea().getFloor() != null) {
+            response.setFloorNumber(table.getArea().getFloor().getFloorNumber());
+        }
+        return response;
+    }
+
+    private void validateReservationTime(
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime,
+            boolean requireFutureStart
+    ) {
+        if (!endDateTime.isAfter(startDateTime)) {
+            throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
+        }
+        if (startDateTime.toLocalTime().isBefore(OPEN_TIME)
+                || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
+            throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
+        }
+        if (!requireFutureStart) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!startDateTime.isAfter(now)) {
+            throw new InvalidDataException("Không thể đặt bàn trong quá khứ");
+        }
+    }
 }

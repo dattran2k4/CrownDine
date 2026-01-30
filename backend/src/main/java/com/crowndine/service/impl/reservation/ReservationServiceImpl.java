@@ -144,7 +144,9 @@ public class ReservationServiceImpl implements ReservationService {
             LocalTime endTime,
             Integer guestNumber
     ) {
-        validateReservationTime(date, startTime, endTime, true);
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
+        validateReservationTime(startDateTime, endDateTime, true);
         if (guestNumber == null || guestNumber < 1) {
             throw new InvalidDataException("Số lượng khách phải lớn hơn 0");
         }
@@ -196,7 +198,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
-        validateReservationTime(request.getDate(), request.getStartTime(), request.getEndTime(), true);
+        LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
+        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
+        validateReservationTime(startDateTime, endDateTime, true);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
@@ -262,32 +266,23 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void validateReservationTime(
-            LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime,
             boolean requireFutureStart
     ) {
-        if (date == null || startTime == null || endTime == null) {
-            throw new InvalidDataException("Ngày và thời gian là bắt buộc");
-        }
-        if (!endTime.isAfter(startTime)) {
+        if (!endDateTime.isAfter(startDateTime)) {
             throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
         }
-        if (startTime.isBefore(OPEN_TIME) || endTime.isAfter(CLOSE_TIME)) {
+        if (startDateTime.toLocalTime().isBefore(OPEN_TIME)
+                || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
             throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
         }
         if (!requireFutureStart) {
             return;
         }
-        LocalDate today = LocalDate.now();
-        if (date.isBefore(today)) {
+        LocalDateTime now = LocalDateTime.now();
+        if (!startDateTime.isAfter(now)) {
             throw new InvalidDataException("Không thể đặt bàn trong quá khứ");
-        }
-        if (date.isEqual(today)) {
-            LocalTime now = LocalTime.now();
-            if (!startTime.isAfter(now)) {
-                throw new InvalidDataException("Không thể đặt bàn trong quá khứ");
-            }
         }
     }
 }

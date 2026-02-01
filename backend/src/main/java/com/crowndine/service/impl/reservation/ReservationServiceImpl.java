@@ -147,9 +147,6 @@ public class ReservationServiceImpl implements ReservationService {
         LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
         LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
         validateReservationTime(startDateTime, endDateTime, true);
-        if (guestNumber == null || guestNumber < 1) {
-            throw new InvalidDataException("Số lượng khách phải lớn hơn 0");
-        }
 
         List<RestaurantTable> candidates =
                 tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(
@@ -183,6 +180,12 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setId(table.getId());
         resp.setName(table.getName());
         resp.setCapacity(table.getCapacity());
+        resp.setShape(table.getShape());
+        resp.setX(table.getPositionX());
+        resp.setY(table.getPositionY());
+        resp.setWidth(table.getWidth());
+        resp.setHeight(table.getHeight());
+        resp.setRotation(table.getRotation());
         if (table.getArea() != null) {
             resp.setAreaId(table.getArea().getId());
             resp.setAreaName(table.getArea().getName());

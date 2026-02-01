@@ -1,5 +1,6 @@
 package com.crowndine.dto.response;
 
+import com.crowndine.common.enums.ETableShape;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,4 +15,10 @@ public class AvailableTableResponse {
     private Long floorId;
     private String floorName;
     private Integer floorNumber;
+    private ETableShape shape;
+    private Integer x;
+    private Integer y;
+    private Integer width;
+    private Integer height;
+    private Integer rotation;
 }

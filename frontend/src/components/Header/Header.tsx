@@ -29,7 +29,7 @@ const Header = () => {
           {navItems.map((item) => (
             <Link
               key={item.href}
-              to={item.href}
+              to={`/${item.href}`}
               className='text-foreground/80 hover:text-primary text-sm font-medium transition-colors'
             >
               {item.label}
@@ -50,11 +50,11 @@ const Header = () => {
           </Button>
 
           {/* Book Button */}
-          <a href='#reservation'>
+          <Link to='/#reservation'>
             <Button className='bg-primary hover:bg-primary/90 btn-lift border-primary hidden rounded-full border px-6 py-2 font-semibold text-white transition-all duration-300 sm:inline-flex'>
               Book a Table
             </Button>
-          </a>
+          </Link>
 
           {/* Mobile Menu Toggle */}
           <Button variant='ghost' size='icon' onClick={() => setIsOpen(!isOpen)} className='md:hidden'>
@@ -70,18 +70,18 @@ const Header = () => {
             {navItems.map((item) => (
               <Link
                 key={item.href}
-                to={item.href}
+                to={`/${item.href}`}
                 className='text-foreground/80 hover:text-primary py-2 font-medium transition-colors'
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}
               </Link>
             ))}
-            <a href='#reservation' onClick={() => setIsOpen(false)} className='w-full'>
+            <Link to='/#reservation' onClick={() => setIsOpen(false)} className='w-full'>
               <Button className='bg-primary hover:bg-primary/90 btn-lift border-primary w-full rounded-full border font-semibold text-white transition-all duration-300'>
                 Book a Table
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       )}

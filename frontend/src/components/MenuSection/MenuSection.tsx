@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ItemCard from '@/components/MenuSection/ItemCard/ItemCard'
 import type { Item } from '@/types/item.type'
+import { Button } from '../ui/button'
 
 const MOCK_MENU: Item[] = [
   {
@@ -127,6 +128,7 @@ const MOCK_MENU: Item[] = [
 const CATEGORIES = ['All', 'Starters', 'Mains', 'Combos', 'Desserts']
 
 const MAX_ITEMS_PER_ROW = 4
+
 const MenuSection = () => {
   const [activeTab, setActiveTab] = useState('All')
 
@@ -138,7 +140,7 @@ const MenuSection = () => {
   const filteredMenu = activeTab === 'All' ? MOCK_MENU : MOCK_MENU.filter((item) => item.category === activeTab)
 
   return (
-    <section className='min-h-screen w-full bg-transparent px-4 py-16 md:px-8'>
+    <section id='menu' className='min-h-screen w-full bg-transparent px-4 py-16 md:px-8'>
       <div className='mx-auto max-w-7xl'>
         <p className='text-primary mb-2 text-center text-sm font-bold tracking-widest uppercase'>• Our Menu</p>
         {/* --- Header --- */}
@@ -175,6 +177,16 @@ const MenuSection = () => {
           {filteredMenu.slice(0, MAX_ITEMS_PER_ROW).map((item) => (
             <ItemCard key={item.id} item={item} onAddToCart={handleAddToCart} />
           ))}
+        </div>
+        <div className='mt-12 flex justify-center'>
+          <a href='#menu'>
+            <Button
+              variant='outline'
+              className='border-primary text-primary hover:bg-primary hover:text-primary-foreground btn-lift cursor-pointer rounded-full border-2 bg-transparent px-8 py-6 text-lg font-semibold transition-all duration-300'
+            >
+              View Full Menu →
+            </Button>
+          </a>
         </div>
       </div>
     </section>

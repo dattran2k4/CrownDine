@@ -5,6 +5,7 @@ import Login from '@/pages/Login'
 import Menu from '@/pages/Menu'
 import Register from '@/pages/Register' // Giả sử bạn có trang này
 import { createBrowserRouter } from 'react-router-dom'
+import Profile from '@/pages/Profile'
 
 const router = createBrowserRouter([
   // Nhóm 1: Các trang sử dụng MainLayout (Cần Header/Footer)
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
       {
         path: '/menu',
         element: <Menu />
+      },
+      {
+        path: path.profile, // Trang Profile sẽ hiển thị tại '/profile'
+        element: <Profile />
       }
       // Thêm các trang Dashboard, Profile... ở đây
     ]

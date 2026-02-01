@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
         log.info("Successfully retrieved profile for user {}", name);
         return response;
     }
-    
+
     @Transactional(rollbackFor = Exception.class)
     public void updateProfile(UpdateProfileRequest request, String name) {
         log.info("Processing for updating profile for user {}", name);
@@ -77,5 +77,10 @@ public class UserServiceImpl implements UserService {
         user.setDateOfBirth(request.getDateOfBirth());
         userRepository.save(user);
         log.info("Successfully updated profile for user {}", name);
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

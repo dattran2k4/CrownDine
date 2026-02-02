@@ -4,6 +4,7 @@ import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register' // Giả sử bạn có trang này
 import { createBrowserRouter } from 'react-router-dom'
+import LayoutPage from "@/pages/Layout";
 
 const router = createBrowserRouter([
   // Nhóm 1: Các trang sử dụng MainLayout (Cần Header/Footer)
@@ -15,8 +16,12 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <Home />
-      }
+      },
       // Thêm các trang Dashboard, Profile... ở đây
+       {
+        path: 'admin/layout',
+        element: <LayoutPage />
+      }
     ]
   },
 
@@ -28,7 +33,10 @@ const router = createBrowserRouter([
   {
     path: path.register, // Ví dụ cho trang đăng ký
     element: <Register />
-  }
+  },
+
+
 ])
+
 
 export default router

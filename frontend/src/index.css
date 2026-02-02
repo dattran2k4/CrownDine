@@ -6,8 +6,8 @@
 @layer base {
   :root {
     /* Màu nền kem/beige sang trọng*/
-    --background: 30, 84%, 60%;
-    --foreground: 20, 20%, 12%;
+    --background: oklch(0.98 0.01 80);
+    --foreground: oklch(0.18 0.04 25);
 
     --muted: 260 30% 95%;
     --muted-foreground: 240 15% 50%;
@@ -97,4 +97,55 @@
     hsla(0, 0%, 100%, 1) 40%,
     hsla(38, 92%, 50%, 0.5) 100%
   );
+}
+/* Smooth animations & effects */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  .smooth-transition {
+    @apply transition-all duration-300;
+  }
+
+  /* Image lift effect */
+  .image-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .image-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .image-lift:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Button elevation effect */
+  .btn-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .btn-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .btn-lift:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  }
 }

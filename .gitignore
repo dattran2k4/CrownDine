@@ -2,3 +2,8 @@
 .DS_Store
 target/
 node_modules/
+.vscode/
+package-lock.json
+.agent/
+frontend/package-lock.json
+

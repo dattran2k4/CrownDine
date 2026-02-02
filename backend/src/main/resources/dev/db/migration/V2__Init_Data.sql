@@ -138,16 +138,16 @@ VALUES
 (2, 10, NULL,  1,  19000.00, NULL, NOW(), NOW());
 
 INSERT INTO payments
-(reservation_id, order_id, target, type, method, status, amount, transaction_code, created_at, updated_at)
+(reservation_id, order_id, user_id, source, target, type, method, status, amount, transaction_code, created_at, updated_at)
 VALUES
 -- Deposit cho reservation 1
-(1, NULL, 'RESERVATION', 'DEPOSIT',    'CREDIT_CARD', 'SUCCESS', 100000.00, 'RSV-DEPOSIT-0001', NOW(), NOW()),
+(1, NULL, 3, 'CLIENT_APP', 'RESERVATION', 'DEPOSIT', 'PAYOS', 'SUCCESS', 100000.00, 'RSV-DEPOSIT-0001', NOW(), NOW()),
 -- Settlement cho order 2
-(NULL, 2, 'ORDER',       'SETTLEMENT', 'CASH',        'SUCCESS', 189000.00, 'ORD-SETTLE-0002',  NOW(), NOW());
+(NULL, 2, 2, 'POS_COUNTER', 'ORDER', 'SETTLEMENT', 'CASH', 'SUCCESS', 189000.00, 'ORD-SETTLE-0002',  NOW(), NOW());
 
-INSERT INTO work_schedules (staff_id, shift_id, status, created_at, updated_at) VALUES
-                                                                                        (2, 1, 'APPROVED', NOW(), NOW()),
-                                                                                        (2, 2, 'APPROVED', NOW(), NOW());
+INSERT INTO work_schedules (staff_id, shift_id, status, work_date, created_at, updated_at) VALUES
+                                                                                        (2, 1, 'APPROVED', '2026-02-28', NOW(), NOW()),
+                                                                                        (2, 2, 'APPROVED', '2026-02-28', NOW(), NOW());
 
 INSERT INTO attendances (user_id, work_schedule_id, check_in_time, check_out_time, note, created_at, updated_at) VALUES
                                                                                                                          (2, 1, '08:05:00', '14:00:00', 'Đúng giờ', NOW(), NOW()),

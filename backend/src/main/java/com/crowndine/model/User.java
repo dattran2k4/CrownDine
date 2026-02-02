@@ -73,6 +73,9 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @OneToMany(mappedBy = "customer")
     private List<Review> reviews = new ArrayList<>();
 
+    @OneToMany(mappedBy = "createdBy")
+    private List<Payment> payments = new ArrayList<>();
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -114,5 +117,9 @@ public class User extends AbstractEntity<Long> implements UserDetails {
 
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
+    }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 }

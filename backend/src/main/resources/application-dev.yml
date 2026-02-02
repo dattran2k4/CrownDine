@@ -21,7 +21,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -64,7 +64,16 @@ logging:
   level:
     org.flywaydb: DEBUG
 
+#Clooudinary
 cloudinary:
   cloud_name: dk1urarrc
   api_key: 654243287352318
   api_secret: IJAoDwzp8EaLRI7KJKYwYHqXqbo
+
+#PayOS
+payos:
+  client-id: 123
+  api-key: 123
+  checksum-key: 123
+  return-url: ${app.base-url}/thanh-toan/payos/thanh-cong
+  cancel-url: ${app.base-url}/thanh-toan/payos/that-bai

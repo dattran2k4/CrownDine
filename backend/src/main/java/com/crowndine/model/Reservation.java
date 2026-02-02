@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,12 @@ public class Reservation extends AbstractEntity<Long> {
 
     @Column(name = "note")
     private String note;
+
+    @Column(name = "expirated_at")
+    private LocalDateTime expiratedAt;
+
+    @Column(name = "code", unique = true, nullable = false, updatable = false)
+    private String code;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

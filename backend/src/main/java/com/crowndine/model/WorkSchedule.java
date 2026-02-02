@@ -22,6 +22,7 @@ public class WorkSchedule extends AbstractEntity<Long> {
     @Column(name = "status")
     private EWorkScheduleStatus status;
 
+    @Column(name = "note")
     private String note;
 
     @ManyToOne

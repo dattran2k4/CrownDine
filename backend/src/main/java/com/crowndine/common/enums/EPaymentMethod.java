@@ -1,7 +1,16 @@
 package com.crowndine.common.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum EPaymentMethod {
-    CASH,
-    BANK_TRANSFER,
-    CREDIT_CARD,
+    PAYOS("payos"),
+    MOMO("momo"),
+    CASH("cash"),
+    ZALOPAY("zalopay");
+
+    private final String value;
+    
 }

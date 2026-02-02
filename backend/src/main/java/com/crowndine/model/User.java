@@ -73,6 +73,9 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @OneToMany(mappedBy = "customer")
     private List<Review> reviews = new ArrayList<>();
 
+    @OneToMany(mappedBy = "createdBy")
+    private List<Payment> payments = new ArrayList<>();
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

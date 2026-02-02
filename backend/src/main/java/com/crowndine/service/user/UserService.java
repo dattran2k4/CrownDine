@@ -16,4 +16,6 @@ public interface UserService {
     void updateProfile(UpdateProfileRequest request, String name);
 
     User getUserById(Long id);
+
+    User getUserByUserName(String username);
 }

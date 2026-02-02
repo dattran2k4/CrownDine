@@ -14,6 +14,9 @@ import java.math.BigDecimal;
 @Table(name = "payments")
 public class Payment extends AbstractEntity<Long> {
 
+    @Column(name = "code", unique = true, nullable = false)
+    private Long code;
+
     @Column(name = "amount")
     private BigDecimal amount;
 
@@ -36,6 +39,10 @@ public class Payment extends AbstractEntity<Long> {
     @Column(name = "target")
     private EPaymentTarget target;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source")
+    private EPaymentSource source;
+
     @ManyToOne
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;
@@ -43,4 +50,8 @@ public class Payment extends AbstractEntity<Long> {
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User createdBy;
 }

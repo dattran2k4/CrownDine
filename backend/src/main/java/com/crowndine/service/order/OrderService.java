@@ -11,11 +11,9 @@ import java.util.List;
 public interface OrderService {
     Order getOrderByCode(String code);
 
-    void createOder(OrderRequest request, String username);
+    void saveOrder(OrderRequest request, String username);
 
     void updateStatus(Long id, EOrderStatus status);
-
-    void deleteOrder(Long id);
 
     Order getOrderById(Long id);
 

@@ -9,6 +9,9 @@ import java.util.List;
 @Getter
 public class OrderRequest {
 
+    @Min(1)
+    private Long orderId;
+
     private String voucherCode;
 
     @NotNull(message = "Chưa có danh sách đồ ăn")
@@ -21,5 +24,6 @@ public class OrderRequest {
     private Long reservationId;
 
     @Min(value = 1, message = "Bàn không hợp lý")
+    @NotNull
     private Long tableId;
 }

@@ -22,6 +22,7 @@ import java.util.Objects;
 public class PriceCalculatorService {
 
     public void calculateTotalPrice(Order order) {
+        log.info("Calculating price for orderId {}", order.getId());
         if (order == null || order.getOrderDetails() == null) return;
 
         // 1. Tính Subtotal (Tổng tiền trước giảm giá)
@@ -31,8 +32,10 @@ public class PriceCalculatorService {
                     return price.multiply(BigDecimal.valueOf(detail.getQuantity()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        log.info("Subtotal: {}", subTotal);
 
         order.setTotalPrice(subTotal);
+        log.info("Total price: {}", order.getTotalPrice());
 
         // 2. Tính Discount (Tiền giảm giá từ Voucher)
         BigDecimal discount = BigDecimal.ZERO;
@@ -40,11 +43,13 @@ public class PriceCalculatorService {
             discount = calculateVoucherDiscount(order.getVoucher(), subTotal);
         }
         order.setDiscountPrice(discount);
+        log.info("Discount price: {}", order.getDiscountPrice());
 
         // 3. Tính Final Price (Tổng cuối cùng)
         // Dùng .max(BigDecimal.ZERO) để đảm bảo không bị âm nếu voucher giảm quá tay
         BigDecimal finalPrice = subTotal.subtract(discount).max(BigDecimal.ZERO);
         order.setFinalPrice(finalPrice);
+        log.info("Final price: {}", finalPrice);
     }
 
     private BigDecimal calculateSubTotal(List<OrderDetail> details) {

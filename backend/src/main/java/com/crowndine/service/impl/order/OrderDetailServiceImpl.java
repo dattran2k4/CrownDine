@@ -1,6 +1,5 @@
 package com.crowndine.service.impl.order;
 
-import com.crowndine.model.Order;
 import com.crowndine.model.OrderDetail;
 import com.crowndine.repository.OrderDetailRepository;
 import com.crowndine.repository.OrderRepository;

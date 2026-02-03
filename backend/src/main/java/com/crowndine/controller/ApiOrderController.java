@@ -23,7 +23,7 @@ public class ApiOrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public ApiResponse getOrdersByUser(Principal principal) {
+    public ApiResponse getOrdersByStaff(Principal principal) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully retrieved orders")
@@ -32,8 +32,8 @@ public class ApiOrderController {
     }
 
     @PostMapping
-    public ApiResponse createOrder(@Valid @RequestBody OrderRequest request, Principal principal) {
-        orderService.createOder(request, principal.getName());
+    public ApiResponse createOrderByStaff(@Valid @RequestBody OrderRequest request, Principal principal) {
+        orderService.saveOrder(request, principal.getName());
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Order created successfully")
@@ -46,15 +46,6 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(HttpStatus.ACCEPTED.value())
                 .message("Order status updated successfully")
-                .build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ApiResponse deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
-        return ApiResponse.builder()
-                .status(200)
-                .message("Order has been deleted")
                 .build();
     }
 }

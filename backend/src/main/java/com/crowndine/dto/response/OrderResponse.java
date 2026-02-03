@@ -17,4 +17,5 @@ public class OrderResponse {
     private BigDecimal discountPrice;
     private BigDecimal finalPrice;
     private EOrderStatus status;
+    private String tableName;
 }

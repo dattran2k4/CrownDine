@@ -10,8 +10,9 @@ import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.*;
 import com.crowndine.repository.ItemRepository;
 import com.crowndine.repository.OrderRepository;
-import com.crowndine.repository.UserRepository;
+import com.crowndine.repository.RestaurantTableRepository;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.user.UserService;
 import com.crowndine.service.voucher.VoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,8 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final ItemRepository itemRepository;
-    private final UserRepository userRepository;
+    private final RestaurantTableRepository tableRepository;
+    private final UserService userService;
     private final VoucherService voucherService;
     private final PriceCalculatorService priceCalculatorService;
 
@@ -41,11 +43,22 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createOder(OrderRequest request, String username) {
-        log.info("Processing create order");
-        Order order = new Order();
+    public void saveOrder(OrderRequest request, String username) {
+        log.info("Processing saving order");
 
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Order order;
+
+        if (request.getOrderId() != null) {
+            order = getOrderById(request.getOrderId());
+        } else {
+            order = new Order();
+        }
+
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        order.setRestaurantTable(table);
+
+        User user = userService.getUserByUserName(username);
 
         order.setUser(user);
 
@@ -77,8 +90,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setCode(CodeUtils.generateOrderCode());
 
-        orderRepository.save(order);
-        log.info("Order created successfully");
+        Order o = orderRepository.save(order);
+        log.info("Order saved successfully with order id {}", o.getId());
     }
 
     @Override
@@ -100,18 +113,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void deleteOrder(Long id) {
-        orderRepository.delete(getOrderById(id));
-    }
-
-    @Override
     public Order getOrderById(Long id) {
         return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
     @Override
     public List<OrderResponse> getOrderByUsername(String username) {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userService.getUserByUserName(username);
         return orderRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
     }
 
@@ -123,7 +131,7 @@ public class OrderServiceImpl implements OrderService {
                 .discountPrice(order.getDiscountPrice())
                 .finalPrice(order.getFinalPrice())
                 .status(order.getStatus())
+                .tableName(order.getRestaurantTable().getName())
                 .build();
-
     }
 }

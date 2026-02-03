@@ -1,7 +1,10 @@
+import categoryApi from '@/apis/category.api'
+import itemApi from '@/apis/item.api'
 import MenuFilter from '@/components/MenuFilter'
 import ItemCard from '@/components/MenuSection/ItemCard'
 import type { Item } from '@/types/item.type'
-import React, { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
 
 // --- MOCK DATA (Cập nhật theo Entity mới) ---
 const MOCK_ITEMS: Item[] = [
@@ -64,6 +67,20 @@ export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]) // Mặc định 0 - 1000$
 
+  const { data: categoryData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoryApi.getCategories()
+  })
+
+  console.log(categoryData?.data.data)
+
+  const { data: itemData } = useQuery({
+    queryKey: ['items'],
+    queryFn: () => itemApi.getItems()
+  })
+
+  console.log(itemData?.data.data)
+
   // Logic Filter (Xử lý client-side tạm thời)
   const filteredItems = useMemo(() => {
     return MOCK_ITEMS.filter((item) => {
@@ -81,6 +98,8 @@ export default function Menu() {
       return matchCategory && matchSearch && matchPrice
     })
   }, [searchQuery, selectedCategory, priceRange])
+
+  if (!categoryData) return
 
   return (
     <div className='bg-background text-foreground min-h-screen px-4 pt-10 pb-20 md:px-8'>

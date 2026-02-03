@@ -41,7 +41,7 @@ public class Order extends AbstractEntity<Long> {
     @Column(name = "code", unique = true, nullable = false)
     private String code;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "order")

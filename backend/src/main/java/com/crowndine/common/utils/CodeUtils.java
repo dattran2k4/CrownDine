@@ -1,6 +1,7 @@
 package com.crowndine.common.utils;
 
 import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class CodeUtils {
@@ -22,5 +23,21 @@ public class CodeUtils {
         String orderCodeStr = String.valueOf(timestamp) + randomBits;
 
         return Long.parseLong(orderCodeStr);
+    }
+
+    public static String generateOrderCode() {
+        return "ORD-" + shortUUID();
+    }
+
+    public static String generateReservationCode() {
+        return "RES-" + shortUUID();
+    }
+
+    private static String shortUUID() {
+        return UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 8)
+                .toUpperCase();
     }
 }

@@ -10,6 +10,7 @@ import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from "@/pages/Layout";
+import Profile from '@/pages/Profile'
 
 const router = createBrowserRouter([
   // Nhóm 1: Các trang sử dụng MainLayout (Cần Header/Footer)
@@ -27,6 +28,8 @@ const router = createBrowserRouter([
         element: <Menu />
       },
       {
+        path: path.profile, // Trang Profile sẽ hiển thị tại '/profile'
+        element: <Profile />
         path: path.reservation,
         element: <Reservation />
       },

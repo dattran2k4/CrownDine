@@ -9,7 +9,7 @@ import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
 import { createBrowserRouter } from 'react-router-dom'
-import LayoutPage from "@/pages/Layout";
+import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
 
 const router = createBrowserRouter([
@@ -30,11 +30,13 @@ const router = createBrowserRouter([
       {
         path: path.profile, // Trang Profile sẽ hiển thị tại '/profile'
         element: <Profile />
+      },
+      {
         path: path.reservation,
         element: <Reservation />
       },
       // Thêm các trang Dashboard, Profile... ở đây
-       {
+      {
         path: 'admin/layout',
         element: <LayoutPage />
       }
@@ -67,6 +69,5 @@ const router = createBrowserRouter([
     ]
   }
 ])
-
 
 export default router

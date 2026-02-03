@@ -38,6 +38,9 @@ public class Order extends AbstractEntity<Long> {
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;
 
+    @Column(name = "code", unique = true, nullable = false)
+    private String code;
+
     @OneToMany(mappedBy = "order")
     private List<OrderDetail> orderDetails = new ArrayList<>();
 

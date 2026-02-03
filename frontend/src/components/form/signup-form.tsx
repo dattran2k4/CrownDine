@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,13 +7,11 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
-import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signupFormSchema, type SignupFormValues } from '@/utils/auth.schema'
 
 export function SignupForm({ className, ...props }: React.ComponentProps<'div'>) {
-  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
@@ -21,8 +19,8 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema)
   })
-  const onSubmit = async (data: SignupFormValues) => {
-    // goi backend de sign up
+  const onSubmit = async (_data: SignupFormValues) => {
+    // FE only: validate via zod + react-hook-form (chưa gọi API)
   }
   return (
     <div className={cn('signup-form flex flex-col gap-5', className)} {...props}>
@@ -92,6 +90,21 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
                 <Input type='password' id='password' placeholder='Nhập mật khẩu' {...register('password')} />
                 {errors.password && (
                   <p className='text-destructive mt-1 text-xs break-words'>{errors.password.message}</p>
+                )}
+              </div>
+              <div className='flex min-w-0 flex-col gap-2'>
+                <Label htmlFor='confirmPassword' className='text-sm font-medium'>
+                  Xác nhận mật khẩu
+                </Label>
+                <Input
+                  type='password'
+                  id='confirmPassword'
+                  placeholder='Nhập lại mật khẩu'
+                  autoComplete='new-password'
+                  {...register('confirmPassword')}
+                />
+                {errors.confirmPassword && (
+                  <p className='text-destructive mt-1 text-xs break-words'>{errors.confirmPassword.message}</p>
                 )}
               </div>
 

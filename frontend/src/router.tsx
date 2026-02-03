@@ -7,6 +7,7 @@ import Register from '@/pages/Register' // Giả sử bạn có trang này
 import Reservation from '@/pages/Reservation'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
+import StaffList from '@/pages/Admin/Staff/StaffList'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from "@/pages/Layout";
 
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
       {
         path: 'categories',
         element: <CategoryList />
+      },
+      {
+        path: 'staff',
+        element: <StaffList />
       }
     ]
   }

@@ -1,14 +1,19 @@
-import Hero from '@/components/Hero/hero'
+import Contact from '@/components/Contact'
+import Hero from '@/components/Hero/Hero'
 import MenuSection from '@/components/MenuSection'
+import Reviews from '@/components/reviews'
+import Story from '@/components/Story/Story'
 
 const Home = () => {
   return (
     <>
-      <Hero />
-      <div>
-        Home
+      <main className='bg-background'>
+        <Hero />
         <MenuSection />
-      </div>
+        <Story />
+        <Contact />
+        <Reviews />
+      </main>
     </>
   )
 }

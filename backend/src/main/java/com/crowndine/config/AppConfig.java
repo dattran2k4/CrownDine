@@ -39,6 +39,8 @@ public class AppConfig {
                 .authorizeHttpRequests(request ->
                         request
                                 .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/categories/**").permitAll()
+                                .requestMatchers("/api/items/**").permitAll()
                                 .requestMatchers("/api/payments/payos-ipn").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
@@ -75,8 +77,8 @@ public class AppConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(@NonNull CorsRegistry registry) {
-                registry.addMapping("**")
-                        .allowedOrigins("http://localhost:8500")
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:5173/")
                         .allowedMethods("GET", "POST", "PUT", "DELETE") // Allowed HTTP methods
                         .allowedHeaders("*") // Allowed request headers
                         .allowCredentials(false)

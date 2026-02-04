@@ -1,0 +1,59 @@
+package com.crowndine.service.impl.token;
+
+import com.crowndine.exception.ResourceNotFoundException;
+import com.crowndine.model.Token;
+import com.crowndine.repository.TokenRepository;
+import com.crowndine.service.token.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j(topic = "TOKEN-SERVICE")
+public class TokenServiceImpl implements TokenService {
+
+    private final TokenRepository tokenRepository;
+
+    @Value("${jwt.refresh-key-expiration}")
+    private long refreshExpiration;
+
+    @Override
+    public void saveToken(String username, String refreshToken, HttpServletRequest request) {
+        Token token = new Token();
+        token.setUsername(username);
+        token.setDevice(request.getHeader("User-Agent"));
+        token.setDevice(request.getRemoteAddr());
+        token.setRefreshToken(refreshToken);
+        token.setExpiredAt(LocalDateTime.now().plusSeconds(refreshExpiration));
+        token.setIsRevoked(false);
+        tokenRepository.save(token);
+        log.info("Token saved with id {}", token.getId());
+    }
+
+    @Override
+    public Token getByUsername(String username) {
+        return tokenRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Token not found"));
+    }
+
+    @Override
+    public Token getByRefreshToken(String refreshToken) {
+        return tokenRepository.findByRefreshToken(refreshToken).orElseThrow(() -> new ResourceNotFoundException("Token not found"));
+    }
+
+    @Override
+    public void revokedByRefreshToken(String refreshToken) {
+        Token token = getByRefreshToken(refreshToken);
+        if (!token.getIsRevoked()) {
+            token.setIsRevoked(true);
+        }
+        tokenRepository.save(token);
+        log.info("Token revoked with id {}", token.getId());
+    }
+
+}

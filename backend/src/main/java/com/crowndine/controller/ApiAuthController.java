@@ -8,6 +8,7 @@ import com.crowndine.dto.request.ResetPasswordRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.service.auth.AuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +29,24 @@ public class ApiAuthController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
         log.info("Login request for user: {}", request.getUsername());
-        return new ResponseEntity<>(authenticationService.login(request), HttpStatus.OK);
+        return new ResponseEntity<>(authenticationService.accessToken(request, httpServletRequest), HttpStatus.OK);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<TokenResponse> refreshToken(HttpServletRequest request) {
+        log.info("Get new access token");
+        return new ResponseEntity<>(authenticationService.refreshToken(request), HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse logout(HttpServletRequest request) {
+        authenticationService.logout(request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully logged out")
+                .build();
     }
 
     @PostMapping("/register")
@@ -68,10 +84,5 @@ public class ApiAuthController {
     public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request, @RequestParam String verifyCode) {
         log.info("Reset Password request for user, verify code: {}", verifyCode);
         return null;
-    }
-
-    @PostMapping("/logout")
-    public ApiResponse logout() {
-        return ApiResponse.builder().build();
     }
 }

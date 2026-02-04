@@ -1,5 +1,6 @@
 package com.crowndine.controller;
 
+import com.cloudinary.Api;
 import com.crowndine.dto.request.ForgotPasswordRequest;
 import com.crowndine.dto.request.LoginRequest;
 import com.crowndine.dto.request.RegisterRequest;
@@ -49,7 +50,7 @@ public class ApiAuthController {
         log.info("Verify register request for user, verify code: {}", verifyCode);
 
         boolean isSuccess = authenticationService.confirmRegister(verifyCode);
-        
+
         return ApiResponse.builder()
                 .status(isSuccess ? 200 : 404)
                 .message(isSuccess ? "Verify successfully" : "Verify register failed")
@@ -67,5 +68,10 @@ public class ApiAuthController {
     public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request, @RequestParam String verifyCode) {
         log.info("Reset Password request for user, verify code: {}", verifyCode);
         return null;
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse logout() {
+        return ApiResponse.builder().build();
     }
 }

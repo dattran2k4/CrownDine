@@ -36,7 +36,7 @@ const MainLayout = () => {
   return (
     <div className='bg-background flex min-h-screen flex-col'>
       <Header />
-      <main style={{ height: 'calc(100vh - 120px)' }}>
+      <main>
         <Outlet />
       </main>
       <Footer />

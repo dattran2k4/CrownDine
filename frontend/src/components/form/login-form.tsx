@@ -10,28 +10,54 @@ import { Separator } from '@/components/ui/separator'
 import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
-import { z } from 'zod'
+import { useMutation } from '@tanstack/react-query'
+import authApi from '@/apis/auth.api'
+import { useContext } from 'react'
+import { AppContext } from '@/contexts/app.context'
+import { isAxiosErrorUnthorized } from '@/utils/utils'
+import type { ErrorResponse } from '@/types/utils.type'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
-  // const{signIn} = useAuthStore();
   const navigate = useNavigate()
+
+  const { setIsAuthenticated } = useContext(AppContext)
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting }
   } = useForm<SigninFormValues>({
     resolver: zodResolver(signinSchema)
   })
-  const onSubmit = async (data: SigninFormValues) => {
-    // const {username,password} = data;
-  }
+
+  const loginMutation = useMutation({
+    mutationFn: authApi.login
+  })
+
+  const onSubmit = handleSubmit((data) => {
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        navigate(path.home)
+        setIsAuthenticated(true)
+      },
+      onError: (error) => {
+        if (isAxiosErrorUnthorized<ErrorResponse>(error)) {
+          const serverMessage = error.response?.data?.message
+          setError('root', {
+            type: 'server',
+            message: serverMessage
+          })
+        }
+      }
+    })
+  })
 
   return (
     <div className={cn('login-form flex flex-col gap-5', className)} {...props}>
       <Card className='login-form-card border-border bg-card overflow-hidden rounded-xl border p-0 shadow-lg'>
         <CardContent className='p-0'>
-          <form className='p-5 sm:p-6' onSubmit={handleSubmit(onSubmit)}>
+          <form className='p-5 sm:p-6' onSubmit={onSubmit}>
             <div className='flex flex-col gap-5'>
               {/* Header - Logo & title */}
               <div className='flex flex-col items-center gap-2 text-center'>
@@ -59,7 +85,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                   {...register('username')}
                 />
                 {errors.username && (
-                  <p className='text-destructive mt-1 text-xs break-words'>{errors.username.message}</p>
+                  <p className='text-destructive mt-1 text-xs wrap-break-word'>{errors.username.message}</p>
                 )}
               </div>
 
@@ -77,7 +103,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                   {...register('password')}
                 />
                 {errors.password && (
-                  <p className='text-destructive mt-1 text-xs break-words'>{errors.password.message}</p>
+                  <p className='text-destructive mt-1 text-xs wrap-break-word'>{errors.password.message}</p>
+                )}
+                {errors.root && (
+                  <p className='text-destructive mb-4 text-center text-sm font-medium'>{errors.root.message}</p>
                 )}
               </div>
 

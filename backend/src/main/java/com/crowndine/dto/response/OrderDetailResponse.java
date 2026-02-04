@@ -10,13 +10,17 @@ import java.util.List;
 
 @Getter
 @Setter
-public class OrderDetailPageResponse {
+public class OrderDetailResponse {
     private Long orderId;
     private String tableName;
     private EOrderStatus status;
     private BigDecimal totalPrice;
     private BigDecimal discountPrice;
     private BigDecimal finalPrice;
+    private BigDecimal itemsTotal;
+    private BigDecimal tableDeposit;
+    private BigDecimal depositAmount;
+    private BigDecimal remainingAmount;
     private LocalDateTime createdAt;
 
     private List<OrderLineResponse> items;

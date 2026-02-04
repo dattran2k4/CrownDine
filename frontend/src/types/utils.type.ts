@@ -1,7 +1,7 @@
 export interface ApiResponse<Data> {
   status: string | number
   message: string
-  data?: Data
+  data: Data
 }
 
 export interface ErrorResponse {

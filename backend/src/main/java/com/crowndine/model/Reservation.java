@@ -36,6 +36,9 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "expirated_at")
     private LocalDateTime expiratedAt;
 
+    @Column(name = "code", unique = true, nullable = false, updatable = false)
+    private String code;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private EReservationStatus status;

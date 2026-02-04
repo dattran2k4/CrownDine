@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -223,13 +224,23 @@ public class ReservationServiceImpl implements ReservationService {
         response.setStatus(saved.getStatus());
         response.setExpiratedAt(saved.getExpiratedAt());
         response.setTableName(table.getName());
+        reservation.setCode(UUID.randomUUID().toString());
         if (table.getArea() != null && table.getArea().getFloor() != null) {
             response.setFloorNumber(table.getArea().getFloor().getFloorNumber());
         }
         return response;
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime, boolean requireFutureStart) {
+    @Override
+    public Reservation getReservationByCode(String code) {
+        return reservationRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+    }
+
+    private void validateReservationTime(
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime,
+            boolean requireFutureStart
+    ) {
         if (!endDateTime.isAfter(startDateTime)) {
             throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
         }

@@ -203,6 +203,7 @@ CREATE TABLE `work_schedules` (
                                   `id` bigint NOT NULL AUTO_INCREMENT,
                                   `shift_id` bigint DEFAULT NULL,
                                   `staff_id` bigint DEFAULT NULL,
+                                  `note` varchar(200) DEFAULT NULL,
                                   `work_date` DATE NOT NULL,
                                   `updated_at` datetime(6) DEFAULT NULL,
                                   `status` enum('APPROVED','CANCELLED','PENDING','REJECTED') DEFAULT NULL,
@@ -302,17 +303,20 @@ CREATE TABLE `payments` (
                             `id` bigint NOT NULL AUTO_INCREMENT,
                             `order_id` bigint DEFAULT NULL,
                             `reservation_id` bigint DEFAULT NULL,
+                            `user_id` bigint NOT NULL,
                             `updated_at` datetime(6) DEFAULT NULL,
                             `transaction_code` varchar(255) DEFAULT NULL,
-                            `method` enum('BANK_TRANSFER','CASH','CREDIT_CARD') DEFAULT NULL,
-                            `status` enum('FAILED','SUCCESS') DEFAULT NULL,
+                            `method` enum('PAYOS','MOMO','CASH', 'ZALOPAY') DEFAULT NULL,
+                            `status` enum('PENDING', 'FAILED','SUCCESS') DEFAULT NULL,
                             `type` enum('DEPOSIT','REFUND','SETTLEMENT') DEFAULT NULL,
                             `target` enum('RESERVATION','ORDER') DEFAULT NULL,
+                            `source` enum('CLIENT_APP','POS_COUNTER') DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             KEY `FK81gagumt0r8y3rmudcgpbk42l` (`order_id`),
                             KEY `FKp8yh4sjt3u0g6aru1oxfh3o14` (`reservation_id`),
-                            CONSTRAINT `FK81gagumt0r8y3rmudcgpbk42l` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
-                            CONSTRAINT `FKp8yh4sjt3u0g6aru1oxfh3o14` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`)
+                            CONSTRAINT `fk_payments_orders` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
+                            CONSTRAINT `fk_payments_reservations` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
+                            CONSTRAINT `fk_payments_users` FOREIGN KEY (`reservation_id`) REFERENCES `payments` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 

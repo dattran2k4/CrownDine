@@ -8,6 +8,7 @@ import com.crowndine.dto.response.OrderDetailResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.ReservationCreateResponse;
 import com.crowndine.dto.response.ReservationHistoryResponse;
+import com.crowndine.model.Reservation;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,4 +28,6 @@ public interface ReservationService {
     ReservationCreateResponse createReservation(String username, ReservationCreateRequest request);
     OrderDetailResponse createOrGetOrder(Long reservationId, String username);
     OrderDetailResponse addOrderItems(Long reservationId, OrderItemBatchRequest request, String username);
+
+    Reservation getReservationByCode(String code);
 }

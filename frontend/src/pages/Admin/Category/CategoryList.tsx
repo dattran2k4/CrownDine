@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Filter, ArrowUpDown } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from '@/components/form/category-form'
 import { MenuItemForm, type ItemFormData } from '@/components/form/menu-item-form'
+import { CategoryToolbar } from './components/CategoryToolbar'
+import { CategoryTable } from './components/CategoryTable'
+import { ItemsModal } from './components/ItemsModal'
 
 // Mock Data
 const MOCK_CATEGORIES = [
@@ -116,6 +117,11 @@ export default function CategoryList() {
     setIsCategoryModalOpen(true)
   }
 
+  const handleDeleteCategory = (e: React.MouseEvent, category: Category) => {
+      e.stopPropagation()
+      console.log('Delete category', category)
+  }
+
   const handleSaveCategory = (data: { name: string; description: string }) => {
     console.log('Saved Category:', data)
     setIsCategoryModalOpen(false)
@@ -125,7 +131,7 @@ export default function CategoryList() {
 
   const handleRowClick = (category: Category) => {
     setSelectedCategoryForItems(category)
-    const items = MOCK_ITEMS.filter(() => true)
+    const items = MOCK_ITEMS.filter(() => true) // In real app, filter by categoryId
     setCategoryItems(items)
     setIsItemsModalOpen(true)
   }
@@ -138,6 +144,10 @@ export default function CategoryList() {
   const handleEditItem = (item: Item) => {
     setEditingItem(item)
     setIsItemFormOpen(true)
+  }
+
+  const handleDeleteItem = (item: Item) => {
+      console.log('Delete item', item)
   }
 
   const handleSaveItem = (data: ItemFormData) => {
@@ -163,74 +173,15 @@ export default function CategoryList() {
       </div>
 
       {/* Filters & Toolbar */}
-      <div className='bg-card border-border flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm'>
-        <div className='relative max-w-sm flex-1'>
-          <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-          <Input
-            placeholder='Search categories...'
-            className='bg-background pl-9'
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className='flex items-center gap-2'>
-          <button className='border-input hover:bg-accent hover:text-accent-foreground inline-flex h-9 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium shadow-sm transition-colors'>
-            <Filter className='mr-2 h-4 w-4' />
-            Filter
-          </button>
-        </div>
-      </div>
+      <CategoryToolbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       {/* Table */}
-      <div className='border-border bg-card overflow-hidden rounded-xl border shadow-sm'>
-        <div className='overflow-x-auto'>
-          <table className='w-full text-left text-sm'>
-            <thead className='bg-muted/50 text-muted-foreground border-border border-b font-medium'>
-              <tr>
-                <th className='min-w-[200px] px-6 py-4'>
-                  <div className='hover:text-foreground flex cursor-pointer items-center gap-2'>
-                    Name <ArrowUpDown className='h-3 w-3' />
-                  </div>
-                </th>
-                <th className='hidden px-6 py-4 md:table-cell'>Description</th>
-                <th className='w-[100px] px-6 py-4 text-center'>Items</th>
-                <th className='w-[100px] px-6 py-4 text-end'>Actions</th>
-              </tr>
-            </thead>
-            <tbody className='divide-border divide-y'>
-              {MOCK_CATEGORIES.map((category) => (
-                <tr
-                  key={category.id}
-                  className='group hover:bg-muted/30 cursor-pointer transition-colors'
-                  onClick={() => handleRowClick(category)}
-                >
-                  <td className='px-6 py-4'>
-                    <div className='text-base font-semibold'>{category.name}</div>
-                  </td>
-                  <td className='text-muted-foreground hidden px-6 py-4 md:table-cell'>{category.description}</td>
-                  <td className='px-6 py-4 text-center font-medium'>{category.itemsCount}</td>
-                  <td className='px-6 py-4'>
-                    <div className='flex items-center justify-end gap-2'>
-                      <button
-                        onClick={(e) => handleEditCategory(e, category)}
-                        className='hover:bg-accent text-muted-foreground hover:text-primary rounded-md p-2 transition-colors'
-                      >
-                        <Pencil className='h-4 w-4' />
-                      </button>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className='hover:bg-accent text-muted-foreground hover:text-destructive rounded-md p-2 transition-colors'
-                      >
-                        <Trash2 className='h-4 w-4' />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <CategoryTable 
+        categories={MOCK_CATEGORIES} 
+        onRowClick={handleRowClick}
+        onEdit={handleEditCategory}
+        onDelete={handleDeleteCategory}
+      />
 
       {/* Create / Edit Category Modal */}
       <Modal
@@ -247,85 +198,15 @@ export default function CategoryList() {
       </Modal>
 
       {/* Items List Modal (Width Large) */}
-      <Modal
+      <ItemsModal 
         isOpen={isItemsModalOpen}
         onClose={() => setIsItemsModalOpen(false)}
-        title={`Items in ${selectedCategoryForItems?.name}`}
-        maxWidth='max-w-4xl'
-      >
-        <div className='space-y-4'>
-          <div className='bg-muted/30 flex items-center justify-between rounded-lg p-2'>
-            <span className='text-muted-foreground text-sm'>Showing {categoryItems.length} items</span>
-            <Button size='sm' onClick={handleCreateItem}>
-              <Plus className='mr-2 h-4 w-4' />
-              Add Item
-            </Button>
-          </div>
-
-          <div className='border-border overflow-hidden rounded-lg border'>
-            <table className='w-full text-left text-sm'>
-              <thead className='bg-muted/50 text-muted-foreground border-border border-b font-medium'>
-                <tr>
-                  <th className='w-[60px] px-4 py-3'>Image</th>
-                  <th className='px-4 py-3'>Name</th>
-                  <th className='hidden px-4 py-3 sm:table-cell'>Description</th>
-                  <th className='w-[100px] px-4 py-3'>Price</th>
-                  <th className='w-[100px] px-4 py-3'>Status</th>
-                  <th className='w-[80px] px-4 py-3 text-end'>Action</th>
-                </tr>
-              </thead>
-              <tbody className='divide-border divide-y'>
-                {categoryItems.length > 0 ? (
-                  categoryItems.map((item) => (
-                    <tr key={item.id} className='hover:bg-muted/30 transition-colors'>
-                      <td className='px-4 py-3'>
-                        <div className='bg-muted border-border h-10 w-10 overflow-hidden rounded-md border'>
-                          <img src={item.image} alt={item.name} className='h-full w-full object-cover' />
-                        </div>
-                      </td>
-                      <td className='px-4 py-3 font-medium'>{item.name}</td>
-                      <td className='text-muted-foreground hidden max-w-[200px] truncate px-4 py-3 sm:table-cell'>
-                        {item.description}
-                      </td>
-                      <td className='px-4 py-3'>${item.price}</td>
-                      <td className='px-4 py-3'>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${
-                            item.status === 'AVAILABLE'
-                              ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                              : 'bg-destructive/15 text-destructive'
-                          } `}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className='px-4 py-3 text-end'>
-                        <div className='flex items-center justify-end gap-1'>
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className='hover:bg-accent text-muted-foreground hover:text-primary rounded-md p-1.5 transition-colors'
-                          >
-                            <Pencil className='h-3.5 w-3.5' />
-                          </button>
-                          <button className='hover:bg-accent text-muted-foreground hover:text-destructive rounded-md p-1.5 transition-colors'>
-                            <Trash2 className='h-3.5 w-3.5' />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className='text-muted-foreground px-4 py-8 text-center'>
-                      No items found in this category.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Modal>
+        categoryName={selectedCategoryForItems?.name}
+        items={categoryItems}
+        onAddItem={handleCreateItem}
+        onEditItem={handleEditItem}
+        onDeleteItem={handleDeleteItem}
+      />
 
       {/* Item Create/Edit Modal */}
       <Modal

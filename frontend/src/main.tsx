@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import '@/index.css'
 import router from '@/router'
+import { AppProvider } from '@/contexts/app.context'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,9 +19,9 @@ export const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      {/* <AppProvider> */}
-      <RouterProvider router={router} />
-      {/* </AppProvider> */}
+      <AppProvider>
+        <RouterProvider router={router} />
+      </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </StrictMode>

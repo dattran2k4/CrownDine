@@ -10,6 +10,7 @@ public class AvailableTableResponse {
     private Long id;
     private String name;
     private Integer capacity;
+    private java.math.BigDecimal baseDeposit;
     private Long areaId;
     private String areaName;
     private Long floorId;

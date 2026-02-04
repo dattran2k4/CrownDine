@@ -30,8 +30,12 @@ public class ReservationExpiryScheduler {
             return;
         }
 
-        expired.forEach(reservation -> reservation.setStatus(EReservationStatus.CANCELLED));
-        reservationRepository.saveAll(expired);
+        expired.forEach(reservation -> {
+            reservation.setStatus(EReservationStatus.CANCELLED);
+            if (reservation.getTable() != null) {
+                reservation.getTable().setStatus(com.crowndine.common.enums.ETableStatus.AVAILABLE);
+            }
+        });
         log.info("Cancelled {} expired reservations", expired.size());
     }
 }

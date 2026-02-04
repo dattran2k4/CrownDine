@@ -1,0 +1,142 @@
+package com.crowndine.service.impl.staff;
+
+import com.crowndine.common.enums.ERole;
+import com.crowndine.common.enums.EUserStatus;
+import com.crowndine.dto.request.StaffCreateRequest;
+import com.crowndine.dto.request.UpdateProfileRequest;
+import com.crowndine.dto.response.ProfileResponse;
+import com.crowndine.exception.InvalidDataException;
+import com.crowndine.exception.ResourceNotFoundException;
+import com.crowndine.model.Role;
+import com.crowndine.model.User;
+import com.crowndine.repository.RoleRepository;
+import com.crowndine.repository.UserRepository;
+import com.crowndine.service.staff.StaffService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j(topic = "ADMIN-STAFF-SERVICE")
+public class StaffServiceImpl implements StaffService {
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // ================= CREATE STAFF =================
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProfileResponse createStaff(StaffCreateRequest request) {
+
+        log.info("Processing create staff with username {}", request.getUsername());
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new InvalidDataException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new InvalidDataException("Email already exists");
+        }
+
+        Role staffRole = roleRepository.findByName(ERole.STAFF);
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setFirstName(request.getFirstName().trim().toUpperCase()); // ✅
+        user.setLastName(request.getLastName().trim().toUpperCase());   // ✅
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setGender(request.getGender());                             // ✅
+        user.setDateOfBirth(request.getDateOfBirth());                  // ✅
+        user.setStatus(EUserStatus.ACTIVE);
+
+        user.getRoles().add(staffRole);
+
+        userRepository.save(user);
+
+        log.info("Successfully created staff with id {}", user.getId());
+        return buildProfileResponse(user);
+    }
+
+    // ================= UPDATE STAFF =================
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProfileResponse updateStaff(Long userId, UpdateProfileRequest request) {
+
+        log.info("Processing update staff profile with id {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setFirstName(request.getFirstName().trim().toUpperCase());
+        user.setLastName(request.getLastName().trim().toUpperCase());
+        user.setGender(request.getGender());
+        user.setDateOfBirth(request.getDateOfBirth());
+
+        userRepository.save(user);
+
+        log.info("Successfully updated staff profile with id {}", userId);
+        return buildProfileResponse(user);
+    }
+
+    // ================= DEACTIVATE STAFF =================
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deactivateStaff(Long userId) {
+
+        log.info("Processing deactivate staff with id {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setStatus(EUserStatus.INACTIVE);
+        userRepository.save(user);
+
+        log.info("Successfully deactivated staff with id {}", userId);
+    }
+
+    // ================= GET STAFF BY ID =================
+    @Override
+    public ProfileResponse getStaffById(Long userId) {
+
+        log.info("Processing get staff with id {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return buildProfileResponse(user);
+    }
+
+    // ================= SEARCH STAFF =================
+    @Override
+    public Page<ProfileResponse> searchStaff(String name, Pageable pageable) {
+
+        log.info("Processing search staff with name {}", name);
+
+        return userRepository
+                .searchStaffByName(name, pageable)
+                .map(this::buildProfileResponse);
+    }
+
+    // ================= MAP RESPONSE =================
+    private ProfileResponse buildProfileResponse(User user) {
+
+        return ProfileResponse.builder()
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .gender(user.getGender())
+                .dateOfBirth(user.getDateOfBirth())
+                .status(user.getStatus())
+                .build();
+    }
+}

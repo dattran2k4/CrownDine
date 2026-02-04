@@ -153,18 +153,15 @@ CREATE TABLE `reservations` (
 -- crowndine.tokens definition
 
 CREATE TABLE `tokens` (
-                          `is_expired` bit(1) DEFAULT NULL,
-                          `is_revoked` bit(1) DEFAULT NULL,
                           `created_at` datetime(6) DEFAULT NULL,
+                          `expired_at` datetime(6) DEFAULT NULL,
                           `id` bigint NOT NULL AUTO_INCREMENT,
                           `updated_at` datetime(6) DEFAULT NULL,
-                          `user_id` bigint DEFAULT NULL,
-                          `token` varchar(255) NOT NULL,
-                          `token_type` enum('ACCESS_TOKEN','REFRESH_TOKEN') DEFAULT NULL,
-                          PRIMARY KEY (`id`),
-                          UNIQUE KEY `UKna3v9f8s7ucnj16tylrs822qj` (`token`),
-                          KEY `FK2dylsfo39lgjyqml2tbe0b0ss` (`user_id`),
-                          CONSTRAINT `FK2dylsfo39lgjyqml2tbe0b0ss` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+                          `username` varchar(255) NOT NULL,
+                          `device` VARCHAR(100),
+                          `ip_address` VARCHAR(45),
+                          `refresh_token` varchar(1000) DEFAULT NULL,
+                          PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 

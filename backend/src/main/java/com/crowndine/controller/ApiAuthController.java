@@ -1,5 +1,6 @@
 package com.crowndine.controller;
 
+import com.cloudinary.Api;
 import com.crowndine.dto.request.ForgotPasswordRequest;
 import com.crowndine.dto.request.LoginRequest;
 import com.crowndine.dto.request.RegisterRequest;
@@ -7,6 +8,7 @@ import com.crowndine.dto.request.ResetPasswordRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.service.auth.AuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +29,24 @@ public class ApiAuthController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
         log.info("Login request for user: {}", request.getUsername());
-        return new ResponseEntity<>(authenticationService.login(request), HttpStatus.OK);
+        return new ResponseEntity<>(authenticationService.accessToken(request, httpServletRequest), HttpStatus.OK);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<TokenResponse> refreshToken(HttpServletRequest request) {
+        log.info("Get new access token");
+        return new ResponseEntity<>(authenticationService.refreshToken(request), HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse logout(HttpServletRequest request) {
+        authenticationService.logout(request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully logged out")
+                .build();
     }
 
     @PostMapping("/register")
@@ -49,7 +66,7 @@ public class ApiAuthController {
         log.info("Verify register request for user, verify code: {}", verifyCode);
 
         boolean isSuccess = authenticationService.confirmRegister(verifyCode);
-        
+
         return ApiResponse.builder()
                 .status(isSuccess ? 200 : 404)
                 .message(isSuccess ? "Verify successfully" : "Verify register failed")

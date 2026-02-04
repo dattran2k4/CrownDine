@@ -3,7 +3,7 @@ import MainLayout from '@/layouts/MainLayout/MainLayout'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Menu from '@/pages/Menu'
-import Register from '@/pages/Register' // Giả sử bạn có trang này
+import Register from '@/pages/Register'
 import Reservation from '@/pages/Reservation'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
@@ -11,46 +11,32 @@ import StaffList from '@/pages/Admin/Staff/StaffList'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
+import { ProtectedRoute, RejectedRoute } from '@/routes/RouteGuard'
 
 const router = createBrowserRouter([
-  // Nhóm 1: Các trang sử dụng MainLayout (Cần Header/Footer)
   {
     path: path.home,
     element: <MainLayout />,
     errorElement: <div>404 Not Found</div>,
     children: [
+      { index: true, element: <Home /> },
+      { path: '/menu', element: <Menu /> },
       {
-        index: true,
-        element: <Home />
-      },
-      {
-        path: '/menu',
-        element: <Menu />
-      },
-      {
-        path: path.profile, // Trang Profile sẽ hiển thị tại '/profile'
-        element: <Profile />
-      },
-      {
-        path: path.reservation,
-        element: <Reservation />
-      },
-      // Thêm các trang Dashboard, Profile... ở đây
-      {
-        path: 'admin/layout',
-        element: <LayoutPage />
+        element: <ProtectedRoute />,
+        children: [
+          { path: path.profile, element: <Profile /> },
+          { path: path.reservation, element: <Reservation /> },
+          { path: 'admin/layout', element: <LayoutPage /> }
+        ]
       }
     ]
   },
-
-  // Nhóm 2: Các trang Auth (Cần nền Gradient chuyển động, không cần Header chung)
   {
-    path: path.login,
-    element: <Login /> // Bây giờ Login sẽ đứng độc lập
-  },
-  {
-    path: path.register, // Ví dụ cho trang đăng ký
-    element: <Register />
+    element: <RejectedRoute />,
+    children: [
+      { path: path.login, element: <Login /> },
+      { path: path.register, element: <Register /> }
+    ]
   },
 
   // Nhóm 3: Admin

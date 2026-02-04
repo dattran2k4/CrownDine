@@ -1,6 +1,7 @@
 package com.crowndine.service.impl.auth;
 
 import com.crowndine.common.enums.ERole;
+import com.crowndine.common.enums.ETokenType;
 import com.crowndine.common.enums.EUserStatus;
 import com.crowndine.dto.request.ForgotPasswordRequest;
 import com.crowndine.dto.request.LoginRequest;
@@ -10,12 +11,17 @@ import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Role;
+import com.crowndine.model.Token;
 import com.crowndine.model.User;
 import com.crowndine.repository.RoleRepository;
 import com.crowndine.repository.UserRepository;
+import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.AuthenticationService;
 import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
+import com.crowndine.service.token.TokenService;
+import com.crowndine.service.user.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +34,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -37,6 +45,7 @@ import java.util.*;
 @Slf4j(topic = "AUTH-SERVICE")
 public class AuthenticationServiceImpl implements AuthenticationService {
 
+    private final UserService userService;
     @Value("${endpoint.confirmUser}")
     private String endPointConfirmUser;
 
@@ -49,10 +58,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
-
+    private final TokenService tokenService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
-    public TokenResponse login(LoginRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public TokenResponse accessToken(LoginRequest request, HttpServletRequest httpServletRequest) {
         List<String> authorities = new ArrayList<>();
 
         try {
@@ -69,10 +80,81 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
         String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
 
+        tokenService.saveToken(request.getUsername(), refreshToken, httpServletRequest);
+
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public TokenResponse refreshToken(HttpServletRequest request) {
+        final String refreshToken = request.getHeader("X-Refresh-Token");
+
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new InvalidDataException("Refresh token is empty");
+        }
+
+        //Kiem tra DB truoc
+        Token token = tokenService.getByRefreshToken(refreshToken);
+
+        if (token.getIsRevoked()) {
+            throw new InvalidDataException("Token is revoked");
+        }
+
+        if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Refresh token expired");
+        }
+
+        //Kiem tra JWT
+        final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
+
+        jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
+
+        List<String> authorities = new ArrayList<>();
+        user.getAuthorities().forEach(authority -> authorities.add(authority.toString()));
+
+        String accessToken = jwtService.generateAccessToken(username, authorities);
+
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .username(user.getUsername())
+                .build();
+    }
+
+    @Override
+    public void logout(HttpServletRequest request) {
+
+        final String refreshToken = request.getHeader("X-Refresh-Token");
+
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new InvalidDataException("Token missing or empty");
+        }
+
+        Token token = tokenService.getByRefreshToken(refreshToken);
+
+        if (token.getIsRevoked()) {
+            throw new InvalidDataException("Token is revoked");
+        }
+
+        if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Refresh token expired");
+        }
+
+        //Kiem tra JWT
+        final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
+
+        jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
+
+        tokenService.revokedByRefreshToken(refreshToken);
+
+        log.info("Logout successful");
     }
 
     @Override

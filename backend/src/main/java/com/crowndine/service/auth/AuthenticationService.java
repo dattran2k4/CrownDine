@@ -5,9 +5,14 @@ import com.crowndine.dto.request.LoginRequest;
 import com.crowndine.dto.request.RegisterRequest;
 import com.crowndine.dto.request.ResetPasswordRequest;
 import com.crowndine.dto.response.TokenResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthenticationService {
-    TokenResponse login(LoginRequest request);
+    TokenResponse accessToken(LoginRequest request, HttpServletRequest httpServletRequest);
+
+    TokenResponse refreshToken(HttpServletRequest request);
+
+    void logout(HttpServletRequest request);
 
     Long register(RegisterRequest request);
 

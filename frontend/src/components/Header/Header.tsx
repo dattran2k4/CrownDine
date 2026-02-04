@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Menu, X, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Link } from 'react-router-dom'
 import { Logo } from '../ui/logo'
+import { AppContext } from '@/contexts/app.context'
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -15,6 +16,7 @@ const Header = () => {
     { label: 'Đặt Bàn', href: 'reservation' },
     { label: 'Liên Hệ', href: '#contact' }
   ]
+  const { isAuthenticated } = useContext(AppContext)
   return (
     <header className='bg-background/95 supports-[backdrop-filter]:bg-background/60 border-border/50 sticky top-0 z-50 border-b backdrop-blur'>
       <nav className='container mx-auto flex items-center justify-between px-4 py-3'>
@@ -61,6 +63,8 @@ const Header = () => {
             {isOpen ? <X className='h-5 w-5' /> : <Menu className='h-5 w-5' />}
           </Button>
         </div>
+
+        {isAuthenticated ? 'Đã đăng nhập' : 'Chưa đăng nhập'}
       </nav>
 
       {/* Mobile Navigation */}

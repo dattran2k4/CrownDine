@@ -1,3 +1,5 @@
+import axios, { AxiosError } from 'axios'
+
 export const generateTimeSlots = (openHour: number, closeHour: number, stepMinutes: number = 30) => {
   const slots = []
   let currentTime = openHour * 60 // Convert to minutes
@@ -27,4 +29,16 @@ export const addMinutesToTime = (timeStr: string, minutesToAdd: number) => {
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
+}
+
+export function isAxiosError<T>(error: unknown): error is AxiosError<T> {
+  return axios.isAxiosError(error)
+}
+
+export function isAxiosErrorUnthorized<T>(error: unknown): error is AxiosError<T> {
+  return axios.isAxiosError(error) && error.response?.status === 401
+}
+
+export function isAxiosErrorConfict<T>(error: unknown): error is AxiosError<T> {
+  return axios.isAxiosError(error) && error.response?.status === 403
 }

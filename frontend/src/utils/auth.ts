@@ -20,3 +20,15 @@ export function getUserRoles(): string[] {
 export function isAdmin(): boolean {
   return getUserRoles().includes('ADMIN')
 }
+
+export const setAccessTokenToLC = (access_token: string) => {
+  localStorage.setItem('access_token', access_token)
+}
+
+export const getAccessTokenFromLC = () => {
+  return localStorage.getItem('access_token')
+}
+
+export const clearAccessTokenLS = () => {
+  localStorage.removeItem('access_token')
+}

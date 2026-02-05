@@ -1,6 +1,7 @@
 package com.crowndine.dto.response;
 
 import com.crowndine.common.enums.EGender;
+import com.crowndine.common.enums.EUserStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,4 +17,5 @@ public class ProfileResponse {
     private String phone;
     private EGender gender;
     private LocalDate dateOfBirth;
+    private EUserStatus status;
 }

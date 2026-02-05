@@ -1,5 +1,6 @@
 package com.crowndine.controller;
 
+import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.reservation.ReservationService;
@@ -83,6 +84,19 @@ public class ApiReservationController {
                 .status(200)
                 .message("Hold table successfully")
                 .data(reservationService.createReservation(principal.getName(), request))
+                .build();
+    }
+
+    @PostMapping("/{reservationId}/order/items/batch")
+    public ApiResponse addOrderItems(
+            @PathVariable Long reservationId,
+            @Valid @RequestBody OrderItemBatchRequest request,
+            Principal principal
+    ) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Add items successfully")
+                .data(reservationService.addOrderItems(reservationId, request, principal.getName()))
                 .build();
     }
 }

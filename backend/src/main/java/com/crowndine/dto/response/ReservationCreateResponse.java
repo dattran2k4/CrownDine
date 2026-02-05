@@ -7,6 +7,7 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -18,6 +19,7 @@ public class ReservationCreateResponse {
     private Integer guestNumber;
     private String note;
     private EReservationStatus status;
+    private BigDecimal depositAmount;
     private LocalDateTime expiratedAt;
     private String tableName;
     private Integer floorNumber;

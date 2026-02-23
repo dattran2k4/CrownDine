@@ -7,8 +7,15 @@ const ITEM_URL = '/items'
 const itemApi = {
   getItems() {
     return http.get<ApiResponse<Item[]>>(ITEM_URL)
+  },
+  getItemsByCategory(categoryId: number) {
+    return http.get<ApiResponse<any>>(`${ITEM_URL}/list`, {
+      params: {
+        categoryId,
+        size: 100 // Get all items for now
+      }
+    })
   }
-  //createItem()...
 }
 
 export default itemApi

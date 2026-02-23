@@ -1,28 +1,20 @@
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
-
-interface Item {
-    id: number
-    name: string
-    description: string
-    price: number
-    status: string
-    image: string
-    categoryId: number
-}
+import type { Item } from '@/types/item.type'
 
 interface ItemsModalProps {
     isOpen: boolean
     onClose: () => void
     categoryName: string | undefined
     items: Item[]
+    isLoading?: boolean
     onAddItem: () => void
     onEditItem: (item: Item) => void
     onDeleteItem: (item: Item) => void
 }
 
-export function ItemsModal({ isOpen, onClose, categoryName, items, onAddItem, onEditItem, onDeleteItem }: ItemsModalProps) {
+export function ItemsModal({ isOpen, onClose, categoryName, items, isLoading, onAddItem, onEditItem, onDeleteItem }: ItemsModalProps) {
     return (
         <Modal
             isOpen={isOpen}
@@ -52,12 +44,19 @@ export function ItemsModal({ isOpen, onClose, categoryName, items, onAddItem, on
                     </tr>
                 </thead>
                 <tbody className='divide-border divide-y'>
-                    {items.length > 0 ? (
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={6} className='py-12 text-center'>
+                          <div className='inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent'></div>
+                          <p className='text-muted-foreground mt-2 text-xs'>Loading items...</p>
+                        </td>
+                      </tr>
+                    ) : items.length > 0 ? (
                     items.map((item) => (
                         <tr key={item.id} className='hover:bg-muted/30 transition-colors'>
                         <td className='px-4 py-3'>
                             <div className='bg-muted border-border h-10 w-10 overflow-hidden rounded-md border'>
-                            <img src={item.image} alt={item.name} className='h-full w-full object-cover' />
+                            <img src={item.imageUrl} alt={item.name} className='h-full w-full object-cover' />
                             </div>
                         </td>
                         <td className='px-4 py-3 font-medium'>{item.name}</td>

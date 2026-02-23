@@ -69,7 +69,7 @@ export function ItemsModal({ isOpen, onClose, categoryName, items, isLoading, on
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${
                                 item.status === 'AVAILABLE'
                                 ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                                : 'bg-destructive/15 text-destructive'
+                                : 'bg-red-500/15 text-red-700 dark:text-red-400'
                             } `}
                             >
                             {item.status}

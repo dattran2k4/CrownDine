@@ -55,6 +55,42 @@ export default function CategoryList() {
     }
   })
 
+  // --- ITEM MUTATIONS ---
+
+  const createItemMutation = useMutation({
+    mutationFn: (data: any) => itemApi.createItem(data),
+    onSuccess: () => {
+      if (selectedCategoryForItems) {
+          handleRowClick(selectedCategoryForItems) // Refresh item list
+      }
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Item created successfully')
+      setIsItemFormOpen(false)
+    }
+  })
+
+  const updateItemMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => itemApi.updateItem(id, data),
+    onSuccess: () => {
+      if (selectedCategoryForItems) {
+          handleRowClick(selectedCategoryForItems) // Refresh item list
+      }
+      toast.success('Item updated successfully')
+      setIsItemFormOpen(false)
+    }
+  })
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (id: number) => itemApi.deleteItem(id),
+    onSuccess: () => {
+      if (selectedCategoryForItems) {
+          handleRowClick(selectedCategoryForItems) // Refresh item list
+      }
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Item deleted successfully')
+    }
+  })
+
   // Create/Edit Category State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -105,7 +141,7 @@ export default function CategoryList() {
     setIsItemsModalOpen(true)
     try {
       const response = await itemApi.getItemsByCategory(category.id)
-      setCategoryItems(response.data.data.content || [])
+      setCategoryItems(response.data.data.data || [])
     } catch (error) {
       console.error('Error fetching items:', error)
       setCategoryItems([])
@@ -125,12 +161,25 @@ export default function CategoryList() {
   }
 
   const handleDeleteItem = (item: Item) => {
-      console.log('Delete item', item)
+      if (window.confirm(`Are you sure you want to delete item "${item.name}"?`)) {
+          deleteItemMutation.mutate(item.id)
+      }
   }
 
   const handleSaveItem = (data: ItemFormData) => {
-    console.log('Saved Item:', data)
-    setIsItemFormOpen(false)
+    if (!selectedCategoryForItems) return
+
+    const payload = {
+        ...data,
+        imageUrl: data.image, // Map image field from form to imageUrl for API
+        categoryId: selectedCategoryForItems.id
+    }
+
+    if (editingItem) {
+        updateItemMutation.mutate({ id: editingItem.id, data: payload })
+    } else {
+        createItemMutation.mutate(payload)
+    }
   }
 
   return (

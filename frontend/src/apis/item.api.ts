@@ -15,6 +15,15 @@ const itemApi = {
         size: 100 // Get all items for now
       }
     })
+  },
+  createItem(data: any) {
+    return http.post<ApiResponse<Item>>(ITEM_URL, data)
+  },
+  updateItem(id: number | string, data: any) {
+    return http.put<ApiResponse<Item>>(`${ITEM_URL}/${id}`, data)
+  },
+  deleteItem(id: number | string) {
+    return http.delete<ApiResponse<any>>(`${ITEM_URL}/${id}`)
   }
 }
 

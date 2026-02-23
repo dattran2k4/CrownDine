@@ -29,14 +29,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -71,7 +69,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             authorities.add(authentication.getAuthorities().toString());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (BadCredentialsException e) {
             log.error("errorMessage: {}", e.getMessage());
             throw new BadCredentialsException(e.getMessage());
@@ -80,6 +77,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
         String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
 
+        //save token to db
         tokenService.saveToken(request.getUsername(), refreshToken, httpServletRequest);
 
         return TokenResponse.builder()
@@ -96,10 +94,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Refresh token is empty");
         }
 
-        //Kiem tra DB truoc
+        //Kiem tra JWT
+        final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
+
+        //Kiem tra DB sau
         Token token = tokenService.getByRefreshToken(refreshToken);
 
-        if (token.getIsRevoked()) {
+        if (Boolean.TRUE.equals(token.getIsRevoked())) {
             throw new InvalidDataException("Token is revoked");
         }
 
@@ -107,12 +108,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Refresh token expired");
         }
 
-        //Kiem tra JWT
-        final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
-
         User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
 
         jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
+
 
         List<String> authorities = new ArrayList<>();
         user.getAuthorities().forEach(authority -> authorities.add(authority.toString()));
@@ -135,26 +134,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Token missing or empty");
         }
 
-        Token token = tokenService.getByRefreshToken(refreshToken);
-
-        if (token.getIsRevoked()) {
-            throw new InvalidDataException("Token is revoked");
-        }
-
-        if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Refresh token expired");
-        }
-
         //Kiem tra JWT
         final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
 
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
-
-        jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
-
         tokenService.revokedByRefreshToken(refreshToken);
 
-        log.info("Logout successful");
+        log.info("Logout successful username {} ", username);
     }
 
     @Override

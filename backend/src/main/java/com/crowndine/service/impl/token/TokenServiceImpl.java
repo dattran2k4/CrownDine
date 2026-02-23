@@ -1,5 +1,6 @@
 package com.crowndine.service.impl.token;
 
+import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Token;
 import com.crowndine.repository.TokenRepository;
@@ -11,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +49,15 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void revokedByRefreshToken(String refreshToken) {
         Token token = getByRefreshToken(refreshToken);
-        if (!token.getIsRevoked()) {
+
+        if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Refresh token expired");
+        }
+        
+        if (Boolean.FALSE.equals(token.getIsRevoked())) {
             token.setIsRevoked(true);
+        } else {
+            throw new InvalidDataException("Token is revoked");
         }
         tokenRepository.save(token);
         log.info("Token revoked with id {}", token.getId());

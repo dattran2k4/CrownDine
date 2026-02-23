@@ -42,6 +42,7 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
     private final UserService userService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String createPaymentLink(PaymentRequest request, String username) {
         log.info("Processing create payment link for user {} ", username);
 
@@ -50,21 +51,20 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
         Payment payment = new Payment();
         payment.setStatus(EPaymentStatus.PENDING);
         payment.setMethod(EPaymentMethod.PAYOS);
-        EPaymentTarget target;
         payment.setCreatedBy(user);
 
         BigDecimal amountToPay;
 
         Long code = CodeUtils.generatePaymentCode();
+        log.info("orderCode: {}", code);
         payment.setCode(code);
 
         String description;
 
         if (StringUtils.hasText(request.getReservationCode())) {
             Reservation reservation = reservationService.getReservationByCode(request.getReservationCode());
-            target = EPaymentTarget.RESERVATION;
             payment.setReservation(reservation);
-            payment.setTarget(target);
+            payment.setTarget(EPaymentTarget.RESERVATION);
             payment.setSource(EPaymentSource.CLIENT_APP);
             amountToPay = reservation.getTable().getBaseDeposit();
             payment.setAmount(amountToPay);
@@ -72,10 +72,9 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
             description = "Thanh toán đặt cọc bàn";
         } else {
             Order order = orderService.getOrderByCode(request.getOrderCode());
-            target = EPaymentTarget.ORDER;
             payment.setSource(EPaymentSource.POS_COUNTER);
             payment.setOrder(order);
-            payment.setTarget(target);
+            payment.setTarget(EPaymentTarget.ORDER);
             payment.setType(EPaymentType.SETTLEMENT);
             amountToPay = order.getFinalPrice();
 

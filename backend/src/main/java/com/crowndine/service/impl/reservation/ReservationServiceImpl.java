@@ -82,7 +82,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     public OrderDetailResponse getReservationOrderDetails(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not founded"));
 
         Order order = reservation.getOrder();
         if (order == null) {
@@ -129,7 +129,7 @@ public class ReservationServiceImpl implements ReservationService {
     public List<AvailableTableResponse> findAvailableTables(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber) {
         LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
         LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
-        validateReservationTime(startDateTime, endDateTime, true);
+        validateReservationTime(startDateTime, endDateTime);
 
         List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(guestNumber, ETableStatus.AVAILABLE);
 
@@ -176,13 +176,13 @@ public class ReservationServiceImpl implements ReservationService {
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
         LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
         LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
-        validateReservationTime(startDateTime, endDateTime, true);
+        validateReservationTime(startDateTime, endDateTime);
 
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
 
-        if (table.getStatus() != ETableStatus.AVAILABLE) {
+        if (!table.getStatus().equals(ETableStatus.AVAILABLE)) {
             throw new InvalidDataException("Bàn không khả dụng");
         }
 
@@ -212,6 +212,7 @@ public class ReservationServiceImpl implements ReservationService {
         table.setStatus(ETableStatus.RESERVED);
 
         Reservation saved = reservationRepository.save(reservation);
+        log.info("Reservation has been saved with id: {}", saved.getId());
 
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
@@ -236,23 +237,13 @@ public class ReservationServiceImpl implements ReservationService {
         return reservationRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
     }
 
-    private void validateReservationTime(
-            LocalDateTime startDateTime,
-            LocalDateTime endDateTime,
-            boolean requireFutureStart
-    ) {
+    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (!endDateTime.isAfter(startDateTime)) {
             throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
         }
+
         if (startDateTime.toLocalTime().isBefore(OPEN_TIME) || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
             throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
-        }
-        if (!requireFutureStart) {
-            return;
-        }
-        LocalDateTime now = LocalDateTime.now();
-        if (!startDateTime.isAfter(now)) {
-            throw new InvalidDataException("Không thể đặt bàn trong quá khứ");
         }
     }
 
@@ -338,7 +329,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     private void recalculateOrderTotals(Order order) {
         List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
-        
+
         // tiền món = tổng tiền của tất cả các món
         BigDecimal itemsTotal = details.stream()
                 .map(OrderDetail::getTotalPrice)

@@ -8,6 +8,7 @@ import Reservation from '@/pages/Reservation'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
+import PriceSettings from '@/pages/Admin/Price/PriceSettings'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
@@ -51,6 +52,10 @@ const router = createBrowserRouter([
       {
         path: 'staff',
         element: <StaffList />
+      },
+      {
+        path: 'price-settings',
+        element: <PriceSettings />
       }
     ]
   }

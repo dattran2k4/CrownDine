@@ -22,13 +22,13 @@ export function isAdmin(): boolean {
 }
 
 export const setAccessTokenToLC = (access_token: string) => {
-  localStorage.setItem('access_token', access_token)
+  localStorage.setItem('accessToken', access_token)
 }
 
 export const getAccessTokenFromLC = () => {
-  return localStorage.getItem('access_token')
+  return localStorage.getItem('accessToken')
 }
 
 export const clearAccessTokenLS = () => {
-  localStorage.removeItem('access_token')
+  localStorage.removeItem('accessToken')
 }

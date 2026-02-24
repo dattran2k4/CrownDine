@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,22 +11,43 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signupFormSchema, type SignupFormValues } from '@/utils/auth.schema'
 
+import { isAxiosError } from '@/utils/utils'
+import type { ErrorResponse } from '@/types/utils.type'
+import useSignup from '@/hooks/useSignup'
+
 export function SignupForm({ className, ...props }: React.ComponentProps<'div'>) {
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    setError,
+    formState: { errors }
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema)
   })
-  const onSubmit = async (_data: SignupFormValues) => {
-    // FE only: validate via zod + react-hook-form (chưa gọi API)
-  }
+  const signupMutation = useSignup()
+
+  const onSubmit = handleSubmit((data) => {
+    signupMutation.mutate(data, {
+      onSuccess: () => {
+        navigate(path.verifyRegister)
+      },
+      onError: (error) => {
+        if (isAxiosError<ErrorResponse>(error)) {
+          const serverMessage = error.response?.data?.message
+          setError('root', {
+            type: 'server',
+            message: serverMessage || 'Đăng ký thất bại, vui lòng kiểm tra lại thông tin.'
+          })
+        }
+      }
+    })
+  })
   return (
     <div className={cn('signup-form flex flex-col gap-5', className)} {...props}>
       <Card className='signup-form-card border-border bg-card overflow-hidden rounded-xl border p-0 shadow-lg'>
         <CardContent className='p-0'>
-          <form className='p-5 sm:p-6' onSubmit={handleSubmit(onSubmit)}>
+          <form className='p-5 sm:p-6' onSubmit={onSubmit}>
             <div className='flex flex-col gap-5'>
               {/* Header - Logo & title */}
               <div className='flex flex-col items-center gap-2 text-center'>
@@ -46,18 +67,18 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
                   <Label htmlFor='lastname' className='text-sm font-medium'>
                     Họ
                   </Label>
-                  <Input type='text' id='lastname' placeholder='Nhập họ' {...register('lastname')} />
-                  {errors.lastname && (
-                    <p className='text-destructive mt-1 text-xs break-words'>{errors.lastname.message}</p>
+                  <Input type='text' id='lastname' placeholder='Nhập họ' {...register('lastName')} />
+                  {errors.lastName && (
+                    <p className='text-destructive mt-1 text-xs break-words'>{errors.lastName.message}</p>
                   )}
                 </div>
                 <div className='flex min-w-0 flex-col gap-2'>
                   <Label htmlFor='firstname' className='text-sm font-medium'>
                     Tên
                   </Label>
-                  <Input type='text' id='firstname' placeholder='Nhập tên' {...register('firstname')} />
-                  {errors.firstname && (
-                    <p className='text-destructive mt-1 text-xs break-words'>{errors.firstname.message}</p>
+                  <Input type='text' id='firstname' placeholder='Nhập tên' {...register('firstName')} />
+                  {errors.firstName && (
+                    <p className='text-destructive mt-1 text-xs break-words'>{errors.firstName.message}</p>
                   )}
                 </div>
               </div>
@@ -81,7 +102,14 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
                 <Input type='email' id='email' placeholder='Nhập email' {...register('email')} />
                 {errors.email && <p className='text-destructive mt-1 text-xs break-words'>{errors.email.message}</p>}
               </div>
-
+              {/* Phone */}
+              <div className='flex min-w-0 flex-col gap-2'>
+                <Label htmlFor='phone' className='text-sm font-medium'>
+                  Số điện thoại
+                </Label>
+                <Input type='text' id='phone' placeholder='Nhập số điện thoại' {...register('phone')} />
+                {errors.phone && <p className='text-destructive mt-1 text-xs break-words'>{errors.phone.message}</p>}
+              </div>
               {/* Password */}
               <div className='flex min-w-0 flex-col gap-2'>
                 <Label htmlFor='password' className='text-sm font-medium'>
@@ -109,8 +137,8 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
               </div>
 
               {/* Submit */}
-              <Button type='submit' className='btn-auth w-full' size='lg' disabled={isSubmitting}>
-                {isSubmitting ? 'Đang xử lý...' : 'Tạo tài khoản'}
+              <Button type='submit' className='btn-auth w-full' size='lg' disabled={signupMutation.isPending}>
+                {signupMutation.isPending ? 'Đang xử lý...' : 'Tạo tài khoản'}
               </Button>
 
               {/* Divider */}

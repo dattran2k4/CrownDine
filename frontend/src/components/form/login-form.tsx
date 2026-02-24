@@ -10,8 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
-import { useMutation } from '@tanstack/react-query'
-import authApi from '@/apis/auth.api'
+import { useLogin } from '@/hooks/useLogin'
 import { useContext } from 'react'
 import { AppContext } from '@/contexts/app.context'
 import { isAxiosErrorUnthorized } from '@/utils/utils'
@@ -19,21 +18,18 @@ import type { ErrorResponse } from '@/types/utils.type'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
-
   const { setIsAuthenticated } = useContext(AppContext)
 
   const {
     register,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting }
+    formState: { errors }
   } = useForm<SigninFormValues>({
     resolver: zodResolver(signinSchema)
   })
 
-  const loginMutation = useMutation({
-    mutationFn: authApi.login
-  })
+  const loginMutation = useLogin()
 
   const onSubmit = handleSubmit((data) => {
     loginMutation.mutate(data, {
@@ -111,8 +107,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
 
               {/* Submit */}
-              <Button type='submit' className='btn-auth w-full' size='lg' disabled={isSubmitting}>
-                {isSubmitting ? 'Đang xử lý...' : 'Đăng nhập'}
+              <Button type='submit' className='btn-auth w-full' size='lg' disabled={loginMutation.isPending}>
+                {loginMutation.isPending ? 'Đang xử lý...' : 'Đăng nhập'}
               </Button>
 
               {/* Divider */}

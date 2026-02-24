@@ -1,12 +1,5 @@
 import { ArrowUpDown, Pencil, Trash2 } from 'lucide-react'
-
-interface Category {
-    id: number
-    name: string
-    description: string
-    itemsCount: number
-// Add other properties if necessary
-}
+import type { Category } from '@/types/category.type'
 
 interface CategoryTableProps {
     categories: Category[]
@@ -28,7 +21,6 @@ export function CategoryTable({ categories, onRowClick, onEdit, onDelete }: Cate
                     </div>
                     </th>
                     <th className='hidden px-6 py-4 md:table-cell'>Description</th>
-                    <th className='w-[100px] px-6 py-4 text-center'>Items</th>
                     <th className='w-[100px] px-6 py-4 text-end'>Actions</th>
                 </tr>
                 </thead>
@@ -43,7 +35,6 @@ export function CategoryTable({ categories, onRowClick, onEdit, onDelete }: Cate
                         <div className='text-base font-semibold'>{category.name}</div>
                     </td>
                     <td className='text-muted-foreground hidden px-6 py-4 md:table-cell'>{category.description}</td>
-                    <td className='px-6 py-4 text-center font-medium'>{category.itemsCount}</td>
                     <td className='px-6 py-4'>
                         <div className='flex items-center justify-end gap-2'>
                         <button

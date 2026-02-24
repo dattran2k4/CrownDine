@@ -20,10 +20,10 @@ public class ItemSpecification {
             Predicate predicate = cb.conjunction();
 
             if (categoryId != null) {
-                predicate = cb.and(cb.equal(root.get("category").get("id"), categoryId));
+                predicate = cb.and(predicate, cb.equal(root.get("category").get("id"), categoryId));
             }
 
-            predicate = cb.and(cb.equal(root.get("status"), EItemStatus.AVAILABLE));
+            predicate = cb.and(predicate, cb.equal(root.get("status"), EItemStatus.AVAILABLE));
 
             if (StringUtils.hasLength(search)) {
                 String pattern = String.format("%%%s%%", search.trim().toLowerCase());
@@ -33,8 +33,7 @@ public class ItemSpecification {
                 Join<ComboItem, Combo> comboJoin = comboItemJoin.join("combo", JoinType.LEFT);
                 predicate = cb.and(predicate, cb.or(
                         cb.like(cb.lower(root.get("name")), pattern),
-                        cb.like(cb.lower(comboJoin.get("name")), pattern)
-                ));
+                        cb.like(cb.lower(comboJoin.get("name")), pattern)));
             }
             return predicate;
         };

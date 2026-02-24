@@ -82,8 +82,7 @@ export const MenuItemForm = ({ initialData, onSubmit, onCancel }: MenuItemFormPr
             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
           >
             <option value='AVAILABLE'>Available</option>
-            <option value='SOLD_OUT'>Sold Out</option>
-            <option value='HIDDEN'>Hidden</option>
+            <option value='UNAVAILABLE'>Unavailable</option>
           </select>
         </div>
       </div>

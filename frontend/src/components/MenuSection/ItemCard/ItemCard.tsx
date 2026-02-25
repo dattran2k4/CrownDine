@@ -1,5 +1,6 @@
 import RatingStart from '@/components/RatingStart'
 import type { Item } from '@/types/item.type'
+import { formatCurrency, getImageUrl } from '@/utils/utils'
 import { Heart, ShoppingCart } from 'lucide-react'
 
 interface Props {
@@ -35,7 +36,7 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
       {/* Image Area */}
       <div className='relative h-56 overflow-hidden'>
         <img
-          src={item.imageUrl}
+          src={getImageUrl(item.imageUrl)}
           alt={item.name}
           className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-110'
         />
@@ -66,11 +67,15 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
           <div className='flex flex-col'>
             {item.priceAfterDiscount ? (
               <>
-                <span className='text-muted-foreground text-xs line-through'>${item.price}</span>
-                <span className='text-primary text-xl font-bold'>${item.priceAfterDiscount}</span>
+                <span className='text-muted-foreground text-xs line-through'>
+                  {formatCurrency(Number(item.price))}
+                </span>
+                <span className='text-primary text-xl font-bold'>
+                  {formatCurrency(Number(item.priceAfterDiscount))}
+                </span>
               </>
             ) : (
-              <span className='text-primary text-xl font-bold'>${item.price}</span>
+              <span className='text-primary text-xl font-bold'>{formatCurrency(Number(item.price))}</span>
             )}
           </div>
 

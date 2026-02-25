@@ -9,6 +9,10 @@ export interface Item {
   price: number
   priceAfterDiscount: number | null
   status: string
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
+  /** Tên category (map từ API categories, dùng cho filter/display) */
+  category?: string
+  rating?: number
+  tags?: string[]
 }

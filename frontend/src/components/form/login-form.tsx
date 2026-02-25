@@ -11,14 +11,13 @@ import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
 import { useLogin } from '@/hooks/useLogin'
-import { useContext } from 'react'
-import { AppContext } from '@/contexts/app.context'
-import { isAxiosUnauthorizedError } from '@/utils/utils'
+import { isAxiosErrorUnthorized } from '@/utils/utils'
 import type { ErrorResponse } from '@/types/utils.type'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { toast } from 'sonner'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
-  const { setIsAuthenticated } = useContext(AppContext)
 
   const {
     register,
@@ -30,23 +29,21 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   })
 
   const loginMutation = useLogin()
-
-  const onSubmit = handleSubmit((data) => {
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        navigate(path.home)
-        setIsAuthenticated(true)
-      },
-      onError: (error) => {
-        if (isAxiosUnauthorizedError<ErrorResponse>(error)) {
-          const serverMessage = error.response?.data?.message
-          setError('root', {
-            type: 'server',
-            message: serverMessage
-          })
-        }
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      await loginMutation.mutateAsync(data)
+      toast.success('Đăng nhập thành công!')
+      navigate(path.home)
+    } catch (error) {
+      console.error('Login Mutation Failed WITH ERROR:', error)
+      if (isAxiosErrorUnthorized<ErrorResponse>(error)) {
+        const serverMessage = error.response?.data?.message
+        setError('root', {
+          type: 'server',
+          message: serverMessage
+        })
       }
-    })
+    }
   })
 
   return (
@@ -107,7 +104,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
 
               {/* Submit */}
-              <Button type='submit' className='btn-auth w-full' size='lg' disabled={loginMutation.isPending}>
+              <Button
+                type='submit'
+                className='btn-auth w-full cursor-pointer'
+                size='lg'
+                disabled={loginMutation.isPending}
+              >
                 {loginMutation.isPending ? 'Đang xử lý...' : 'Đăng nhập'}
               </Button>
 
@@ -121,7 +123,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               {/* Google Login Button */}
               <Button
                 type='button'
-                className='btn-auth w-full'
+                className='btn-auth w-full cursor-pointer'
                 size='lg'
                 onClick={() => {
                   // TODO: Implement Google login

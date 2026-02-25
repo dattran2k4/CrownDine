@@ -38,7 +38,11 @@ export function VerifyRegister({ className, ...props }: React.ComponentProps<'di
         navigate(path.login)
       },
       onError: (error) => {
+<<<<<<< HEAD
         if (isAxiosUnauthorizedError<ErrorResponse>(error)) {
+=======
+        if (isAxiosErrorUnthorized<ErrorResponse>(error)) {
+>>>>>>> 94b4d47 (feat(auth): complete authentication flow with JWT and token storage)
           const serverMessage = error.response?.data?.message
           setError('root', {
             type: 'server',
@@ -81,7 +85,16 @@ export function VerifyRegister({ className, ...props }: React.ComponentProps<'di
                 {errors.root && <p className='text-destructive mt-1 text-xs break-words'>{errors.root.message}</p>}
               </div>
 
+<<<<<<< HEAD
               <Button type='submit' className='btn-auth w-full' size='lg' disabled={verifyMutation.isPending}>
+=======
+              <Button
+                type='submit'
+                className='btn-auth w-full cursor-pointer'
+                size='lg'
+                disabled={verifyMutation.isPending}
+              >
+>>>>>>> 94b4d47 (feat(auth): complete authentication flow with JWT and token storage)
                 {verifyMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
               </Button>
             </div>

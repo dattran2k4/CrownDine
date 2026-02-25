@@ -18,8 +18,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
   const [formData, setFormData] = useState({
     firstName: user.firstName,
     lastName: user.lastName,
-    email: user.email,
-    phone: user.phone,
     dateOfBirth: user.dateOfBirth || '',
     gender: user.gender || 'other'
   })
@@ -89,42 +87,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
             className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
           />
         </div>
-
-        {/* Email */}
-        <div>
-          <Label htmlFor='email' className='text-sm font-semibold'>
-            Email Address
-          </Label>
-          <Input
-            id='email'
-            name='email'
-            type='email'
-            value={formData.email}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
-          />
-          {isEditing && (
-            <p className='text-foreground/60 mt-1 text-xs'>A confirmation email will be sent to verify this change</p>
-          )}
-        </div>
-
-        {/* Phone */}
-        <div>
-          <Label htmlFor='phone' className='text-sm font-semibold'>
-            Phone Number
-          </Label>
-          <Input
-            id='phone'
-            name='phone'
-            value={formData.phone}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
-          />
-          {isEditing && <p className='text-foreground/60 mt-1 text-xs'>An OTP will be sent to verify this number</p>}
-        </div>
-
         {/* Date of Birth */}
         <div>
           <Label htmlFor='dateOfBirth' className='text-sm font-semibold'>
@@ -199,8 +161,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
               setFormData({
                 firstName: user.firstName,
                 lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
                 dateOfBirth: user.dateOfBirth || '',
                 gender: user.gender || 'other'
               })

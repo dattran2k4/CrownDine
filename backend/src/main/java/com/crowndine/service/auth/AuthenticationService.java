@@ -22,4 +22,7 @@ public interface AuthenticationService {
 
     void resetPassword(String verifyCode, ResetPasswordRequest request);
 
+    void logout(String token);
+
+    TokenResponse refreshToken(String refreshToken);
 }

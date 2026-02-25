@@ -122,6 +122,7 @@ class Http {
           toast.error(error.response?.data.message || error.response?.data.message)
           // window.location.reload()
         }
+
         return Promise.reject(error)
       }
     )

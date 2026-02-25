@@ -3,6 +3,7 @@ package com.crowndine.controller;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -24,6 +25,7 @@ import java.time.LocalTime;
 public class ApiReservationController {
 
     private final ReservationService reservationService;
+    private final OrderService orderService;
 
     @GetMapping("/history")
     public ApiResponse getReservationHistory(
@@ -40,7 +42,7 @@ public class ApiReservationController {
 
     @GetMapping("/{reservationId}/order-details")
     public ApiResponse getReservationOrderDetails(
-        @PathVariable Long reservationId){
+            @PathVariable Long reservationId) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get reservation order details successfully")
@@ -87,16 +89,14 @@ public class ApiReservationController {
                 .build();
     }
 
-    @PostMapping("/{reservationId}/order/items/batch")
-    public ApiResponse addOrderItems(
-            @PathVariable Long reservationId,
-            @Valid @RequestBody OrderItemBatchRequest request,
-            Principal principal
-    ) {
+    @PostMapping("/{reservationId}/add-order")
+    public ApiResponse addOrderItems(@PathVariable Long reservationId,
+                                     @Valid @RequestBody OrderItemBatchRequest request,
+                                     Principal principal) {
+        orderService.addOrderForReservation(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
-                .message("Add items successfully")
-                .data(reservationService.addOrderItems(reservationId, request, principal.getName()))
+                .message("Saved items successfully")
                 .build();
     }
 }

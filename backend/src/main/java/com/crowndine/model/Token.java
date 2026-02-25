@@ -13,7 +13,7 @@ import lombok.*;
 @Table(name = "tokens")
 public class Token extends AbstractEntity<Long> {
 
-    @Column(unique = true, nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String token;
 
     @Enumerated(EnumType.STRING)

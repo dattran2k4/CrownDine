@@ -10,9 +10,12 @@ import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Role;
+import com.crowndine.model.Token;
 import com.crowndine.model.User;
 import com.crowndine.repository.RoleRepository;
+import com.crowndine.repository.TokenRepository;
 import com.crowndine.repository.UserRepository;
+import com.crowndine.common.enums.ETokenType;
 import com.crowndine.service.auth.AuthenticationService;
 import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
@@ -46,17 +49,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
+    private final TokenRepository tokenRepository;
     private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
-
 
     @Override
     public TokenResponse login(LoginRequest request) {
         List<String> authorities = new ArrayList<>();
 
         try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
             authorities.add(authentication.getAuthorities().toString());
 
@@ -68,6 +72,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
         String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
+
+        // Save token to database
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        Token token = new Token();
+        token.setToken(accessToken);
+        token.setTokenType(ETokenType.ACCESS_TOKEN);
+        token.setUser(user);
+        token.setRevoked(false);
+        token.setExpired(false);
+        tokenRepository.save(token);
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -98,7 +114,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String randomCode = UUID.randomUUID().toString();
 
-        //save to db
+        // save to db
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
@@ -112,7 +128,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(5));
         user.setStatus(EUserStatus.INACTIVE);
 
-        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser, randomCode);
+        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser,
+                randomCode);
 
         userRepository.save(user);
 
@@ -124,13 +141,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public String forgotPassword(ForgotPasswordRequest request) {
         log.info("Processing forgot password for user: {}", request.getEmail());
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản"));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản"));
 
         String randomCode = UUID.randomUUID().toString();
         user.setVerificationCode(randomCode);
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(5));
 
-        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser, randomCode);
+        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser,
+                randomCode);
 
         userRepository.save(user);
 
@@ -142,7 +161,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public boolean confirmRegister(String verifyCode) {
         log.info("Processing verify code for register");
 
-        User user = userRepository.findByVerificationCode(verifyCode).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
+        User user = userRepository.findByVerificationCode(verifyCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
 
         if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
             log.error("Verification code expired for user {}", user.getUsername());
@@ -166,7 +186,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String verifyCode, ResetPasswordRequest request) {
 
-        User user = userRepository.findByVerificationCode(verifyCode).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
+        User user = userRepository.findByVerificationCode(verifyCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
 
         if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());
@@ -185,5 +206,52 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository.save(user);
 
         log.info("Reset password successfully");
+    }
+
+    @Override
+    public void logout(String token) {
+        log.info("Logout user with token");
+        var storedToken = tokenRepository.findByToken(token).orElse(null);
+        if (storedToken != null) {
+            storedToken.setRevoked(true);
+            storedToken.setExpired(true);
+            tokenRepository.save(storedToken);
+        }
+    }
+
+    @Override
+    public TokenResponse refreshToken(String refreshToken) {
+        log.info("Process refresh token");
+
+        String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
+        if (username == null) {
+            throw new InvalidDataException("Refresh token không hợp lệ");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng"));
+
+        if (!jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user)) {
+            throw new InvalidDataException("Refresh token đã hết hạn hoặc không hợp lệ");
+        }
+
+        List<String> authorities = new ArrayList<>();
+        authorities.add(user.getAuthorities().toString());
+
+        String newAccessToken = jwtService.generateAccessToken(username, authorities);
+        String newRefreshToken = jwtService.generateRefreshToken(username, authorities);
+
+        Token token = new Token();
+        token.setToken(newAccessToken);
+        token.setTokenType(ETokenType.ACCESS_TOKEN);
+        token.setUser(user);
+        token.setRevoked(false);
+        token.setExpired(false);
+        tokenRepository.save(token);
+
+        return TokenResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
     }
 }

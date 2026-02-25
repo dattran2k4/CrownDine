@@ -32,3 +32,12 @@ export const getAccessTokenFromLC = () => {
 export const clearAccessTokenLS = () => {
   localStorage.removeItem('access_token')
 }
+export const getUserFromLC = () => {
+  try {
+    const user = localStorage.getItem('user')
+    return user ? JSON.parse(user) : null
+  } catch (error) {
+    console.error('Lỗi khi parse User từ LocalStorage:', error)
+    return null
+  }
+}

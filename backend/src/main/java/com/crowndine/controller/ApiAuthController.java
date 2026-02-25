@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collection;
 
@@ -57,21 +58,36 @@ public class ApiAuthController {
                 .build();
     }
 
-    //Nhap email
+    // Nhap email
     @PostMapping("forgot-password")
     public ApiResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         log.info("Forgot password request for email: {}", request.getEmail());
         return null;
     }
 
-    //Verify code + doi mat khau moi
-    public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request, @RequestParam String verifyCode) {
+    // Verify code + doi mat khau moi
+    public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request,
+            @RequestParam String verifyCode) {
         log.info("Reset Password request for user, verify code: {}", verifyCode);
         return null;
     }
 
     @PostMapping("/logout")
-    public ApiResponse logout() {
-        return ApiResponse.builder().build();
+    public ApiResponse logout(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            authenticationService.logout(token);
+        }
+        return ApiResponse.builder()
+                .status(200)
+                .message("Logout successfully")
+                .build();
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<TokenResponse> refreshToken(@RequestParam String refreshToken) {
+        log.info("Refresh token request...");
+        return new ResponseEntity<>(authenticationService.refreshToken(refreshToken), HttpStatus.OK);
     }
 }

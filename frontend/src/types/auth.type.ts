@@ -1,6 +1,4 @@
-import type { ApiResponse } from '@/types/utils.type'
-
-export type AuthResponse = ApiResponse<{
+export type AuthResponse = {
   accessToken: string
   refreshToken: string
-}>
+}

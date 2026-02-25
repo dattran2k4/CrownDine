@@ -4,6 +4,7 @@ import com.crowndine.common.enums.ETokenType;
 import com.crowndine.exception.ErrorResponse;
 import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.JwtService;
+import com.crowndine.repository.TokenRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -36,10 +37,12 @@ public class PreFilter extends OncePerRequestFilter {
 
     private final CustomUserDetailsService customUserDetailsService;
 
+    private final TokenRepository tokenRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         log.info("----------------------- Pre Filter -----------------------");
 
@@ -57,7 +60,7 @@ public class PreFilter extends OncePerRequestFilter {
         try {
             username = jwtService.extractUsername(token, ETokenType.ACCESS_TOKEN);
         }
-        //Ném message trong extract ra response
+        // Ném message trong extract ra response
         catch (BadCredentialsException | JwtException e) {
             log.error("JWT Authentication Error, message={}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -71,7 +74,6 @@ public class PreFilter extends OncePerRequestFilter {
             errorResponse.setError("Vui lòng đăng nhập");
             errorResponse.setMessage(e.getMessage());
 
-
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = objectMapper.writeValueAsString(errorResponse);
             response.getWriter().write(jsonString);
@@ -80,8 +82,13 @@ public class PreFilter extends OncePerRequestFilter {
 
         if (StringUtils.isNotEmpty(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-            if (jwtService.isTokenValid(token, ETokenType.ACCESS_TOKEN, userDetails)) {
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            var isTokenValid = tokenRepository.findByToken(token)
+                    .map(t -> !t.isExpired() && !t.isRevoked())
+                    .orElse(false);
+
+            if (jwtService.isTokenValid(token, ETokenType.ACCESS_TOKEN, userDetails) && isTokenValid) {
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                        userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }

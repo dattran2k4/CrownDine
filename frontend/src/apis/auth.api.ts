@@ -19,6 +19,12 @@ const authApi = {
   },
   verifyRegister(verifyCode: string) {
     return http.post<ApiResponse<null>>(`auth/verify-register?verifyCode=${verifyCode}`)
+  },
+  logout() {
+    return http.post<ApiResponse<null>>('auth/logout')
+  },
+  refreshToken(refreshToken: string) {
+    return http.post<AuthResponse>(`auth/refresh-token?refreshToken=${refreshToken}`)
   }
 }
 

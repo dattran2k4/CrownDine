@@ -137,7 +137,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
               </div>
 
               {/* Submit */}
-              <Button type='submit' className='btn-auth w-full' size='lg' disabled={signupMutation.isPending}>
+              <Button
+                type='submit'
+                className='btn-auth w-full cursor-pointer'
+                size='lg'
+                disabled={signupMutation.isPending}
+              >
                 {signupMutation.isPending ? 'Đang xử lý...' : 'Tạo tài khoản'}
               </Button>
 
@@ -151,7 +156,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
               {/* Google Signup Button */}
               <Button
                 type='button'
-                className='btn-auth w-full'
+                className='btn-auth w-full cursor-pointer'
                 size='lg'
                 onClick={() => {
                   // TODO: Implement Google signup

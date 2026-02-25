@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getAccessTokenFromLC } from '@/utils/auth'
+import { clearAccessTokenLS, getAccessTokenFromLC, setAccessTokenToLC } from '@/utils/auth'
 
 class Http {
   instance: AxiosInstance
@@ -30,6 +30,16 @@ class Http {
 
     this.instance.interceptors.response.use(
       (response) => {
+        const { url } = response.config
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = response.data as any
+        if (url === 'auth/login' || url === 'auth/register') {
+          this.accessToken = data.accessToken
+          setAccessTokenToLC(this.accessToken)
+        } else if (url === '/auth/logout') {
+          clearAccessTokenLS()
+          this.accessToken = ''
+        }
         return response
       },
       (error) => {

@@ -13,10 +13,11 @@ export const useLogin = () => {
       const response = await authApi.login(data)
       // Backend đang trả TokenResponse trực tiếp, không bọc trong ApiResponse
       const accessToken = response.data?.accessToken
+      const refreshToken = response.data?.refreshToken
 
       // 2. Nếu có token thì lưu vào Zustand
-      if (accessToken) {
-        setAuth(accessToken)
+      if (accessToken && refreshToken) {
+        setAuth(accessToken, refreshToken)
 
         // 3. Sau đó gọi API lấy profile (dùng interceptor để gắn Authorization)
         try {

@@ -12,6 +12,7 @@ import PriceSettings from '@/pages/Admin/Price/PriceSettings'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
+import VerifyRegister from '@/pages/VerifyRegister/VerifyRegister'
 import { ProtectedRoute, RejectedRoute } from '@/routes/RouteGuard'
 
 const router = createBrowserRouter([
@@ -36,7 +37,8 @@ const router = createBrowserRouter([
     element: <RejectedRoute />,
     children: [
       { path: path.login, element: <Login /> },
-      { path: path.register, element: <Register /> }
+      { path: path.register, element: <Register /> },
+      { path: path.verifyRegister, element: <VerifyRegister /> }
     ]
   },
 

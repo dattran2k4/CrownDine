@@ -6,8 +6,13 @@ export const signinSchema = z.object({
 })
 export const signupFormSchema = signinSchema
   .extend({
-    firstname: z.string().min(1, 'Vui lòng nhập tên của bạn'),
-    lastname: z.string().min(1, 'Vui lòng nhập họ của bạn'),
+    firstName: z.string().min(1, 'Vui lòng nhập tên của bạn'),
+    lastName: z.string().min(1, 'Vui lòng nhập họ của bạn'),
+    phone: z
+      .string()
+      .min(10, 'Số điện thoại phải có ít nhất 10 chữ số')
+      .max(15, 'Số điện thoại không được vượt quá 15 chữ số')
+      .regex(/^\+?[0-9\s\-()]+$/, 'Định dạng số điện thoại không hợp lệ'),
     email: z.string().email('Email không hợp lệ'),
     confirmPassword: z.string().min(6, 'Mật khẩu có ít nhất 6 ký tự')
   })

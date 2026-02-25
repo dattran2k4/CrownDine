@@ -1,12 +1,17 @@
 package com.crowndine.dto.request;
 
+import java.time.LocalDate;
+
 import com.crowndine.common.enums.EGender;
 import com.crowndine.dto.validator.EnumValue;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.*;
-import lombok.Getter;
 
-import java.time.LocalDate;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
 
 @Getter
 public class RegisterRequest {
@@ -32,12 +37,12 @@ public class RegisterRequest {
     )
     private String phone;
 
-    @NotNull(message = "Ngày sinh không để trống!")
+    // @NotNull(message = "Ngày sinh không để trống!")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     @Past(message = "Ngày sinh phải trước hôm nay")
     private LocalDate birthday;
 
-    @NotNull(message = "Vui lòng chọn giới tính")
+    // @NotNull(message = "Vui lòng chọn giới tính")
     @EnumValue(name = "gender", enumClass = EGender.class)
     private EGender gender;
 

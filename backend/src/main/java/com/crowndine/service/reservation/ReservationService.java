@@ -19,14 +19,9 @@ public interface ReservationService {
 
     OrderDetailResponse getReservationOrderDetails(Long reservationId);
 
-    List<AvailableTableResponse> findAvailableTables(
-            LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
-            Integer guestNumber
-    );
-
     ReservationCreateResponse createReservation(String username, ReservationCreateRequest request);
-    
+
+    void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username);
+
     Reservation getReservationByCode(String code);
 }

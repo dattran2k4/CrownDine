@@ -1,10 +1,8 @@
 package com.crowndine.service.impl.reservation;
 
-import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
@@ -48,9 +46,6 @@ public class ReservationServiceImpl implements ReservationService {
     private final UserRepository userRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final RestaurantTableRepository tableRepository;
-    private final OrderRepository orderRepository;
-    private final ItemRepository itemRepository;
-    private final ComboRepository comboRepository;
 
     private final CalculationService calculationService;
     private final OrderService orderService;
@@ -128,29 +123,6 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         return r;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<AvailableTableResponse> findAvailableTables(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber) {
-        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
-        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
-        validateReservationTime(startDateTime, endDateTime);
-
-        List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(guestNumber, ETableStatus.AVAILABLE);
-
-        if (candidates.isEmpty()) {
-            return List.of();
-        }
-
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
-
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses, now);
-
-        Set<Long> reservedSet = new HashSet<>(reservedIds);
-
-        return candidates.stream().filter(t -> !reservedSet.contains(t.getId())).map(this::toAvailableTableResponse).toList();
     }
 
     private AvailableTableResponse toAvailableTableResponse(RestaurantTable table) {
@@ -239,6 +211,36 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username) {
+        log.info("Adding order items for reservation id {}", reservationId);
+
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        validateReservationBeforeOrder(reservation, user);
+
+        orderService.addOrderForReservation(reservation, request, user);
+
+        log.info("Items has been added for reservation id: {}", reservation.getId());
+    }
+
+    private void validateReservationBeforeOrder(Reservation reservation, User user) {
+        if (!reservation.getCustomer().getId().equals(user.getId())) {
+            throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
+        }
+
+        if (reservation.getStatus().equals(EReservationStatus.CANCELLED)) {
+            throw new InvalidDataException("Đặt bàn đã bị hủy");
+        }
+
+        if (reservation.getStatus().equals(EReservationStatus.PENDING) && reservation.getExpiratedAt()
+                != null && reservation.getExpiratedAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Đặt bàn đã hết hạn giữ");
+        }
+    }
+
+    @Override
     public Reservation getReservationByCode(String code) {
         return reservationRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
     }
@@ -251,27 +253,6 @@ public class ReservationServiceImpl implements ReservationService {
         if (startDateTime.toLocalTime().isBefore(OPEN_TIME) || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
             throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
         }
-    }
-
-    private void recalculateOrderTotals(Order order) {
-        List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
-
-        // tiền món = tổng tiền của tất cả các món
-        BigDecimal itemsTotal = details.stream()
-                .map(OrderDetail::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal deposit = getTableDeposit(order.getRestaurantTable());
-
-        // tiền thanh toán = tiền đặt cọc + tiền món
-        BigDecimal total = itemsTotal.add(deposit);
-        order.setTotalPrice(total);
-
-        order.setDiscountPrice(BigDecimal.ZERO);
-
-        // tiền thanh toán = tiền đặt cọc + tiền món - discount
-        order.setFinalPrice(total.subtract(order.getDiscountPrice()));
-        orderRepository.save(order);
     }
 
     private BigDecimal getTableDeposit(RestaurantTable table) {

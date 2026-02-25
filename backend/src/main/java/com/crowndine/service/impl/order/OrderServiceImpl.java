@@ -40,14 +40,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username) {
-        log.info("Process saving order for reservation {}", reservationId);
-
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        validateReservationBeforeOrder(reservation, user);
-
+    public void addOrderForReservation(Reservation reservation, OrderItemBatchRequest request, User user) {
         Order order = (reservation.getOrder() != null) ? reservation.getOrder() : new Order();
 
         order.setStatus(EOrderStatus.PENDING);
@@ -79,6 +72,7 @@ public class OrderServiceImpl implements OrderService {
                         .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
                 detail.setItem(item);
                 unitPrice = item.getPriceAfterDiscount() != null ? item.getPriceAfterDiscount() : item.getPrice();
+                log.info("Adding item {} for order {}", itemReq.getItemId(), order.getId());
             }
 
             if (hasCombo) {
@@ -86,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
                         .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
                 detail.setCombo(combo);
                 unitPrice = combo.getPriceAfterDiscount() != null ? combo.getPriceAfterDiscount() : combo.getPrice();
+                log.info("Adding combo {} for order {}", itemReq.getComboId(), order.getId());
             }
 
             detail.setTotalPrice(unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity())));
@@ -101,20 +96,6 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order has been saved {}", result.getId());
     }
 
-    private void validateReservationBeforeOrder(Reservation reservation, User user) {
-        if (!reservation.getCustomer().getId().equals(user.getId())) {
-            throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
-        }
-
-        if (reservation.getStatus().equals(EReservationStatus.CANCELLED)) {
-            throw new InvalidDataException("Đặt bàn đã bị hủy");
-        }
-
-        if (reservation.getStatus().equals(EReservationStatus.PENDING) && reservation.getExpiratedAt()
-                != null && reservation.getExpiratedAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Đặt bàn đã hết hạn giữ");
-        }
-    }
 
     @Override
     public void updateOrder(Long orderId) {

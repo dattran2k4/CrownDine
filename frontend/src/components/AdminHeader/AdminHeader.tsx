@@ -30,7 +30,6 @@ export default function AdminHeader() {
       ]
     },
     { label: 'Quản lý phòng bàn', href: '/admin/tables' },
-    { label: 'Báo Cáo doanh thu', href: '/admin/reports' },
     { label: 'Trợ lý AI', href: '/admin/ai-assistant' }
   ]
 

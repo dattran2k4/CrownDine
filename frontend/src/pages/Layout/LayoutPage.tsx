@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
-import LayoutCanvas from '@/components/Layout'
+import LayoutCanvas from '@/components/Layout/LayoutCanvas'
+import AreaCanvas from '@/components/Layout/AreaCanvas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { FloorLayoutResponse, TableLayout, LayoutSaveRequest } from '@/types/layout'
+import type { FloorLayoutResponse, TableLayout, LayoutSaveRequest, AreaLayout } from '@/types/layout'
 import { Modal } from '@/components/ui/modal'
 
 import { useEffect } from 'react'
@@ -167,6 +168,26 @@ export default function LayoutPage() {
     }
   }
 
+  /* ---------- UPDATE AREA STATE ---------- */
+  const updateAreaState = (patch: Partial<AreaLayout>) => {
+    if (!activeFloorId) return;
+
+    setFloors(prev =>
+      prev.map(f =>
+        f.floorId !== activeFloorId
+          ? f
+          : {
+              ...f,
+              areas: f.areas.map(a =>
+                a.areaId === selectedTableId // In Area Edit Mode, selectedTableId holds the Area ID
+                  ? { ...a, ...patch }
+                  : a
+              )
+            }
+      )
+    )
+  }
+
   /* ---------- UPDATE TABLE STATE ---------- */
   const updateTableState = (patch: Partial<TableLayout>) => {
     if (!selectedTableId) return
@@ -177,18 +198,14 @@ export default function LayoutPage() {
           ? f
           : {
               ...f,
-              areas: f.areas.map(a =>
-                a.areaId !== activeAreaId
-                  ? a
-                  : {
-                      ...a,
-                      tables: a.tables.map(t =>
-                        t.id === selectedTableId
-                          ? { ...t, ...patch }
-                          : t
-                      )
-                    }
-              )
+              areas: f.areas.map(a => ({
+                ...a,
+                tables: a.tables.map(t =>
+                  t.id === selectedTableId
+                    ? { ...t, ...patch }
+                    : t
+                )
+              }))
             }
       )
     )
@@ -252,6 +269,10 @@ export default function LayoutPage() {
       const payload: LayoutSaveRequest = {
         areas: activeFloor.areas.map(a => ({
           areaId: a.areaId,
+          x: a.x || 0,
+          y: a.y || 0,
+          width: a.width || 0,
+          height: a.height || 0,
           objects: a.tables.map(t => ({
             id: t.id,
             x: t.x || 0,
@@ -308,13 +329,17 @@ export default function LayoutPage() {
             <div key={floor.floorId} className="mb-2">
               <button
                 className="flex items-center gap-2 font-semibold py-2 w-full"
-                onClick={() =>
+                onClick={() => {
                   setExpandedFloors(p =>
                     p.includes(floor.floorId)
                       ? p.filter(i => i !== floor.floorId)
                       : [...p, floor.floorId]
                   )
-                }
+                  // Enter Area Edit Mode
+                  setActiveFloorId(floor.floorId)
+                  setActiveAreaId(null)
+                  setSelectedTableId(null)
+                }}
               >
                 {expandedFloors.includes(floor.floorId)
                   ? <ChevronDown size={16} />
@@ -349,14 +374,55 @@ export default function LayoutPage() {
 
         {/* ================= CENTER ================= */}
         <div className="flex-1 bg-gray-50 p-6 flex flex-col">
-          {!activeFloor || !activeArea ? (
+          {!activeFloor ? (
             <div className="flex-1 flex items-center justify-center text-gray-500">
-              Chưa có khu vực nào được chọn. Vui lòng thêm hoặc chọn khu vực.
+              Chưa có tầng nào được chọn. Vui lòng chọn một tầng ở thanh bên trái.
             </div>
-          ) : (
+          ) : !activeAreaId ? (
+            /* ================= AREA EDIT MODE ================= */
             <>
               <h2 className="text-xl font-bold mb-4">
-                {activeArea.areaName} ({activeFloor.floorName})
+                Sơ đồ khu vực - {activeFloor.floorName}
+              </h2>
+              <div className="flex gap-2 mb-4">
+                <Button variant="outline" onClick={() => setShowAddArea(true)}>
+                  + Thêm khu vực mới
+                </Button>
+                <div className="ml-auto flex gap-2">
+                  <div className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-md border border-green-200">
+                    Chế độ: Chỉnh sửa Khu vực
+                  </div>
+                </div>
+              </div>
+              <div
+                className="bg-white border rounded-lg flex-1 min-h-[500px]"
+                style={{
+                  backgroundSize: '30px 30px',
+                  backgroundImage:
+                    'linear-gradient(#eee 1px, transparent 1px), linear-gradient(90deg, #eee 1px, transparent 1px)'
+                }}
+              >
+                <AreaCanvas
+                  layout={activeFloor}
+                  onSelectArea={a => setSelectedTableId(a.areaId)}
+                  selectedAreaId={selectedTableId}
+                  onChange={updated =>
+                    setFloors(prev =>
+                      prev.map(f =>
+                        f.floorId !== activeFloor.floorId
+                          ? f
+                          : updated
+                      )
+                    )
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            /* ================= TABLE EDIT MODE ================= */
+            <>
+              <h2 className="text-xl font-bold mb-4">
+                {activeArea?.areaName} ({activeFloor.floorName})
               </h2>
 
               <div className="flex gap-2 mb-4">
@@ -369,6 +435,12 @@ export default function LayoutPage() {
                 <Button variant="outline" onClick={() => addTable('CIRCLE')}>
                   Bàn tròn
                 </Button>
+                <Button variant="ghost" onClick={() => {
+                  setActiveAreaId(null)
+                  setSelectedTableId(null)
+                }}>
+                  Quay lại Sơ đồ khu vực
+                </Button>
               </div>
 
               <div
@@ -380,26 +452,17 @@ export default function LayoutPage() {
                 }}
               >
                 <LayoutCanvas
-                  layout={{
-                    floorId: activeFloor.floorId,
-                    floorName: activeFloor.floorName,
-                    areas: [activeArea]
-                  }}
+                  layout={activeFloor}
                   editable
+                  activeAreaId={activeAreaId}
                   onSelectTable={t => setSelectedTableId(t.id)}
+                  selectedTableIds={selectedTableId ? [selectedTableId] : []}
                   onChange={updated =>
                     setFloors(prev =>
                       prev.map(f =>
                         f.floorId !== activeFloor.floorId
                           ? f
-                          : {
-                              ...f,
-                              areas: f.areas.map(a =>
-                                a.areaId === activeArea.areaId
-                                  ? updated.areas[0]
-                                  : a
-                              )
-                            }
+                          : updated
                       )
                     )
                   }
@@ -411,7 +474,8 @@ export default function LayoutPage() {
 
         {/* ================= RIGHT ================= */}
         <div className="w-80 border-l bg-white p-6 overflow-y-auto">
-          {selectedTable ? (
+          {activeAreaId && selectedTable ? (
+            /* --- TABLE EDIT SIDEBAR --- */
             <>
               <div className="flex justify-between mb-4">
                 <h3 className="font-bold">Chỉnh sửa Bàn</h3>
@@ -424,7 +488,6 @@ export default function LayoutPage() {
                     value={selectedTable.name || ''}
                     onChange={e => updateTableState({ name: e.target.value })}
                   />
-
                 </Field>
 
                 <Field label="Số khách tối đa">
@@ -450,25 +513,32 @@ export default function LayoutPage() {
                   />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <Field label="Vị trí X (px)">
                     <Input
                       type="number"
-                      value={selectedTable.x || 0}
-                      onChange={e => updateTableState({ x: Number(e.target.value) })}
+                      value={Math.round(selectedTable.x)}
+                      onChange={e =>
+                        updateTableState({ x: Number(e.target.value) })
+                      }
                     />
                   </Field>
                   <Field label="Vị trí Y (px)">
                     <Input
                       type="number"
-                      value={selectedTable.y || 0}
-                      onChange={e => updateTableState({ y: Number(e.target.value) })}
+                      value={Math.round(selectedTable.y)}
+                      onChange={e =>
+                        updateTableState({ y: Number(e.target.value) })
+                      }
                     />
                   </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
                   <Field label="Chiều rộng (px)">
                     <Input
                       type="number"
-                      value={selectedTable.width || 0}
+                      value={Math.round(selectedTable.width)}
                       onChange={e =>
                         updateTableState({ width: Number(e.target.value) })
                       }
@@ -477,7 +547,7 @@ export default function LayoutPage() {
                   <Field label="Chiều cao (px)">
                     <Input
                       type="number"
-                      value={selectedTable.height || 0}
+                      value={Math.round(selectedTable.height)}
                       onChange={e =>
                         updateTableState({ height: Number(e.target.value) })
                       }
@@ -485,9 +555,19 @@ export default function LayoutPage() {
                   </Field>
                 </div>
 
+                <Field label="Góc xoay (°)">
+                  <Input
+                    type="number"
+                    value={selectedTable.rotation || 0}
+                    onChange={e =>
+                      updateTableState({ rotation: Number(e.target.value) })
+                    }
+                  />
+                </Field>
+
                 <Field label="Hình dạng">
                   <select
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border rounded-md p-2"
                     value={selectedTable.shape}
                     onChange={e =>
                       updateShape(e.target.value as TableLayout['shape'])
@@ -499,15 +579,89 @@ export default function LayoutPage() {
                   </select>
                 </Field>
 
-                <Button className="w-full" onClick={handleUpdateTableApi}>Cập nhật Cấu hình Bàn</Button>
-                <Button variant="destructive" className="w-full" onClick={handleDeleteTableApi}>
-                  Xóa bàn
+                <Button className="w-full mt-4" onClick={handleUpdateTableApi}>
+                  Cập nhật Bàn
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="w-full mt-2"
+                  onClick={handleDeleteTableApi}
+                >
+                  Xóa Bàn
                 </Button>
               </div>
             </>
+          ) : !activeAreaId && selectedTableId && activeFloor ? (
+            /* --- AREA EDIT SIDEBAR --- */
+            (() => {
+              const selectedArea = activeFloor.areas.find(a => a.areaId === selectedTableId);
+              if (!selectedArea) return null;
+
+              return (
+                <>
+                  <div className="flex justify-between mb-4">
+                    <h3 className="font-bold text-green-700">Chỉnh sửa Khu vực</h3>
+                    <X className="cursor-pointer" onClick={() => setSelectedTableId(null)} />
+                  </div>
+
+                  <div className="space-y-4">
+                    <Field label="Tên Khu vực *">
+                      <Input
+                        value={selectedArea.areaName || ''}
+                        onChange={e => updateAreaState({ areaName: e.target.value })}
+                        disabled
+                        title="Tên khu vực hiện tại chưa hỗ trợ API đổi tên nhanh, hãy dùng nút Cập nhật form gốc nếu có"
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Vị trí X (px)">
+                        <Input
+                          type="number"
+                          value={Math.round(selectedArea.x || 50)}
+                          onChange={e =>
+                            updateAreaState({ x: Number(e.target.value) })
+                          }
+                        />
+                      </Field>
+                      <Field label="Vị trí Y (px)">
+                        <Input
+                          type="number"
+                          value={Math.round(selectedArea.y || 50)}
+                          onChange={e =>
+                            updateAreaState({ y: Number(e.target.value) })
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Chiều rộng (px)">
+                        <Input
+                          type="number"
+                          value={Math.round(selectedArea.width || 400)}
+                          onChange={e =>
+                            updateAreaState({ width: Number(e.target.value) })
+                          }
+                        />
+                      </Field>
+                      <Field label="Chiều cao (px)">
+                        <Input
+                          type="number"
+                          value={Math.round(selectedArea.height || 300)}
+                          onChange={e =>
+                            updateAreaState({ height: Number(e.target.value) })
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </>
+              )
+            })()
           ) : (
-            <div className="text-gray-500 text-center mt-20">
-              Chọn một bàn để chỉnh sửa
+            <div className="text-gray-400 text-center mt-20">
+              Chọn một Mục trên sơ đồ để xem chi tiết
             </div>
           )}
         </div>

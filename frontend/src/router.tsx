@@ -27,8 +27,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: path.profile, element: <Profile /> },
-          { path: path.reservation, element: <Reservation /> },
-          { path: 'admin/layout', element: <LayoutPage /> }
+          { path: path.reservation, element: <Reservation /> }
         ]
       }
     ]
@@ -58,6 +57,10 @@ const router = createBrowserRouter([
       {
         path: 'price-settings',
         element: <PriceSettings />
+      },
+      {
+        path: 'layout',
+        element: <LayoutPage />
       }
     ]
   }

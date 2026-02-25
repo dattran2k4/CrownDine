@@ -1,10 +1,13 @@
 import axios, { type AxiosInstance } from 'axios'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { getAccessTokenFromLC } from '@/utils/auth'
 
 class Http {
   instance: AxiosInstance
+  private accessToken: string
 
   constructor() {
+    this.accessToken = getAccessTokenFromLC() || ''
     this.instance = axios.create({
       baseURL: 'http://localhost:8080/api/',
       timeout: 10000,
@@ -16,8 +19,8 @@ class Http {
     this.instance.interceptors.request.use(
       (config) => {
         if (this.accessToken && config.headers) {
-          config.headers.Authorization = this.accessToken.startsWith('Bearer ') 
-            ? this.accessToken 
+          config.headers.Authorization = this.accessToken.startsWith('Bearer ')
+            ? this.accessToken
             : `Bearer ${this.accessToken}`
         }
         return config

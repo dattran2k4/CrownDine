@@ -15,10 +15,11 @@ class Http {
 
     this.instance.interceptors.request.use(
       (config) => {
-        if (this.accessToken && config.headers) {
-          config.headers.Authorization = this.accessToken.startsWith('Bearer ') 
-            ? this.accessToken 
-            : `Bearer ${this.accessToken}`
+        const { accessToken } = useAuthStore.getState()
+        if (accessToken && config.headers) {
+          config.headers.Authorization = accessToken.startsWith('Bearer ') 
+            ? accessToken 
+            : `Bearer ${accessToken}`
         }
         return config
       },

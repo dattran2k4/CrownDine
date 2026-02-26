@@ -4,3 +4,7 @@ export type AuthResponse = ApiResponse<{
   accessToken: string
   refreshToken: string
 }>
+
+export type RefreshTokenResponse = {
+  accessToken: string
+}

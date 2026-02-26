@@ -54,12 +54,18 @@ export default function LayoutPage() {
     try {
       const res = await layoutApi.getAllFloors()
       const floorRecords = res.data.data
-      const fullLayouts = await Promise.all(
+      const fullLayouts = (await Promise.all(
         floorRecords.map(async f => {
-          const layoutRes = await layoutApi.getFloorLayout(f.id)
-          return layoutRes.data.data
+          try {
+            const layoutRes = await layoutApi.getFloorLayout(f.id)
+            return layoutRes.data.data
+          } catch (e) {
+            console.warn(`Could not load layout for floor ${f.id}`, e)
+            return null
+          }
         })
-      )
+      )).filter(Boolean) as FloorLayoutResponse[]
+
       setFloors(fullLayouts)
       if (fullLayouts.length > 0) {
         if (!activeFloorId) setActiveFloorId(fullLayouts[0].floorId)

@@ -10,8 +10,8 @@ VALUES ('Ca sáng', '08:00:00', '14:00:00', NOW(), NOW()),
 INSERT INTO restaurant_tables (name, capacity, status, created_at, updated_at)
 VALUES ('Bàn 01', 2, 'AVAILABLE', NOW(), NOW()),
        ('Bàn 02', 4, 'AVAILABLE', NOW(), NOW()),
-       ('Bàn 03', 6, 'RESERVED', NOW(), NOW()),
-       ('Bàn 04', 8, 'UNAVAILABLE', NOW(), NOW());
+       ('Bàn 03', 6, 'AVAILABLE', NOW(), NOW()),
+       ('Bàn 04', 8, 'AVAILABLE', NOW(), NOW());
 
 INSERT INTO categories (name, slug, description, created_at, updated_at)
 VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
@@ -116,9 +116,26 @@ INSERT INTO orders
 (user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at)
 VALUES
 -- Order gắn với reservation 1
-(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'PENDING',  NOW(), NOW()),
+(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'PENDING', NOW(), NOW()),
 -- Order walk-in (không reservation), gắn table 2
-(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'SERVED', NOW(), NOW());
+(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'SERVED', NOW(), NOW()),
+
+-- THÊM DỮ LIỆU CHO DASHBOARD
+-- Hôm nay: 5 đơn COMPLETED, 3 đơn SERVED
+(2, NULL, 1, NULL, 150000.00, 0, 150000.00, 'COMPLETED', NOW(), NOW()),
+(3, NULL, 2, NULL, 200000.00, 0, 200000.00, 'COMPLETED', NOW(), NOW()),
+(1, NULL, 3, NULL, 350000.00, 0, 350000.00, 'COMPLETED', NOW(), NOW()),
+(2, NULL, 4, NULL, 120000.00, 0, 120000.00, 'COMPLETED', NOW(), NOW()),
+(3, NULL, 1, NULL, 450000.00, 0, 450000.00, 'COMPLETED', NOW(), NOW()),
+
+(1, NULL, 2, NULL, 100000.00, 0, 100000.00, 'SERVED', NOW(), NOW()),
+(2, NULL, 3, NULL, 500000.00, 0, 500000.00, 'SERVED', NOW(), NOW()),
+(3, NULL, 4, NULL, 250000.00, 0, 250000.00, 'SERVED', NOW(), NOW()),
+
+-- Hôm qua: 3 đơn COMPLETED (để tính tăng trưởng: (5-3)/3 * 100 = 66%)
+(1, NULL, 1, NULL, 100000.00, 0, 100000.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(2, NULL, 2, NULL, 200000.00, 0, 200000.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(3, NULL, 3, NULL, 300000.00, 0, 300000.00, 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY));
 
 INSERT INTO order_details
 (order_id, item_id, combo_id, quantity, total_price, note, created_at, updated_at)

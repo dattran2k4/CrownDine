@@ -15,3 +15,5 @@ CREATE INDEX idx_feedbacks_order_detail_id ON feedbacks(order_detail_id);
 
 ALTER TABLE feedbacks
     ADD CONSTRAINT uq_feedbacks_user_order_detail UNIQUE (user_id, order_detail_id);
+ALTER TABLE users MODIFY COLUMN date_of_birth date;
+ALTER TABLE users MODIFY COLUMN gender enum('FEMALE','MALE','OTHER');

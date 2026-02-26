@@ -74,19 +74,18 @@ public class AppConfig {
     }
 
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "http://localhost:5173/"));
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "X-Requested-With", "accept",
-                "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
-        configuration.setExposedHeaders(
-                java.util.List.of("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(@NonNull CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:5173/")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH","OPTIONS") // Allowed HTTP methods
+                        .allowedHeaders("*") // Allowed request headers
+                        .allowCredentials(false)
+                        .maxAge(3600);
+            }
+        };
 
-}
+    }
+};

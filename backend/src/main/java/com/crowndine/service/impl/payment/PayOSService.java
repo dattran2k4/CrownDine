@@ -26,6 +26,7 @@ import vn.payos.model.webhooks.WebhookData;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service("payos")
 @RequiredArgsConstructor
@@ -66,10 +67,17 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
             payment.setTarget(EPaymentTarget.RESERVATION);
             payment.setSource(EPaymentSource.CLIENT_APP);
 
-            List<OrderDetail> orderDetails = reservation.getOrder().getOrderDetails();
-            BigDecimal totalOrder = calculationService.calculateTotalOrder(orderDetails);
+            BigDecimal totalOrder = BigDecimal.ZERO;
+
+            if (reservation.getOrder() != null) {
+                List<OrderDetail> orderDetails = reservation.getOrder().getOrderDetails();
+                totalOrder = calculationService.calculateTotalOrder(orderDetails);
+            }
 
             amountToPay = calculationService.calculateDepositPayment(totalOrder, reservation.getTable().getBaseDeposit());
+
+            log.info("Base deposit table: {}", reservation.getTable().getBaseDeposit());
+            log.info("Total amount to pay: {}", amountToPay);
 
             payment.setAmount(amountToPay);
             payment.setType(EPaymentType.DEPOSIT);
@@ -150,7 +158,14 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
 
             payment.setStatus(EPaymentStatus.SUCCESS);
             payment.setTransactionCode(data.getReference());
+            String rawApiData = data.toString().replace("WebhookData(", "").replace(")", "");
+            payment.setRawApiData(rawApiData);
             paymentRepository.save(payment);
+
+            Reservation reservation = payment.getReservation();
+            reservation.setStatus(EReservationStatus.CONFIRMED);
+            reservation.setExpiratedAt(null);
+
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {
             log.error("Error while handling PayOS webhook: {}", e.getMessage(), e);

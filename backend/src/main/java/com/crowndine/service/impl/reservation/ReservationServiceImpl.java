@@ -46,6 +46,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final UserRepository userRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final RestaurantTableRepository tableRepository;
+    private final PaymentRepository paymentRepository;
 
     private final CalculationService calculationService;
     private final OrderService orderService;
@@ -160,7 +161,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
 
-        if (!table.getStatus().equals(ETableStatus.AVAILABLE)) {
+        if (table.getStatus().equals(ETableStatus.UNAVAILABLE)) {
             throw new InvalidDataException("Bàn không khả dụng");
         }
 
@@ -186,8 +187,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setStatus(EReservationStatus.PENDING);
         reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
         reservation.setCustomer(user);
+        reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);
-        table.setStatus(ETableStatus.RESERVED);
 
         Reservation saved = reservationRepository.save(reservation);
         log.info("Reservation has been saved with id: {}", saved.getId());
@@ -203,7 +204,7 @@ public class ReservationServiceImpl implements ReservationService {
         response.setStatus(saved.getStatus());
         response.setExpiratedAt(saved.getExpiratedAt());
         response.setTableName(table.getName());
-        reservation.setCode(UUID.randomUUID().toString());
+        response.setCode(saved.getCode());
         if (table.getArea() != null && table.getArea().getFloor() != null) {
             response.setFloorNumber(table.getArea().getFloor().getFloorNumber());
         }
@@ -246,6 +247,11 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
+        }
+
         if (!endDateTime.isAfter(startDateTime)) {
             throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
         }

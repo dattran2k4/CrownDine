@@ -44,9 +44,10 @@ public class ApiPaymentController {
     }
 
     @PostMapping("/payos-ipn")
-    public ApiResponse handleWebhook(@RequestBody WebhookData body) {
+    public ApiResponse handleWebhook(@RequestBody Map<String, Object> body) {
         log.info("PayOS return received: {}", body);
-        payOSService.handleWebHook(body);
+        WebhookData data = payOS.webhooks().verify(body);
+        payOSService.handleWebHook(data);
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("PayOS returned")

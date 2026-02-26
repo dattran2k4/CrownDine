@@ -8,10 +8,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OrderItemRequest {
+    @Min(1)
     private Long itemId;
+    @Min(1)
     private Long comboId;
 
-    @NotNull
+    @NotNull(message = "Số lượng không được để trống")
     @Min(1)
     private Integer quantity;
 

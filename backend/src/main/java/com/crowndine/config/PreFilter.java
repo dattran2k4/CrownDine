@@ -68,7 +68,7 @@ public class PreFilter extends OncePerRequestFilter {
             errorResponse.setTimestamp(new Date());
             errorResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             errorResponse.setPath(request.getRequestURI());
-            errorResponse.setError("Vui lòng đăng nhập");
+            errorResponse.setError("UNAUTHORIZED");
             errorResponse.setMessage(e.getMessage());
 
 

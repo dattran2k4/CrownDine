@@ -13,7 +13,7 @@ import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
 import { useLogin } from '@/hooks/useLogin'
 import { useContext } from 'react'
 import { AppContext } from '@/contexts/app.context'
-import { isAxiosErrorUnthorized } from '@/utils/utils'
+import { isAxiosUnauthorizedError } from '@/utils/utils'
 import type { ErrorResponse } from '@/types/utils.type'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
@@ -38,7 +38,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
         setIsAuthenticated(true)
       },
       onError: (error) => {
-        if (isAxiosErrorUnthorized<ErrorResponse>(error)) {
+        if (isAxiosUnauthorizedError<ErrorResponse>(error)) {
           const serverMessage = error.response?.data?.message
           setError('root', {
             type: 'server',

@@ -21,14 +21,23 @@ export function isAdmin(): boolean {
   return getUserRoles().includes('ADMIN')
 }
 
-export const setAccessTokenToLC = (access_token: string) => {
-  localStorage.setItem('accessToken', access_token)
+export const setAccessTokenToLC = (accessToken: string) => {
+  localStorage.setItem('accessToken', accessToken)
+}
+
+export const setRefreshTokenToLC = (refreshToken: string) => {
+  localStorage.setItem('refreshToken', refreshToken)
+}
+
+export const getRefreshTokenFromLC = () => {
+  return localStorage.getItem('refreshToken')
 }
 
 export const getAccessTokenFromLC = () => {
   return localStorage.getItem('accessToken')
 }
 
-export const clearAccessTokenLS = () => {
+export const clearLS = () => {
   localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
 }

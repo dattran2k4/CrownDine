@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dashboardApi from '@/apis/dashboard.api'
 import {
@@ -20,7 +21,10 @@ import {
   TrendingUp,
   TrendingDown, 
   History,
-  FileDown
+  FileDown,
+  ChevronDown,
+  ChevronUp,
+  Check
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -79,7 +83,65 @@ const recentActivities = [
   { id: 9, user: 'Hương - Kế Toán', action: 'bán đơn hàng', value: '1,250,000', time: '3 days ago', type: 'sale' }
 ]
 
+
+const TimeRangeDropdown = ({ 
+  selected, 
+  onSelect, 
+  options 
+}: { 
+  selected: string, 
+  onSelect: (val: string) => void, 
+  options: string[] 
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-xs text-blue-600 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-50/50 hover:bg-blue-50 transition-all border border-blue-100/50"
+      >
+        {selected} 
+        {isOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-border shadow-2xl rounded-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="py-1">
+              {options.map((range) => (
+                <button
+                  key={range}
+                  onClick={() => {
+                    onSelect(range)
+                    setIsOpen(false)
+                  }}
+                  className="w-full px-4 py-2.5 text-sm font-bold text-left hover:bg-blue-50/50 flex items-center justify-between transition-colors border-b last:border-b-0 border-border/10"
+                >
+                  <span className={range === selected ? 'text-blue-600' : 'text-gray-700'}>{range}</span>
+                  {range === selected && <Check size={16} className="text-blue-600" strokeWidth={3} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
+  const [revenueViewMode, setRevenueViewMode] = useState('Theo giờ')
+  const [revenueTimeRange, setRevenueTimeRange] = useState('7 ngày qua')
+  const [customerTimeRange, setCustomerTimeRange] = useState('Tháng này')
+  const [topProductsTimeRange, setTopProductsTimeRange] = useState('7 ngày qua')
+
+  const timeRanges = ['Hôm nay', 'Hôm qua', '7 ngày qua', 'Tháng này', 'Tháng trước']
+
   const { data: salesResults } = useQuery({
     queryKey: ['dashboard-sales'],
     queryFn: () => dashboardApi.getSalesResults()
@@ -161,7 +223,7 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Doanh số 7 ngày qua
+                Doanh số {revenueTimeRange.toLowerCase()}
               </CardTitle>
               <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
                 15,701,000
@@ -172,8 +234,9 @@ export default function Dashboard() {
                 {['Theo ngày', 'Theo giờ', 'Theo thứ'].map((tab) => (
                   <button
                     key={tab}
+                    onClick={() => setRevenueViewMode(tab)}
                     className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
-                      tab === 'Theo giờ' 
+                      tab === revenueViewMode 
                         ? 'bg-white text-blue-600 shadow-sm' 
                         : 'text-muted-foreground hover:bg-muted/50'
                     }`}
@@ -182,9 +245,12 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                7 ngày qua <ChevronRight size={14} />
-              </button>
+              
+              <TimeRangeDropdown 
+                selected={revenueTimeRange} 
+                onSelect={setRevenueTimeRange} 
+                options={timeRanges} 
+              />
             </div>
           </CardHeader>
           <CardContent className="h-[300px] pt-4">
@@ -226,15 +292,17 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Số lượng khách tháng này
+                Số lượng khách {customerTimeRange.toLowerCase()}
               </CardTitle>
               <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
                 102
               </Badge>
             </div>
-            <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-              Tháng này <ChevronRight size={14} />
-            </button>
+            <TimeRangeDropdown 
+              selected={customerTimeRange} 
+              onSelect={setCustomerTimeRange} 
+              options={timeRanges} 
+            />
           </CardHeader>
           <CardContent className="h-[250px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -277,15 +345,17 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4 border-b">
             <div className="flex items-center gap-6">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Top 10 hàng hóa bán chạy 7 ngày qua
+                Top 10 hàng hóa bán chạy {topProductsTimeRange.toLowerCase()}
               </CardTitle>
               <div className="flex items-center gap-1 text-xs text-blue-600 font-bold uppercase cursor-pointer">
                 Theo doanh thu <ChevronRight size={14} />
               </div>
             </div>
-            <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-              7 ngày qua <ChevronRight size={14} />
-            </button>
+            <TimeRangeDropdown 
+              selected={topProductsTimeRange} 
+              onSelect={setTopProductsTimeRange} 
+              options={timeRanges} 
+            />
           </CardHeader>
           <CardContent className="h-[400px] pt-8">
             <ResponsiveContainer width="100%" height="100%">

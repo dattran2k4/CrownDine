@@ -10,8 +10,8 @@ VALUES ('Ca sáng', '08:00:00', '14:00:00', NOW(), NOW()),
 INSERT INTO restaurant_tables (name, capacity, status, created_at, updated_at)
 VALUES ('Bàn 01', 2, 'AVAILABLE', NOW(), NOW()),
        ('Bàn 02', 4, 'AVAILABLE', NOW(), NOW()),
-       ('Bàn 03', 6, 'RESERVED', NOW(), NOW()),
-       ('Bàn 04', 8, 'UNAVAILABLE', NOW(), NOW());
+       ('Bàn 03', 6, 'AVAILABLE', NOW(), NOW()),
+       ('Bàn 04', 8, 'AVAILABLE', NOW(), NOW());
 
 INSERT INTO categories (name, slug, description, created_at, updated_at)
 VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),

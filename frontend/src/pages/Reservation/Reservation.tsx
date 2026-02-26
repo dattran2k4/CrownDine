@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronRight, ArrowLeft, CheckCircle } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots } from '@/utils/utils'
-import { RESTAURANT_CONFIG, USER_INFO, type MenuItem, type Table } from '@/pages/Reservation/data'
+import { RESTAURANT_CONFIG, USER_INFO, type PreOrderCartItem, type Table } from '@/pages/Reservation/data'
 import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Step1DateTime'
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
@@ -24,7 +24,7 @@ export default function Reservation() {
   const [selectedTables, setSelectedTables] = useState<Table[]>([])
   const [multiTableOption, setMultiTableOption] = useState<'NEAR' | 'SEPARATED'>('NEAR')
 
-  const [cartItems, setCartItems] = useState<(MenuItem & { quantity: number })[]>([])
+  const [cartItems, setCartItems] = useState<PreOrderCartItem[]>([])
 
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
@@ -40,12 +40,12 @@ export default function Reservation() {
     }
   }
 
-  const handleAddToCart = (item: MenuItem) => {
-    const exist = cartItems.find((i) => i.id === item.id)
+  const handleAddToCart = (entry: Omit<PreOrderCartItem, 'quantity'>) => {
+    const exist = cartItems.find((i) => i.type === entry.type && i.id === entry.id)
     if (exist) {
-      setCartItems(cartItems.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)))
+      setCartItems(cartItems.map((i) => (i.type === entry.type && i.id === entry.id ? { ...i, quantity: i.quantity + 1 } : i)))
     } else {
-      setCartItems([...cartItems, { ...item, quantity: 1 }])
+      setCartItems([...cartItems, { ...entry, quantity: 1 }])
     }
   }
 
@@ -69,8 +69,8 @@ export default function Reservation() {
     setCurrentStep((prev) => prev + 1)
   }
 
-  const handleRemoveFromCart = (itemId: number) => {
-    setCartItems(cartItems.filter((i) => i.id !== itemId))
+  const handleRemoveFromCart = (type: 'item' | 'combo', id: number) => {
+    setCartItems(cartItems.filter((i) => !(i.type === type && i.id === id)))
   }
 
   const handlePayment = () => {

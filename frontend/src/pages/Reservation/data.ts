@@ -37,6 +37,16 @@ export interface MenuItem {
   image: string
 }
 
+/** Món hoặc combo trong giỏ đặt trước (bước 3) */
+export interface PreOrderCartItem {
+  type: 'item' | 'combo'
+  id: number
+  name: string
+  price: number
+  image: string
+  quantity: number
+}
+
 export const MOCK_MENU: MenuItem[] = [
   {
     id: 1,

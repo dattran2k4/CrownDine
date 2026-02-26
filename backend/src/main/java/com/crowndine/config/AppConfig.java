@@ -35,15 +35,17 @@ public class AppConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .cors(org.springframework.security.config.Customizer.withDefaults())
-                .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/categories/**").permitAll()
-                        .requestMatchers("/api/items/**").permitAll()
-                        .requestMatchers("/api/dashboard/**").permitAll()
-                        .requestMatchers("/api/payments/payos-ipn").permitAll()
-                        .anyRequest().authenticated())
+        http.cors(org.springframework.security.config.Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(request ->
+                        request
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/categories/**").permitAll()
+                                .requestMatchers("/api/items/**").permitAll()
+                                .requestMatchers("/api/combos/**").permitAll()
+                                .requestMatchers("/api/feedbacks/items/**", "/api/feedbacks/combos/**").permitAll()
+                                .requestMatchers("/api/payments/payos-ipn").permitAll()
+                                .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);

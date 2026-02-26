@@ -1,13 +1,14 @@
 import RatingStart from '@/components/RatingStart'
-import type { Item } from '@/types/item.type'
-import { Heart, ShoppingCart } from 'lucide-react'
+import type { MenuCardItem } from '@/types/item.type'
+import { formatCurrency, getImageUrl } from '@/utils/utils'
+import { Eye, Heart } from 'lucide-react'
 
 interface Props {
-  item: Item
-  onAddToCart?: (item: Item) => void
+  item: MenuCardItem
+  onViewDetails?: (item: MenuCardItem) => void
 }
 
-const ItemCard = ({ item, onAddToCart }: Props) => {
+const ItemCard = ({ item, onViewDetails }: Props) => {
   const discountPercent = item.priceAfterDiscount
     ? Math.round(((item.price - item.priceAfterDiscount) / item.price) * 100)
     : 0
@@ -35,7 +36,7 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
       {/* Image Area */}
       <div className='relative h-56 overflow-hidden'>
         <img
-          src={item.imageUrl}
+          src={getImageUrl(item.imageUrl)}
           alt={item.name}
           className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-110'
         />
@@ -58,7 +59,9 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
         {/* Rating */}
         <div className='mb-4 flex items-center gap-2'>
           <RatingStart rating={item.rating} size={18} />
-          <span className='text-muted-foreground pt-0.5 text-xs font-medium'>({item.rating})</span>
+          {item.rating != null && (
+            <span className='text-muted-foreground pt-0.5 text-xs font-medium'>({item.rating})</span>
+          )}
         </div>
 
         {/* Price & Action */}
@@ -66,21 +69,25 @@ const ItemCard = ({ item, onAddToCart }: Props) => {
           <div className='flex flex-col'>
             {item.priceAfterDiscount ? (
               <>
-                <span className='text-muted-foreground text-xs line-through'>${item.price}</span>
-                <span className='text-primary text-xl font-bold'>${item.priceAfterDiscount}</span>
+                <span className='text-muted-foreground text-xs line-through'>
+                  {formatCurrency(Number(item.price))}
+                </span>
+                <span className='text-primary text-xl font-bold'>
+                  {formatCurrency(Number(item.priceAfterDiscount))}
+                </span>
               </>
             ) : (
-              <span className='text-primary text-xl font-bold'>${item.price}</span>
+              <span className='text-primary text-xl font-bold'>{formatCurrency(Number(item.price))}</span>
             )}
           </div>
 
           <button
-            onClick={() => onAddToCart && onAddToCart(item)}
+            onClick={() => onViewDetails && onViewDetails(item)}
             disabled={item.status === 'SOLD_OUT'}
             className='btn-auth flex items-center gap-2 px-4! py-2! text-sm! disabled:cursor-not-allowed disabled:opacity-50'
           >
-            <ShoppingCart size={16} />
-            Add
+            <Eye size={16} />
+            Xem chi tiết
           </button>
         </div>
       </div>

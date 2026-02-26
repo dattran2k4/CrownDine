@@ -1,105 +1,110 @@
+import comboApi from '@/apis/combo.api'
 import categoryApi from '@/apis/category.api'
 import itemApi from '@/apis/item.api'
 import MenuFilter from '@/components/MenuFilter'
 import ItemCard from '@/components/MenuSection/ItemCard'
+import type { Category } from '@/types/category.type'
 import type { Item } from '@/types/item.type'
+import { comboToCardItem, type MenuCardItem } from '@/types/item.type'
+import type { Combo } from '@/types/combo.type'
 import { useQuery } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
-
-// --- MOCK DATA (Cập nhật theo Entity mới) ---
-const MOCK_ITEMS: Item[] = [
-  {
-    id: 1,
-    name: 'Truffle Burrata',
-    description: 'Fresh burrata with black truffle, heirloom tomatoes and basil oil.',
-    price: 20,
-    priceAfterDiscount: 18,
-    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=800',
-    status: 'AVAILABLE',
-    category: 'Starters',
-    soldCount: 120,
-    rating: 4.8,
-    tags: ['BEST_SELLER']
-  },
-  {
-    id: 2,
-    name: 'Wagyu Ribeye Steak',
-    description: 'Japanese A5 Wagyu, brown butter, roasted seasonal vegetables.',
-    price: 85,
-    imageUrl: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800',
-    status: 'AVAILABLE',
-    category: 'Mains',
-    soldCount: 45,
-    rating: 5.0,
-    tags: ['MUST_TRY']
-  },
-  {
-    id: 3,
-    name: 'Classic Tiramisu',
-    description: 'Espresso-soaked ladyfingers, mascarpone cream, cocoa powder.',
-    price: 12,
-    imageUrl: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=800',
-    status: 'SOLD_OUT', // Test trạng thái hết hàng
-    category: 'Desserts',
-    soldCount: 300,
-    rating: 4.9,
-    tags: ['BEST_SELLER']
-  },
-  {
-    id: 4,
-    name: 'Seafood Combo',
-    description: 'Lobster, shrimp, calamari platter for 2 people.',
-    price: 100,
-    priceAfterDiscount: 89,
-    imageUrl: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=800',
-    status: 'AVAILABLE',
-    category: 'Combos',
-    soldCount: 10,
-    rating: 4.2,
-    tags: ['NEW']
-  }
-]
-
-const CATEGORIES = ['All', 'Starters', 'Mains', 'Combos', 'Desserts', 'Drinks']
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Menu() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]) // Mặc định 0 - 1000$
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]) // VND
 
-  const { data: categoryData } = useQuery({
+  const { data: categoryData, isPending: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoryApi.getCategories()
   })
 
-  console.log(categoryData?.data.data)
-
-  const { data: itemData } = useQuery({
+  const { data: itemData, isPending: itemsLoading } = useQuery({
     queryKey: ['items'],
     queryFn: () => itemApi.getItems()
   })
 
-  console.log(itemData?.data.data)
+  const { data: comboData, isPending: combosLoading } = useQuery({
+    queryKey: ['combos'],
+    queryFn: () => comboApi.getCombos()
+  })
 
-  // Logic Filter (Xử lý client-side tạm thời)
+  const categories: Category[] = categoryData?.data?.data ?? []
+  const rawItems: Item[] = itemData?.data?.data ?? []
+  const combos: Combo[] = comboData?.data?.data ?? []
+
+  const categoryMap = useMemo(() => {
+    const map: Record<number, string> = {}
+    categories.forEach((c) => {
+      map[c.id] = c.name
+    })
+    return map
+  }, [categories])
+
+  const itemsWithCategory: Item[] = useMemo(
+    () =>
+      rawItems.map((item) => ({
+        ...item,
+        category: categoryMap[item.categoryId] ?? ''
+      })),
+    [rawItems, categoryMap]
+  )
+
+  const combosAsCardItems: MenuCardItem[] = useMemo(
+    () => combos.map(comboToCardItem),
+    [combos]
+  )
+
+  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name), 'Combo'], [categories])
+
   const filteredItems = useMemo(() => {
-    return MOCK_ITEMS.filter((item) => {
-      // 1. Filter Category
+    return itemsWithCategory.filter((item) => {
       const matchCategory = selectedCategory === 'All' || item.category === selectedCategory
-
-      // 2. Filter Search (Name)
       const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
-
-      // 3. Filter Price (Sử dụng priceAfterDiscount nếu có, không thì dùng price thường)
-      const currentPrice = item.priceAfterDiscount ?? item.price
-      const matchPrice = currentPrice >= priceRange[0] && (priceRange[1] === 0 || currentPrice <= priceRange[1])
-      // Note: Logic priceRange[1] === 0 nghĩa là user chưa nhập max thì bỏ qua check max
-
+      const currentPrice = Number(item.priceAfterDiscount ?? item.price)
+      const matchPrice =
+        currentPrice >= priceRange[0] && (priceRange[1] === 0 || priceRange[1] >= 10000000 || currentPrice <= priceRange[1])
       return matchCategory && matchSearch && matchPrice
     })
-  }, [searchQuery, selectedCategory, priceRange])
+  }, [itemsWithCategory, searchQuery, selectedCategory, priceRange])
 
-  if (!categoryData) return
+  const filteredCombos = useMemo(() => {
+    return combosAsCardItems.filter((c) => {
+      const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const currentPrice = Number(c.priceAfterDiscount ?? c.price)
+      const matchPrice =
+        currentPrice >= priceRange[0] && (priceRange[1] === 0 || priceRange[1] >= 10000000 || currentPrice <= priceRange[1])
+      return matchSearch && matchPrice
+    })
+  }, [combosAsCardItems, searchQuery, priceRange])
+
+  const navigate = useNavigate()
+  const handleViewDetails = (item: MenuCardItem, type: 'item' | 'combo') => {
+    navigate(`/menu/${type}/${item.id}`)
+  }
+
+  const displayList = useMemo(() => {
+    if (selectedCategory === 'Combo') {
+      return filteredCombos.map((item) => ({ key: `combo-${item.id}`, item }))
+    }
+    if (selectedCategory === 'All') {
+      return [
+        ...filteredItems.map((item) => ({ key: `item-${item.id}`, item })),
+        ...filteredCombos.map((item) => ({ key: `combo-${item.id}`, item }))
+      ]
+    }
+    return filteredItems.map((item) => ({ key: `item-${item.id}`, item }))
+  }, [selectedCategory, filteredItems, filteredCombos])
+
+  if (categoriesLoading || itemsLoading || combosLoading) {
+    return (
+      <div className='bg-background text-foreground flex min-h-screen items-center justify-center px-4'>
+        <p className='text-muted-foreground'>Đang tải menu...</p>
+      </div>
+    )
+  }
 
   return (
     <div className='bg-background text-foreground min-h-screen px-4 pt-10 pb-20 md:px-8'>
@@ -116,7 +121,7 @@ export default function Menu() {
         {/* --- LEFT COLUMN: FILTER --- */}
         <div className='hidden lg:col-span-1 lg:block'>
           <MenuFilter
-            categories={CATEGORIES}
+            categories={categoryNames}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             searchQuery={searchQuery}
@@ -138,7 +143,7 @@ export default function Menu() {
           />
           {/* List category ngang cho mobile */}
           <div className='scrollbar-hide mt-4 flex gap-2 overflow-x-auto pb-2'>
-            {CATEGORIES.map((cat) => (
+            {categoryNames.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -150,10 +155,10 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: GRID ITEMS --- */}
+        {/* --- RIGHT COLUMN: GRID ITEMS + COMBOS --- */}
         <div className='lg:col-span-3'>
           <div className='mb-6 flex items-center justify-between'>
-            <p className='text-muted-foreground'>Showing {filteredItems.length} results</p>
+            <p className='text-muted-foreground'>Showing {displayList.length} results</p>
 
             <select
               className='bg-card border-border focus:border-primary cursor-pointer rounded-lg border px-3 py-2 text-sm outline-none'
@@ -166,10 +171,14 @@ export default function Menu() {
               <option value='sold'>Best Sellers</option>
             </select>
           </div>
-          {filteredItems.length > 0 ? (
+          {displayList.length > 0 ? (
             <div className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
-              {filteredItems.map((item) => (
-                <ItemCard key={item.id} item={item} />
+              {displayList.map(({ key, item }) => (
+                <ItemCard
+                  key={key}
+                  item={item}
+                  onViewDetails={(i) => handleViewDetails(i, key.startsWith('combo') ? 'combo' : 'item')}
+                />
               ))}
             </div>
           ) : (

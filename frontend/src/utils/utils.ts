@@ -33,6 +33,15 @@ export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
 
+const API_BASE = 'http://localhost:8080'
+/** Chuẩn hóa URL ảnh: nếu path bắt đầu bằng / hoặc không phải http thì ghép với API_BASE */
+export function getImageUrl(imageUrl: string | null | undefined): string {
+  if (!imageUrl) return ''
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) return imageUrl
+  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+  return `${API_BASE}${path}`
+}
+
 export function isAxiosError<T>(error: unknown): error is AxiosError<T> {
   return axios.isAxiosError(error)
 }

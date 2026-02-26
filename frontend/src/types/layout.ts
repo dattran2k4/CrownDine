@@ -37,3 +37,24 @@ export type LayoutSaveRequest = {
     }[];
   }[];
 };
+
+export type FloorRequest = {
+  name: string;
+};
+
+export type AreaRequest = {
+  name: string;
+  description?: string;
+};
+
+export type TableRequest = {
+  name: string;
+  capacity?: number;
+  shape: "RECT" | "CIRCLE" | "SQUARE";
+  deposit?: number;
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  rotation?: number;
+};

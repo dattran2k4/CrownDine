@@ -33,7 +33,10 @@ export default function TableShape({
   onPointerDown,
   onResizeStart
 }: Props) {
-  const style = STATUS_STYLE[table.status]
+  const statusKey = table.status as keyof typeof STATUS_STYLE
+  const style = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
+  const seatColor = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
+  
   const capacity = table.capacity || 2
 
   /* ===== FIX TỈ LỆ ===== */
@@ -55,7 +58,7 @@ export default function TableShape({
         const angle = (i / capacity) * Math.PI * 2
         const sx = r + Math.cos(angle) * (r + 14)
         const sy = r + Math.sin(angle) * (r + 14)
-        return <circle key={i} cx={sx} cy={sy} r={5} fill={SEAT_COLOR[table.status]} />
+        return <circle key={i} cx={sx} cy={sy} r={5} fill={seatColor} />
       })
     }
 
@@ -76,7 +79,7 @@ export default function TableShape({
           <path
             key={`t${i}`}
             d={d}
-            fill={SEAT_COLOR[table.status]}
+            fill={seatColor}
           />
         )
       })
@@ -87,7 +90,7 @@ export default function TableShape({
           <path
             key={`b${i}`}
             d={d}
-            fill={SEAT_COLOR[table.status]}
+            fill={seatColor}
           />
         )
       })
@@ -97,7 +100,7 @@ export default function TableShape({
         <polygon
           key="l0"
           points={leftPoints}
-          fill={SEAT_COLOR[table.status]}
+          fill={seatColor}
         />
       )
 
@@ -106,7 +109,7 @@ export default function TableShape({
         <polygon
           key="r0"
           points={rightPoints}
-          fill={SEAT_COLOR[table.status]}
+          fill={seatColor}
         />
       )
 
@@ -122,7 +125,7 @@ export default function TableShape({
         <path
           key={`t${i}`}
           d={d}
-          fill={SEAT_COLOR[table.status]}
+          fill={seatColor}
         />
       )
     }
@@ -136,7 +139,7 @@ export default function TableShape({
         <path
           key={`b${i}`}
           d={d}
-          fill={SEAT_COLOR[table.status]}
+          fill={seatColor}
         />
       )
     }

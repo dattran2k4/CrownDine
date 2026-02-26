@@ -50,7 +50,7 @@ CREATE TABLE `roles` (
                          `description` varchar(500) DEFAULT NULL,
                          `name` enum('ADMIN','STAFF','USER') NOT NULL,
                          PRIMARY KEY (`id`),
-                         UNIQUE KEY `UKofx66keruapi6vyqpv6f2or37` (`name`)
+                         CONSTRAINT `uk_roles_name` UNIQUE (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -86,10 +86,10 @@ CREATE TABLE `users` (
                          `verification_code` varchar(255) DEFAULT NULL,
                          `verification_expiration` datetime(6) DEFAULT NULL,
                          PRIMARY KEY (`id`),
-                         UNIQUE KEY `UKdu5v5sr43g5bfnji4vb8hg5s3` (`phone`),
-                         UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`),
-                         UNIQUE KEY `UKma1e5g5a354bb93w98c8366ik` (`avatar_url`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
+                         CONSTRAINT `uk_users_phone` UNIQUE (`phone`),
+                         CONSTRAINT `uk_users_username` UNIQUE (`username`),
+                         KEY `idx_users_avatar_url` (`avatar_url`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
 -- crowndine.vouchers definition
@@ -105,7 +105,7 @@ CREATE TABLE `vouchers` (
                             `description` varchar(255) DEFAULT NULL,
                             `type` enum('FIXED_AMOUNT','PERCENTAGE') DEFAULT NULL,
                             PRIMARY KEY (`id`),
-                            UNIQUE KEY `UKmii5rtxmg6nqqsdpgsyir21kx` (`name`)
+                            CONSTRAINT `uk_vouchers_code` UNIQUE (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -123,8 +123,8 @@ CREATE TABLE `items` (
                          `name` varchar(255) DEFAULT NULL,
                          `status` enum('AVAILABLE','UNAVAILABLE') DEFAULT NULL,
                          PRIMARY KEY (`id`),
-                         KEY `FKjcdcde7htb3tyjgouo4g9xbmr` (`category_id`),
-                         CONSTRAINT `FKjcdcde7htb3tyjgouo4g9xbmr` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
+                         KEY `idx_items_category_id` (`category_id`),
+                         CONSTRAINT `fk_items_category_id_categories` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -143,10 +143,10 @@ CREATE TABLE `reservations` (
                                 `note` varchar(255) DEFAULT NULL,
                                 `status` enum('CANCELLED','CHECKED_IN','COMPLETED','CONFIRMED','NO_SHOW','PENDING') DEFAULT NULL,
                                 PRIMARY KEY (`id`),
-                                KEY `FKcmkyuub3ieebwbnrvh5710ply` (`customer_id`),
-                                KEY `FKefnkka0kk0ilojfptgn02u08n` (`restaurant_table_id`),
-                                CONSTRAINT `FKcmkyuub3ieebwbnrvh5710ply` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`),
-                                CONSTRAINT `FKefnkka0kk0ilojfptgn02u08n` FOREIGN KEY (`restaurant_table_id`) REFERENCES `restaurant_tables` (`id`)
+                                KEY `idx_reservations_customer_id` (`customer_id`),
+                                KEY `idx_reservations_restaurant_table_id` (`restaurant_table_id`),
+                                CONSTRAINT `fk_reservations_customer_id_users` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`),
+                                CONSTRAINT `fk_reservations_restaurant_table_id_restaurant_tables` FOREIGN KEY (`restaurant_table_id`) REFERENCES `restaurant_tables` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -170,10 +170,10 @@ CREATE TABLE `tokens` (
 CREATE TABLE `user_roles` (
                               `role_id` bigint NOT NULL,
                               `user_id` bigint NOT NULL,
-                              PRIMARY KEY (`role_id`,`user_id`),
-                              KEY `FKhfh9dx7w3ubf1co1vdev94g3f` (`user_id`),
-                              CONSTRAINT `FKh8ciramu9cc9q3qcqiv4ue8a6` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
-                              CONSTRAINT `FKhfh9dx7w3ubf1co1vdev94g3f` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+                              CONSTRAINT `pk_user_roles` PRIMARY KEY (`role_id`,`user_id`),
+                              KEY `idx_user_roles_user_id` (`user_id`),
+                              CONSTRAINT `fk_user_roles_role_id_roles` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
+                              CONSTRAINT `fk_user_roles_user_id_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -186,10 +186,10 @@ CREATE TABLE `user_vouchers` (
                                  `updated_at` datetime(6) DEFAULT NULL,
                                  `voucher_id` bigint DEFAULT NULL,
                                  PRIMARY KEY (`id`),
-                                 KEY `FKigrfm979v1p7rxvg9k9dcxiew` (`customer_id`),
-                                 KEY `FK40ig7khk2v79rbqaj98mf1g2q` (`voucher_id`),
-                                 CONSTRAINT `FK40ig7khk2v79rbqaj98mf1g2q` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`),
-                                 CONSTRAINT `FKigrfm979v1p7rxvg9k9dcxiew` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`)
+                                 KEY `idx_user_vouchers_customer_id` (`customer_id`),
+                                 KEY `idx_user_vouchers_voucher_id` (`voucher_id`),
+                                 CONSTRAINT `fk_user_vouchers_voucher_id_vouchers` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`),
+                                 CONSTRAINT `fk_user_vouchers_customer_id_users` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -201,33 +201,31 @@ CREATE TABLE `work_schedules` (
                                   `shift_id` bigint DEFAULT NULL,
                                   `staff_id` bigint DEFAULT NULL,
                                   `note` varchar(200) DEFAULT NULL,
-                                  `work_date` DATE NOT NULL,
+                                  `work_date` date NOT NULL,
                                   `updated_at` datetime(6) DEFAULT NULL,
                                   `status` enum('APPROVED','CANCELLED','PENDING','REJECTED') DEFAULT NULL,
                                   PRIMARY KEY (`id`),
-                                  KEY `FKoe9yynmgiahyihuhas36bnfwb` (`shift_id`),
-                                  KEY `FK1rccjjhay8dypgbcfuggfrjxd` (`staff_id`),
-                                  CONSTRAINT `FK1rccjjhay8dypgbcfuggfrjxd` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`),
-                                  CONSTRAINT `FKoe9yynmgiahyihuhas36bnfwb` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`)
+                                  CONSTRAINT `uk_work_schedules_staff_shift_date` UNIQUE (`staff_id`,`shift_id`,`work_date`),
+                                  KEY `idx_work_schedules_shift_id` (`shift_id`),
+                                  KEY `idx_work_schedules_staff_id` (`staff_id`),
+                                  CONSTRAINT `fk_work_schedules_staff_id_users` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`),
+                                  CONSTRAINT `fk_work_schedules_shift_id_shifts` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
 -- crowndine.attendances definition
 
 CREATE TABLE `attendances` (
-                               `check_in_time` time DEFAULT NULL,
-                               `check_out_time` time DEFAULT NULL,
+                               `check_in_at` datetime(6) DEFAULT NULL,
+                               `check_out_at` datetime(6) DEFAULT NULL,
                                `created_at` datetime(6) DEFAULT NULL,
                                `id` bigint NOT NULL AUTO_INCREMENT,
                                `updated_at` datetime(6) DEFAULT NULL,
-                               `user_id` bigint DEFAULT NULL,
                                `work_schedule_id` bigint DEFAULT NULL,
                                `note` varchar(500) DEFAULT NULL,
                                PRIMARY KEY (`id`),
-                               UNIQUE KEY `UKpwpvw6yhdmixs5w6q3je4tcyf` (`work_schedule_id`),
-                               KEY `FK8o39cn3ghqwhccyrrqdesttr8` (`user_id`),
-                               CONSTRAINT `FK3jvbpdispud5josnga5j10llo` FOREIGN KEY (`work_schedule_id`) REFERENCES `work_schedules` (`id`),
-                               CONSTRAINT `FK8o39cn3ghqwhccyrrqdesttr8` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+                               CONSTRAINT `uk_attendances_work_schedule_id` UNIQUE (`work_schedule_id`),
+                               CONSTRAINT `fk_attendances_work_schedule_id_work_schedules` FOREIGN KEY (`work_schedule_id`) REFERENCES `work_schedules` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -241,10 +239,10 @@ CREATE TABLE `combo_items` (
                                `item_id` bigint DEFAULT NULL,
                                `updated_at` datetime(6) DEFAULT NULL,
                                PRIMARY KEY (`id`),
-                               KEY `FK48h944x1aynyjkgfxa1tu5n32` (`combo_id`),
-                               KEY `FK65pec964nqgk6rgpsgm5u118x` (`item_id`),
-                               CONSTRAINT `FK48h944x1aynyjkgfxa1tu5n32` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`),
-                               CONSTRAINT `FK65pec964nqgk6rgpsgm5u118x` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
+                               KEY `idx_combo_items_combo_id` (`combo_id`),
+                               KEY `idx_combo_items_item_id` (`item_id`),
+                               CONSTRAINT `fk_combo_items_combo_id_combos` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`),
+                               CONSTRAINT `fk_combo_items_item_id_items` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -259,10 +257,10 @@ CREATE TABLE `feedbacks` (
                              `user_id` bigint DEFAULT NULL,
                              `comment` varchar(200) DEFAULT NULL,
                              PRIMARY KEY (`id`),
-                             KEY `FKa94qj7kb165hywij5gpgt5lcr` (`item_id`),
-                             KEY `FK312drfl5lquu37mu4trk8jkwx` (`user_id`),
-                             CONSTRAINT `FK312drfl5lquu37mu4trk8jkwx` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-                             CONSTRAINT `FKa94qj7kb165hywij5gpgt5lcr` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
+                             KEY `idx_feedbacks_item_id` (`item_id`),
+                             KEY `idx_feedbacks_user_id` (`user_id`),
+                             CONSTRAINT `fk_feedbacks_item_id_items` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`),
+                             CONSTRAINT `fk_feedbacks_user_id_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -281,14 +279,14 @@ CREATE TABLE `orders` (
                           `voucher_id` bigint DEFAULT NULL,
                           `status` enum('CANCELLED','COMPLETED','PENDING','PRE_ORDER','SERVED') DEFAULT NULL,
                           PRIMARY KEY (`id`),
-                          UNIQUE KEY `UK72hx6qp7pqavtjrwde9gbm13x` (`reservation_id`),
-                          KEY `FKgowqti7ase2e3o3k76kuani2w` (`restaurant_table_id`),
-                          KEY `FK32ql8ubntj5uh44ph9659tiih` (`user_id`),
-                          KEY `FKdimvsocblb17f45ikjr6xn1wj` (`voucher_id`),
-                          CONSTRAINT `FK32ql8ubntj5uh44ph9659tiih` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-                          CONSTRAINT `FKbn1idyqvshli7bj1rxurlsnju` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
-                          CONSTRAINT `FKdimvsocblb17f45ikjr6xn1wj` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`),
-                          CONSTRAINT `FKgowqti7ase2e3o3k76kuani2w` FOREIGN KEY (`restaurant_table_id`) REFERENCES `restaurant_tables` (`id`)
+                          CONSTRAINT `uk_orders_reservation_id` UNIQUE (`reservation_id`),
+                          KEY `idx_orders_restaurant_table_id` (`restaurant_table_id`),
+                          KEY `idx_orders_user_id` (`user_id`),
+                          KEY `idx_orders_voucher_id` (`voucher_id`),
+                          CONSTRAINT `fk_orders_reservation_id_reservations` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
+                          CONSTRAINT `fk_orders_restaurant_table_id_restaurant_tables` FOREIGN KEY (`restaurant_table_id`) REFERENCES `restaurant_tables` (`id`),
+                          CONSTRAINT `fk_orders_user_id_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+                          CONSTRAINT `fk_orders_voucher_id_vouchers` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -303,17 +301,18 @@ CREATE TABLE `payments` (
                             `user_id` bigint NOT NULL,
                             `updated_at` datetime(6) DEFAULT NULL,
                             `transaction_code` varchar(255) DEFAULT NULL,
-                            `method` enum('PAYOS','MOMO','CASH', 'ZALOPAY') DEFAULT NULL,
-                            `status` enum('PENDING', 'FAILED','SUCCESS') DEFAULT NULL,
+                            `method` enum('PAYOS','MOMO','CASH','ZALOPAY') DEFAULT NULL,
+                            `status` enum('PENDING','FAILED','SUCCESS') DEFAULT NULL,
                             `type` enum('DEPOSIT','REFUND','SETTLEMENT') DEFAULT NULL,
                             `target` enum('RESERVATION','ORDER') DEFAULT NULL,
                             `source` enum('CLIENT_APP','POS_COUNTER') DEFAULT NULL,
                             PRIMARY KEY (`id`),
-                            KEY `FK81gagumt0r8y3rmudcgpbk42l` (`order_id`),
-                            KEY `FKp8yh4sjt3u0g6aru1oxfh3o14` (`reservation_id`),
-                            CONSTRAINT `fk_payments_orders` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
-                            CONSTRAINT `fk_payments_reservations` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
-                            CONSTRAINT `fk_payments_users` FOREIGN KEY (`reservation_id`) REFERENCES `payments` (`id`)
+                            KEY `idx_payments_order_id` (`order_id`),
+                            KEY `idx_payments_reservation_id` (`reservation_id`),
+                            KEY `idx_payments_user_id` (`user_id`),
+                            CONSTRAINT `fk_payments_order_id_orders` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
+                            CONSTRAINT `fk_payments_reservation_id_reservations` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
+                            CONSTRAINT `fk_payments_user_id_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -330,12 +329,12 @@ CREATE TABLE `order_details` (
                                  `updated_at` datetime(6) DEFAULT NULL,
                                  `note` varchar(255) DEFAULT NULL,
                                  PRIMARY KEY (`id`),
-                                 KEY `FKgdw8tvw472t9vkp1bk2ksaj47` (`combo_id`),
-                                 KEY `FKnfrrgu0scdkwpptvs5gx6m6o9` (`item_id`),
-                                 KEY `FKjyu2qbqt8gnvno9oe9j2s2ldk` (`order_id`),
-                                 CONSTRAINT `FKgdw8tvw472t9vkp1bk2ksaj47` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`),
-                                 CONSTRAINT `FKjyu2qbqt8gnvno9oe9j2s2ldk` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
-                                 CONSTRAINT `FKnfrrgu0scdkwpptvs5gx6m6o9` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`)
+                                 KEY `idx_order_details_combo_id` (`combo_id`),
+                                 KEY `idx_order_details_item_id` (`item_id`),
+                                 KEY `idx_order_details_order_id` (`order_id`),
+                                 CONSTRAINT `fk_order_details_combo_id_combos` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`),
+                                 CONSTRAINT `fk_order_details_item_id_items` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`),
+                                 CONSTRAINT `fk_order_details_order_id_orders` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 
@@ -349,6 +348,6 @@ CREATE TABLE `reviews` (
                            `comment` varchar(255) DEFAULT NULL,
                            `customer_id` bigint DEFAULT NULL,
                            PRIMARY KEY (`id`),
-                           KEY `FKcgy7qjc1r99dp117y9en6lxye` (`customer_id`),
-                           CONSTRAINT `FKcgy7qjc1r99dp117y9en6lxye` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`)
+                           KEY `idx_reviews_customer_id` (`customer_id`),
+                           CONSTRAINT `fk_reviews_customer_id_users` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;

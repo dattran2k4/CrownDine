@@ -306,6 +306,7 @@ CREATE TABLE `payments` (
                             `type` enum('DEPOSIT','REFUND','SETTLEMENT') DEFAULT NULL,
                             `target` enum('RESERVATION','ORDER') DEFAULT NULL,
                             `source` enum('CLIENT_APP','POS_COUNTER') DEFAULT NULL,
+                            `raw_api_data` text,
                             PRIMARY KEY (`id`),
                             KEY `idx_payments_order_id` (`order_id`),
                             KEY `idx_payments_reservation_id` (`reservation_id`),

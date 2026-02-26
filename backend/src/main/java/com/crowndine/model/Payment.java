@@ -23,6 +23,9 @@ public class Payment extends AbstractEntity<Long> {
     @Column(name = "transaction_code")
     private String transactionCode;
 
+    @Column(name = "raw_api_data", columnDefinition = "TEXT")
+    private String rawApiData; //webhook callback
+
     @Enumerated(EnumType.STRING)
     @Column(name = "method")
     private EPaymentMethod method;

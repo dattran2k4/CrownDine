@@ -18,6 +18,7 @@ public class ReservationCreateResponse {
     private LocalTime endTime;
     private Integer guestNumber;
     private String note;
+    private String code;
     private EReservationStatus status;
     private BigDecimal depositAmount;
     private LocalDateTime expiratedAt;

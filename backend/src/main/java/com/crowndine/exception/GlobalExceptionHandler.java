@@ -236,6 +236,7 @@ public class GlobalExceptionHandler {
      * @param request
      * @return error
      */
+    @ResponseStatus(INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "500", description = "Internal Server Error",

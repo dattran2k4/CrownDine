@@ -1,11 +1,15 @@
+import comboApi from '@/apis/combo.api'
 import categoryApi from '@/apis/category.api'
 import itemApi from '@/apis/item.api'
 import MenuFilter from '@/components/MenuFilter'
 import ItemCard from '@/components/MenuSection/ItemCard'
 import type { Category } from '@/types/category.type'
 import type { Item } from '@/types/item.type'
+import { comboToCardItem, type MenuCardItem } from '@/types/item.type'
+import type { Combo } from '@/types/combo.type'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Menu() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -22,10 +26,15 @@ export default function Menu() {
     queryFn: () => itemApi.getItems()
   })
 
+  const { data: comboData, isPending: combosLoading } = useQuery({
+    queryKey: ['combos'],
+    queryFn: () => comboApi.getCombos()
+  })
+
   const categories: Category[] = categoryData?.data?.data ?? []
   const rawItems: Item[] = itemData?.data?.data ?? []
+  const combos: Combo[] = comboData?.data?.data ?? []
 
-  // Map categoryId -> category name để filter và hiển thị
   const categoryMap = useMemo(() => {
     const map: Record<number, string> = {}
     categories.forEach((c) => {
@@ -43,7 +52,12 @@ export default function Menu() {
     [rawItems, categoryMap]
   )
 
-  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name)], [categories])
+  const combosAsCardItems: MenuCardItem[] = useMemo(
+    () => combos.map(comboToCardItem),
+    [combos]
+  )
+
+  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name), 'Combo'], [categories])
 
   const filteredItems = useMemo(() => {
     return itemsWithCategory.filter((item) => {
@@ -56,7 +70,35 @@ export default function Menu() {
     })
   }, [itemsWithCategory, searchQuery, selectedCategory, priceRange])
 
-  if (categoriesLoading || itemsLoading) {
+  const filteredCombos = useMemo(() => {
+    return combosAsCardItems.filter((c) => {
+      const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const currentPrice = Number(c.priceAfterDiscount ?? c.price)
+      const matchPrice =
+        currentPrice >= priceRange[0] && (priceRange[1] === 0 || priceRange[1] >= 10000000 || currentPrice <= priceRange[1])
+      return matchSearch && matchPrice
+    })
+  }, [combosAsCardItems, searchQuery, priceRange])
+
+  const navigate = useNavigate()
+  const handleViewDetails = (item: MenuCardItem, type: 'item' | 'combo') => {
+    navigate(`/menu/${type}/${item.id}`)
+  }
+
+  const displayList = useMemo(() => {
+    if (selectedCategory === 'Combo') {
+      return filteredCombos.map((item) => ({ key: `combo-${item.id}`, item }))
+    }
+    if (selectedCategory === 'All') {
+      return [
+        ...filteredItems.map((item) => ({ key: `item-${item.id}`, item })),
+        ...filteredCombos.map((item) => ({ key: `combo-${item.id}`, item }))
+      ]
+    }
+    return filteredItems.map((item) => ({ key: `item-${item.id}`, item }))
+  }, [selectedCategory, filteredItems, filteredCombos])
+
+  if (categoriesLoading || itemsLoading || combosLoading) {
     return (
       <div className='bg-background text-foreground flex min-h-screen items-center justify-center px-4'>
         <p className='text-muted-foreground'>Đang tải menu...</p>
@@ -113,10 +155,10 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: GRID ITEMS --- */}
+        {/* --- RIGHT COLUMN: GRID ITEMS + COMBOS --- */}
         <div className='lg:col-span-3'>
           <div className='mb-6 flex items-center justify-between'>
-            <p className='text-muted-foreground'>Showing {filteredItems.length} results</p>
+            <p className='text-muted-foreground'>Showing {displayList.length} results</p>
 
             <select
               className='bg-card border-border focus:border-primary cursor-pointer rounded-lg border px-3 py-2 text-sm outline-none'
@@ -129,10 +171,14 @@ export default function Menu() {
               <option value='sold'>Best Sellers</option>
             </select>
           </div>
-          {filteredItems.length > 0 ? (
+          {displayList.length > 0 ? (
             <div className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
-              {filteredItems.map((item) => (
-                <ItemCard key={item.id} item={item} />
+              {displayList.map(({ key, item }) => (
+                <ItemCard
+                  key={key}
+                  item={item}
+                  onViewDetails={(i) => handleViewDetails(i, key.startsWith('combo') ? 'combo' : 'item')}
+                />
               ))}
             </div>
           ) : (

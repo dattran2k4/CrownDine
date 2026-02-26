@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronRight, ArrowLeft, CheckCircle } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots } from '@/utils/utils'
-import { MOCK_MENU, RESTAURANT_CONFIG, USER_INFO, type MenuItem, type Table } from '@/pages/Reservation/data'
+import { RESTAURANT_CONFIG, USER_INFO, type MenuItem, type Table } from '@/pages/Reservation/data'
 import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Step1DateTime'
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
@@ -40,7 +40,7 @@ export default function Reservation() {
     }
   }
 
-  const handleAddToCart = (item: (typeof MOCK_MENU)[0]) => {
+  const handleAddToCart = (item: MenuItem) => {
     const exist = cartItems.find((i) => i.id === item.id)
     if (exist) {
       setCartItems(cartItems.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)))

@@ -41,6 +41,8 @@ public class AppConfig {
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/categories/**").permitAll()
                                 .requestMatchers("/api/items/**").permitAll()
+                                .requestMatchers("/api/combos/**").permitAll()
+                                .requestMatchers("/api/feedbacks/items/**", "/api/feedbacks/combos/**").permitAll()
                                 .requestMatchers("/api/payments/payos-ipn").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))

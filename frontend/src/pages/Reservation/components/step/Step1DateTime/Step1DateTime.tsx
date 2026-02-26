@@ -33,7 +33,7 @@ const Step1DateTime = ({
   // Note: Logic so sánh chuỗi thời gian đơn giản, thực tế nên dùng Date object nếu qua ngày mới
 
   return (
-    <div className='animate-fade-in space-y-8'>
+    <div className='animate-fade-in space-y-8 m-4 p-4'>
       {/* 1. Chọn Ngày & Số khách */}
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         <div className='space-y-2'>

@@ -1,10 +1,13 @@
+import comboApi from '@/apis/combo.api'
 import categoryApi from '@/apis/category.api'
 import itemApi from '@/apis/item.api'
 import { Button } from '@/components/ui/button'
 import ItemCard from '@/components/MenuSection/ItemCard/ItemCard'
 import type { Item } from '@/types/item.type'
+import { comboToCardItem, type MenuCardItem } from '@/types/item.type'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const MAX_ITEMS_PER_ROW = 8
 
@@ -21,8 +24,17 @@ const MenuSection = () => {
     queryFn: () => itemApi.getItems()
   })
 
+  const { data: comboData, isPending: combosLoading } = useQuery({
+    queryKey: ['combos'],
+    queryFn: () => comboApi.getCombos()
+  })
+
   const categories = categoryData?.data?.data ?? []
   const rawItems: Item[] = itemData?.data?.data ?? []
+  const combosAsCardItems: MenuCardItem[] = useMemo(
+    () => (comboData?.data?.data ?? []).map(comboToCardItem),
+    [comboData?.data?.data]
+  )
 
   const categoryMap = useMemo(() => {
     const map: Record<number, string> = {}
@@ -41,14 +53,26 @@ const MenuSection = () => {
     [rawItems, categoryMap]
   )
 
-  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name)], [categories])
+  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name), 'Combo'], [categories])
 
-  const handleAddToCart = (item: Item) => {
-    console.log('Add to cart:', item.name)
+  const navigate = useNavigate()
+  const handleViewDetails = (item: MenuCardItem, type: 'item' | 'combo') => {
+    navigate(`/menu/${type}/${item.id}`)
   }
 
-  const filteredMenu =
-    activeTab === 'All' ? itemsWithCategory : itemsWithCategory.filter((item) => item.category === activeTab)
+  const displayListWithKeys = useMemo(() => {
+    if (activeTab === 'Combo') {
+      return combosAsCardItems.map((item) => ({ key: `combo-${item.id}`, item }))
+    }
+    if (activeTab === 'All') {
+      return [
+        ...itemsWithCategory.map((item) => ({ key: `item-${item.id}`, item })),
+        ...combosAsCardItems.map((item) => ({ key: `combo-${item.id}`, item }))
+      ]
+    }
+    const filtered = itemsWithCategory.filter((item) => item.category === activeTab)
+    return filtered.map((item) => ({ key: `item-${item.id}`, item }))
+  }, [activeTab, itemsWithCategory, combosAsCardItems])
 
   return (
     <section id='menu' className='min-h-screen w-full bg-transparent px-4 py-16 md:px-8'>
@@ -85,14 +109,18 @@ const MenuSection = () => {
 
         {/* --- Product Grid --- */}
         <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4'>
-          {(categoriesLoading || itemsLoading
+          {(categoriesLoading || itemsLoading || combosLoading
             ? []
-            : filteredMenu.slice(0, MAX_ITEMS_PER_ROW)
-          ).map((item) => (
-            <ItemCard key={item.id} item={item} onAddToCart={handleAddToCart} />
+            : displayListWithKeys.slice(0, MAX_ITEMS_PER_ROW)
+          ).map(({ key, item }) => (
+            <ItemCard
+              key={key}
+              item={item}
+              onViewDetails={(i) => handleViewDetails(i, key.startsWith('combo') ? 'combo' : 'item')}
+            />
           ))}
         </div>
-        {(categoriesLoading || itemsLoading) && (
+        {(categoriesLoading || itemsLoading || combosLoading) && (
           <p className='text-muted-foreground py-8 text-center text-sm'>Đang tải menu...</p>
         )}
         <div className='mt-12 flex justify-center'>

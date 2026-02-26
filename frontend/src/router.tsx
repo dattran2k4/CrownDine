@@ -9,6 +9,7 @@ import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
 import PriceSettings from '@/pages/Admin/Price/PriceSettings'
+import Dashboard from '@/pages/Admin/Dashboard/Dashboard'
 import { createBrowserRouter } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
@@ -46,6 +47,14 @@ const router = createBrowserRouter([
     path: '/admin',
     element: <AdminLayout />,
     children: [
+      {
+        index: true,
+        element: <Dashboard />
+      },
+      {
+        path: path.dashboard,
+        element: <Dashboard />
+      },
       {
         path: 'categories',
         element: <CategoryList />

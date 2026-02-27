@@ -1,5 +1,4 @@
-import axios, { AxiosError, type AxiosInstance } from 'axios'
-import { useAuthStore } from '@/stores/useAuthStore'
+import axios, { type AxiosError, type AxiosInstance } from 'axios'
 import {
   clearLS,
   getAccessTokenFromLC,
@@ -97,11 +96,11 @@ class Http {
             this.refreshTokenRequest = this.refreshTokenRequest
               ? this.refreshTokenRequest
               : this.handleRefreshToken().finally(() => {
-                  // Giữ refreshTokenRequest trong 10s cho những request tiếp theo nếu có 401 thì dùng
-                  setTimeout(() => {
-                    this.refreshTokenRequest = null
-                  }, 10000)
-                })
+                // Giữ refreshTokenRequest trong 10s cho những request tiếp theo nếu có 401 thì dùng
+                setTimeout(() => {
+                  this.refreshTokenRequest = null
+                }, 10000)
+              })
             return this.refreshTokenRequest.then((access_token) => {
               // Nghĩa là chúng ta tiếp tục gọi lại request cũ vừa bị lỗi
               return this.instance({

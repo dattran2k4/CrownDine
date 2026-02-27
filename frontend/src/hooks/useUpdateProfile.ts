@@ -10,12 +10,9 @@ const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: (data: UpdateUserRequest) => userApi.updateProfile(data),
-    onSuccess: (response, variables) => {
+    onSuccess: (_, variables) => {
       const currentUser = useAuthStore.getState().user
       if (currentUser) {
-        // Merge the manually submitted fields, but wait! The variables have `dateOfBirth` as dd/MM/yyyy and `gender` as UPPERCASE.
-        // It's safer to just trigger invalidation and let the GET profile fetch the fresh data.
-        // Or we map it directly:
         setUser({ ...currentUser, ...variables, gender: variables.gender?.toLowerCase() as any })
       }
       queryClient.invalidateQueries({ queryKey: ['profile'] })

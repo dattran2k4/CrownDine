@@ -22,4 +22,6 @@ public class ProfileResponse {
     private EGender gender;
     private LocalDate dateOfBirth;
     private EUserStatus status;
+    private LocalDate createdAt;
+    private LocalDate updatedAt;
 }

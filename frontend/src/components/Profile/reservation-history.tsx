@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import type { Reservation } from '@/types/profile.type'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ChevronDown, Clock, Users, DollarSign } from 'lucide-react'
 
 interface ReservationHistoryProps {

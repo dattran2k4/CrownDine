@@ -12,13 +12,13 @@ import {
   Line,
   Cell
 } from 'recharts'
-import { 
-  Users, 
-  CircleDollarSign, 
-  Utensils, 
-  ChevronRight, 
+import {
+  Users,
+  CircleDollarSign,
+  Utensils,
+  ChevronRight,
   TrendingUp,
-  TrendingDown, 
+  TrendingDown,
   History,
   FileDown
 } from 'lucide-react'
@@ -109,9 +109,8 @@ export default function Dashboard() {
                   <div className="text-blue-500 font-bold text-2xl leading-none">
                     {(results?.completedTotalAmount || 0).toLocaleString('vi-VN')}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${
-                    (results?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
                     {(results?.completedGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                     <span>{Math.abs(results?.completedGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
@@ -119,7 +118,7 @@ export default function Dashboard() {
                 <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(results?.completedOrdersYesterday || 0).toLocaleString('vi-VN')}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 border-r md:last:border-r-0 border-border/50 pr-4">
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
                 <Utensils size={24} />
@@ -143,9 +142,8 @@ export default function Dashboard() {
                   <div className="text-cyan-500 font-bold text-2xl leading-none">
                     {results?.totalCustomersToday || 0}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${
-                    (results?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
                     {(results?.customersGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                     <span>{Math.abs(results?.customersGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
@@ -172,11 +170,10 @@ export default function Dashboard() {
                 {['Theo ngày', 'Theo giờ', 'Theo thứ'].map((tab) => (
                   <button
                     key={tab}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
-                      tab === 'Theo giờ' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${tab === 'Theo giờ'
+                        ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-muted-foreground hover:bg-muted/50'
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>
@@ -191,28 +188,28 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 11, fill: '#6B7280' }} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="time"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
-                  tickFormatter={(value) => `${value} tr`}
                 />
-                <Tooltip 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#6B7280' }}
+                  tickFormatter={(value: number | string) => `${value} tr`}
+                />
+                <Tooltip
                   cursor={{ fill: '#F3F4F6' }}
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: 'none',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                   {salesData.map((_, index) => (
+                  {salesData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill="#0EA5E9" />
                   ))}
                 </Bar>
@@ -240,29 +237,29 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={customerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 11, fill: '#6B7280' }} 
+                <XAxis
+                  dataKey="time"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#6B7280' }}
                   interval={1}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: 'none',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#0EA5E9" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#0EA5E9"
                   strokeWidth={2}
                   dot={{ r: 4, fill: '#fff', strokeWidth: 2, stroke: '#0EA5E9' }}
                   activeDot={{ r: 6, fill: '#0EA5E9' }}
@@ -292,29 +289,29 @@ export default function Dashboard() {
               <BarChart layout="vertical" data={topProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                 <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 11, fill: '#4B5563' }}
                   width={150}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: 'transparent' }}
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: 'none',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
                 />
                 <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-8 mt-2 overflow-x-auto pb-2">
-               {['0', '500k', '1 tr', '1.5 tr', '2 tr', '2.5 tr', '3 tr', '3.5 tr', '4 tr', '4.5 tr', '5 tr'].map((val, idx) => (
-                 <span key={idx} className="text-[9px] text-muted-foreground">{val}</span>
-               ))}
+              {['0', '500k', '1 tr', '1.5 tr', '2 tr', '2.5 tr', '3 tr', '3.5 tr', '4 tr', '4.5 tr', '5 tr'].map((val, idx) => (
+                <span key={idx} className="text-[9px] text-muted-foreground">{val}</span>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -324,18 +321,18 @@ export default function Dashboard() {
       <div className="space-y-6">
         {/* Export File Widget */}
         <Card className="rounded-xl overflow-hidden shadow-sm relative group cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 border-none min-h-[140px] flex items-center justify-center text-white">
-           <div className="text-center p-4">
-              <div className="mb-3 flex justify-center">
-                 <div className="p-3 bg-white/20 rounded-full backdrop-blur-md">
-                   <FileDown size={32} />
-                 </div>
+          <div className="text-center p-4">
+            <div className="mb-3 flex justify-center">
+              <div className="p-3 bg-white/20 rounded-full backdrop-blur-md">
+                <FileDown size={32} />
               </div>
-              <div className="text-lg font-bold mb-1">Xuất file báo cáo</div>
-              <p className="text-[11px] opacity-80 mb-3">Tải xuống dữ liệu doanh thu và hàng hóa</p>
-              <Badge className="bg-white text-blue-600 hover:bg-white/90 border-none font-bold">
-                XUẤT FILE NGAY
-              </Badge>
-           </div>
+            </div>
+            <div className="text-lg font-bold mb-1">Xuất file báo cáo</div>
+            <p className="text-[11px] opacity-80 mb-3">Tải xuống dữ liệu doanh thu và hàng hóa</p>
+            <Badge className="bg-white text-blue-600 hover:bg-white/90 border-none font-bold">
+              XUẤT FILE NGAY
+            </Badge>
+          </div>
         </Card>
 
         {/* Recent Activities */}
@@ -349,9 +346,8 @@ export default function Dashboard() {
             <div className="divide-y divide-border/50">
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="p-4 flex gap-4 hover:bg-muted/5 transition-colors">
-                  <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                    activity.type === 'sale' ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'
-                  }`}>
+                  <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${activity.type === 'sale' ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'
+                    }`}>
                     {activity.type === 'sale' ? <CircleDollarSign size={16} /> : <History size={16} />}
                   </div>
                   <div className="space-y-1">
@@ -366,19 +362,19 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="p-4 flex justify-center sticky bottom-0 bg-white border-t">
-               <button className="text-[11px] text-blue-600 font-bold uppercase flex items-center gap-1 hover:underline">
-                  Xem thêm <ChevronRight size={14} />
-               </button>
+              <button className="text-[11px] text-blue-600 font-bold uppercase flex items-center gap-1 hover:underline">
+                Xem thêm <ChevronRight size={14} />
+              </button>
             </div>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Scroll to Top button float (as seen in image) */}
       <div className="fixed bottom-6 right-6 z-50">
-         <button className="w-10 h-10 rounded-full bg-blue-400 text-white flex items-center justify-center shadow-lg hover:bg-blue-500 transition-colors">
-            <TrendingUp size={20} className="rotate-[-45deg]" />
-         </button>
+        <button className="w-10 h-10 rounded-full bg-blue-400 text-white flex items-center justify-center shadow-lg hover:bg-blue-500 transition-colors">
+          <TrendingUp size={20} className="rotate-[-45deg]" />
+        </button>
       </div>
     </div>
   )

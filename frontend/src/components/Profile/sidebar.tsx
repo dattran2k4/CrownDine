@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { User } from '@/types/profile.type'
 import { User as UserIcon, Clock, Lock, Camera, Loader2 } from 'lucide-react'
 import { calculateMembershipTier, getMembershipTierConfig } from '@/lib/membership_tier'

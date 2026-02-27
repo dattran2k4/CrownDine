@@ -49,10 +49,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
   const handleSave = () => {
     let formattedDate = formData.dateOfBirth
     if (formattedDate && formattedDate.includes('-')) {

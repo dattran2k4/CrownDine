@@ -31,10 +31,11 @@ const Header = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const refreshToken = useAuthStore((state) => state.refreshToken)
   const navigate = useNavigate()
 
   const logoutMutation = useMutation({
-    mutationFn: authApi.logout,
+    mutationFn: () => authApi.logout(refreshToken || ''),
     onSuccess: () => {
       logout()
       toast.success('Đăng xuất thành công')

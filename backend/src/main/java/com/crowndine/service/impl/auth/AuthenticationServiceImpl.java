@@ -80,7 +80,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
         String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
 
-        //save token to db
+        // save token to db
         tokenService.saveToken(request.getUsername(), refreshToken, httpServletRequest);
 
         return TokenResponse.builder()
@@ -97,10 +97,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Refresh token is empty");
         }
 
-        //Kiem tra JWT
+        // Kiem tra JWT
         final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
 
-        //Kiem tra DB sau
+        // Kiem tra DB sau
         Token token = tokenService.getByRefreshToken(refreshToken);
 
         if (Boolean.TRUE.equals(token.getIsRevoked())) {
@@ -111,10 +111,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Refresh token expired");
         }
 
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid username"));
 
         jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
-
 
         List<String> authorities = new ArrayList<>();
         user.getAuthorities().forEach(authority -> authorities.add(authority.toString()));
@@ -137,7 +137,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Token missing or empty");
         }
 
-        //Kiem tra JWT
+        // Kiem tra JWT
         final String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
 
         tokenService.revokedByRefreshToken(refreshToken);
@@ -262,50 +262,4 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         log.info("Reset password successfully");
     }
 
-    @Override
-    public void logout(String token) {
-        log.info("Logout user with token");
-        var storedToken = tokenRepository.findByToken(token).orElse(null);
-        if (storedToken != null) {
-            storedToken.setRevoked(true);
-            storedToken.setExpired(true);
-            tokenRepository.save(storedToken);
-        }
-    }
-
-    @Override
-    public TokenResponse refreshToken(String refreshToken) {
-        log.info("Process refresh token");
-
-        String username = jwtService.extractUsername(refreshToken, ETokenType.REFRESH_TOKEN);
-        if (username == null) {
-            throw new InvalidDataException("Refresh token không hợp lệ");
-        }
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng"));
-
-        if (!jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user)) {
-            throw new InvalidDataException("Refresh token đã hết hạn hoặc không hợp lệ");
-        }
-
-        List<String> authorities = new ArrayList<>();
-        authorities.add(user.getAuthorities().toString());
-
-        String newAccessToken = jwtService.generateAccessToken(username, authorities);
-        String newRefreshToken = jwtService.generateRefreshToken(username, authorities);
-
-        Token token = new Token();
-        token.setToken(newAccessToken);
-        token.setTokenType(ETokenType.ACCESS_TOKEN);
-        token.setUser(user);
-        token.setRevoked(false);
-        token.setExpired(false);
-        tokenRepository.save(token);
-
-        return TokenResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .build();
-    }
 }

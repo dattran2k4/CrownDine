@@ -1,9 +1,6 @@
 package com.crowndine.controller;
 
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.OrderItemUpdateRefinedRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.validator.EnumValue;
 import com.crowndine.service.reservation.ReservationService;
@@ -82,7 +79,7 @@ public class ApiReservationController {
 
     @DeleteMapping("/{reservationId}/remove-item")
     public ApiResponse deleteOrderItem(@PathVariable Long reservationId,
-                                       @Valid @RequestBody OrderItemRequest request,
+                                       @Valid @RequestBody OrderItemRemoveRequest request,
                                        Principal principal) {
         reservationService.removeItemFromReservation(reservationId, request, principal.getName());
         return ApiResponse.builder()

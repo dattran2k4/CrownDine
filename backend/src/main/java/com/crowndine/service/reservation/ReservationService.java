@@ -1,9 +1,6 @@
 package com.crowndine.service.reservation;
 
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.OrderItemUpdateRefinedRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.OrderDetailResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.ReservationCreateResponse;
@@ -27,5 +24,5 @@ public interface ReservationService {
 
     Reservation getReservationById(Long reservationId);
 
-    void removeItemFromReservation(Long reservationId, OrderItemRequest request, String name);
+    void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name);
 }

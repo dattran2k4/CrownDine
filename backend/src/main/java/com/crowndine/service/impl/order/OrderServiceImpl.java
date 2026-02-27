@@ -2,6 +2,7 @@ package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
+import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -125,7 +126,7 @@ public class OrderServiceImpl implements OrderService {
         //Check trùng orderDetails item id == request item id
         Optional<OrderDetail> existedDetail = orderDetails
                 .stream()
-                .filter(detail -> isSameProduct(detail, request))
+                .filter(detail -> isSameProduct(detail, request.getItemId(), request.getComboId()))
                 .findFirst();
 
         //Nếu có thì update quantity
@@ -171,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDetail> orderDetails = order.getOrderDetails();
 
         OrderDetail detailToUpdate = orderDetails.stream()
-                .filter(d -> isSameProduct(d, request))
+                .filter(d -> isSameProduct(d, request.getItemId(), request.getComboId()))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm này chưa có trong đơn hàng"));
 
@@ -191,17 +192,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void removeOrderItemInReservation(Order order, OrderItemRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request) {
         log.info("Removing order item  for order {}", order.getId());
 
-        boolean removed = order.getOrderDetails().removeIf(detail -> isSameProduct(detail, request));
+        boolean removed = order.getOrderDetails().removeIf(detail -> isSameProduct(detail, request.getItemId(), request.getComboId()));
 
         if (!removed) {
             throw new ResourceNotFoundException("Sản phẩm này không tồn tại trong đơn hàng để xóa");
         }
 
         log.info("Item removed successfully from order list");
-        
+
         BigDecimal newTotalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
         order.setTotalPrice(newTotalPrice);
         order.setFinalPrice(newTotalPrice);
@@ -209,12 +211,12 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
     }
 
-    private boolean isSameProduct(OrderDetail detail, OrderItemRequest request) {
-        if (request.getItemId() != null && detail.getItem() != null) {
-            return detail.getItem().getId().equals(request.getItemId());
+    private boolean isSameProduct(OrderDetail detail, Long itemId, Long comboId) {
+        if (itemId != null && detail.getItem() != null) {
+            return detail.getItem().getId().equals(itemId);
         }
-        if (request.getComboId() != null && detail.getCombo() != null) {
-            return detail.getCombo().getId().equals(request.getComboId());
+        if (comboId != null && detail.getCombo() != null) {
+            return detail.getCombo().getId().equals(comboId);
         }
         return false;
     }

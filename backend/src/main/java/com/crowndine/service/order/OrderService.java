@@ -1,6 +1,7 @@
 package com.crowndine.service.order;
 
 import com.crowndine.dto.request.OrderItemBatchRequest;
+import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.model.Order;
 import com.crowndine.model.Reservation;
@@ -17,5 +18,5 @@ public interface OrderService {
 
     void updateOrderItemInReservation(Order order, OrderItemRequest request);
 
-    void removeOrderItemInReservation(Order order, OrderItemRequest request);
+    void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request);
 }

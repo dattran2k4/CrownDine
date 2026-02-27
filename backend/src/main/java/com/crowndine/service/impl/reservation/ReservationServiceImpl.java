@@ -2,10 +2,7 @@ package com.crowndine.service.impl.reservation;
 
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.OrderItemUpdateRefinedRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -291,7 +288,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public void removeItemFromReservation(Long reservationId, OrderItemRequest request, String name) {
+    public void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name) {
         log.info("Processing remove order item for reservation id {}", reservationId);
         Reservation reservation = getReservationById(reservationId);
 

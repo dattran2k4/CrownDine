@@ -15,7 +15,7 @@ export interface User {
   createdAt: string
   updatedAt: string
 }
-
+export type UpdateUserRequest = Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'dateOfBirth' | 'gender'>>
 export interface RestaurantTable {
   id: string
   tableNumber: number

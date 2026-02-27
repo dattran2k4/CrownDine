@@ -1,6 +1,8 @@
 package com.crowndine.service.reservation;
 
 import com.crowndine.dto.request.OrderItemBatchRequest;
+import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderItemUpdateRefinedRequest;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.response.OrderDetailResponse;
 import com.crowndine.dto.response.PageResponse;
@@ -18,4 +20,12 @@ public interface ReservationService {
     void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username);
 
     Reservation getReservationByCode(String code);
+
+    void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String name);
+
+    void updateItemInReservation(Long reservationId, OrderItemRequest request, String name);
+
+    Reservation getReservationById(Long reservationId);
+
+    void removeItemFromReservation(Long reservationId, OrderItemRequest request, String name);
 }

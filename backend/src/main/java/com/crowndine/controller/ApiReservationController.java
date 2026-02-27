@@ -1,8 +1,11 @@
 package com.crowndine.controller;
 
 import com.crowndine.dto.request.OrderItemBatchRequest;
+import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderItemUpdateRefinedRequest;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.dto.validator.EnumValue;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
 @Validated
@@ -47,9 +51,43 @@ public class ApiReservationController {
     @PostMapping("/create")
     public ApiResponse createReservation(@Valid @RequestBody ReservationCreateRequest request, Principal principal) {
         return ApiResponse.builder()
-                .status(200)
+                .status(201)
                 .message("Created reservation successfully")
                 .data(reservationService.createReservation(principal.getName(), request))
+                .build();
+    }
+
+    @PostMapping("/{reservationId}/add-item")
+    public ApiResponse addOrderItem(@PathVariable Long reservationId,
+                                    @Valid @RequestBody OrderItemRequest request,
+                                    Principal principal) {
+        reservationService.addItemToReservationOrder(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(201)
+                .message("Added item successfully")
+                .build();
+    }
+
+    @PutMapping("/{reservationId}/upd-item")
+    public ApiResponse updateOrderItem(@PathVariable Long reservationId,
+                                       @Valid @RequestBody OrderItemRequest request,
+                                       Principal principal) {
+        reservationService.updateItemInReservation(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Updated item successfully")
+                .build();
+    }
+
+
+    @DeleteMapping("/{reservationId}/remove-item")
+    public ApiResponse deleteOrderItem(@PathVariable Long reservationId,
+                                       @Valid @RequestBody OrderItemRequest request,
+                                       Principal principal) {
+        reservationService.removeItemFromReservation(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Removed item successfully")
                 .build();
     }
 
@@ -60,7 +98,7 @@ public class ApiReservationController {
         reservationService.addItemsToReservationOrder(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
-                .message("Added items successfully")
+                .message("Deleted items successfully")
                 .build();
     }
 }

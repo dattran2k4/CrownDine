@@ -2,8 +2,7 @@ package com.crowndine.service.impl.reservation;
 
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -54,7 +53,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("date"), Sort.Order.desc("startTime"), Sort.Order.desc("createdAt")));
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByUserName(username);
 
         Page<Reservation> reservationPage = reservationRepository.findByCustomer_Id(user.getId(), pageable);
 
@@ -157,7 +156,7 @@ public class ReservationServiceImpl implements ReservationService {
         LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
         validateReservationTime(startDateTime, endDateTime);
 
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        User user = getUserByUserName(username);
 
         RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
 
@@ -216,7 +215,7 @@ public class ReservationServiceImpl implements ReservationService {
     public void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username) {
         log.info("Adding order items for reservation id {}", reservationId);
 
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        Reservation reservation = getReservationById(reservationId);
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         validateReservationBeforeOrder(reservation, user);
@@ -227,9 +226,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void validateReservationBeforeOrder(Reservation reservation, User user) {
-        if (!reservation.getCustomer().getId().equals(user.getId())) {
-            throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
-        }
+        validateReservationForUser(reservation, user);
 
         if (reservation.getStatus().equals(EReservationStatus.CANCELLED)) {
             throw new InvalidDataException("Đặt bàn đã bị hủy");
@@ -244,6 +241,68 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public Reservation getReservationByCode(String code) {
         return reservationRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+    }
+
+    @Override
+    public void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String name) {
+        log.info("Adding order item for reservation id {}", reservationId);
+
+        Reservation reservation = getReservationById(reservationId);
+
+        User user = getUserByUserName(name);
+
+        validateReservationForUser(reservation, user);
+
+        Order order = reservation.getOrder();
+
+        //Create order if order null
+        if (order == null) {
+            order = orderService.createOrderForReservation(reservation, user);
+            reservation.setOrder(order);
+        }
+
+        orderService.addOrUpdateItemToOrder(order.getId(), request);
+    }
+
+    private User getUserByUserName(String name) {
+        return userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Override
+    public void updateItemInReservation(Long reservationId, OrderItemRequest request, String name) {
+        log.info("Processing update order item for reservation id {}", reservationId);
+        Reservation reservation = getReservationById(reservationId);
+
+        User user = getUserByUserName(name);
+
+        validateReservationForUser(reservation, user);
+
+        Order order = reservation.getOrder();
+        orderService.updateOrderItemInReservation(order, request);
+
+    }
+
+    @Override
+    public Reservation getReservationById(Long reservationId) {
+        return reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+    }
+
+    @Override
+    public void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name) {
+        log.info("Processing remove order item for reservation id {}", reservationId);
+        Reservation reservation = getReservationById(reservationId);
+
+        User user = getUserByUserName(name);
+
+        validateReservationForUser(reservation, user);
+
+        orderService.removeOrderItemInReservation(reservation.getOrder(), request);
+    }
+
+    private void validateReservationForUser(Reservation reservation, User user) {
+        if (!reservation.getCustomer().getId().equals(user.getId())) {
+            throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
+        }
     }
 
     private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {

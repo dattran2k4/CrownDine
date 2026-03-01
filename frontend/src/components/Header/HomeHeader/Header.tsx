@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Menu, X, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Link } from 'react-router-dom'
-import { Logo } from '../ui/logo'
+import { Logo } from '../../ui/logo'
 import { AppContext } from '@/contexts/app.context'
 
 const Header = () => {

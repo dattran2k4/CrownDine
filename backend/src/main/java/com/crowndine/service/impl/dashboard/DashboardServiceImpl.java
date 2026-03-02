@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.crowndine.dto.response.ChartDataResponse;
+import com.crowndine.model.Order;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +41,9 @@ public class DashboardServiceImpl implements DashboardService {
                                 endYesterday);
 
                 // Add widget specific data
-                addRevenueWidgetData(response, viewMode, rangeStart, rangeEnd);
-                addCustomerWidgetData(response, viewMode, rangeStart, rangeEnd, response.getTotalCustomersToday());
+                addRevenueWidgetData(response, viewMode, timeRange, rangeStart, rangeEnd);
+                addCustomerWidgetData(response, viewMode, timeRange, rangeStart, rangeEnd,
+                                response.getTotalCustomersToday());
                 addTopProductsWidgetData(response, rangeStart, rangeEnd);
 
                 return response;
@@ -100,31 +102,96 @@ public class DashboardServiceImpl implements DashboardService {
                                 .build();
         }
 
-        private void addRevenueWidgetData(DashboardSalesResponse response, String viewMode, LocalDateTime start,
+        private void addRevenueWidgetData(DashboardSalesResponse response, String viewMode, String timeRange,
+                        LocalDateTime start,
                         LocalDateTime end) {
                 java.math.BigDecimal rangeTotal = orderRepository
                                 .sumTotalAmountByStatusAndCreatedAtBetween(EOrderStatus.COMPLETED, start, end);
                 response.setRangeTotalAmount(rangeTotal != null ? rangeTotal.doubleValue() : 0);
 
+                List<Order> orders = orderRepository.findAllByStatusAndCreatedAtBetween(EOrderStatus.COMPLETED, start,
+                                end);
                 List<ChartDataResponse> revenueChart = new ArrayList<>();
-                // TODO: Replace with real aggregation logic
+
                 if ("Theo giờ".equals(viewMode)) {
-                        revenueChart.add(new ChartDataResponse("08:00", 1.2));
-                        revenueChart.add(new ChartDataResponse("19:00", response.getRangeTotalAmount() / 1000000));
+                        for (int h = 7; h <= 22; h++) {
+                                String label = String.format("%02dg", h);
+                                final int hour = h;
+                                double sum = orders.stream()
+                                                .filter(o -> o.getCreatedAt().getHour() == hour)
+                                                .mapToDouble(o -> o.getFinalPrice().doubleValue())
+                                                .sum();
+                                revenueChart.add(new ChartDataResponse(label, sum / 1000000.0));
+                        }
                 } else {
-                        revenueChart.add(new ChartDataResponse("Thứ 7", response.getRangeTotalAmount() / 1000000));
+                        LocalDate sDate = start.toLocalDate();
+                        LocalDate eDate = end.toLocalDate();
+                        for (LocalDate date = sDate; !date.isAfter(eDate); date = date.plusDays(1)) {
+                                String label = timeRange.startsWith("Tháng")
+                                                ? String.valueOf(date.getDayOfMonth())
+                                                : String.format("%s, %02d/%02d", getDayOfWeekVietnamese(date),
+                                                                date.getDayOfMonth(), date.getMonthValue());
+                                final LocalDate targetDate = date;
+                                double sum = orders.stream()
+                                                .filter(o -> o.getCreatedAt().toLocalDate().isEqual(targetDate))
+                                                .mapToDouble(o -> o.getFinalPrice().doubleValue())
+                                                .sum();
+                                revenueChart.add(new ChartDataResponse(label, sum / 1000000.0));
+                        }
                 }
                 response.setRevenueChart(revenueChart);
         }
 
-        private void addCustomerWidgetData(DashboardSalesResponse response, String viewMode, LocalDateTime start,
+        private String getDayOfWeekVietnamese(LocalDate date) {
+                switch (date.getDayOfWeek()) {
+                        case MONDAY:
+                                return "Thứ 2";
+                        case TUESDAY:
+                                return "Thứ 3";
+                        case WEDNESDAY:
+                                return "Thứ 4";
+                        case THURSDAY:
+                                return "Thứ 5";
+                        case FRIDAY:
+                                return "Thứ 6";
+                        case SATURDAY:
+                                return "Thứ 7";
+                        case SUNDAY:
+                                return "CN";
+                        default:
+                                return "";
+                }
+        }
+
+        private void addCustomerWidgetData(DashboardSalesResponse response, String viewMode, String timeRange,
+                        LocalDateTime start,
                         LocalDateTime end, long currentTotal) {
+                List<Order> orders = orderRepository.findAllByCreatedAtBetween(start, end);
                 List<ChartDataResponse> customerChart = new ArrayList<>();
-                // TODO: Replace with real aggregation logic
+
                 if ("Theo giờ".equals(viewMode)) {
-                        customerChart.add(new ChartDataResponse("19:00", (double) currentTotal));
+                        for (int h = 7; h <= 22; h++) {
+                                String label = String.format("%02dg", h);
+                                final int hour = h;
+                                long count = orders.stream()
+                                                .filter(o -> o.getCreatedAt().getHour() == hour)
+                                                .count();
+                                customerChart.add(new ChartDataResponse(label, (double) count));
+                        }
                 } else {
-                        customerChart.add(new ChartDataResponse("Thứ 7", 45.0));
+                        LocalDate sDate = start.toLocalDate();
+                        LocalDate eDate = end.toLocalDate();
+                        for (LocalDate date = sDate; !date.isAfter(eDate); date = date.plusDays(1)) {
+                                String label = timeRange.startsWith("Tháng")
+                                                ? String.valueOf(date.getDayOfMonth())
+                                                : String.format("%s, %02d/%02d", getDayOfWeekVietnamese(date),
+                                                                date.getDayOfMonth(), date.getMonthValue());
+                                final LocalDate targetDate = date;
+                                long count = orders.stream()
+                                                .filter(o -> o.getCreatedAt().toLocalDate().isEqual(targetDate))
+                                                .count();
+                                customerChart.add(new ChartDataResponse(label, (double) count));
+                        }
                 }
                 response.setCustomerChart(customerChart);
         }

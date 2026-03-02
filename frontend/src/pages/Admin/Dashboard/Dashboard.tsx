@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dashboardApi from '@/apis/dashboard.api'
 import {
@@ -95,18 +95,13 @@ const TimeRangeDropdown = ({
 }
 
 export default function Dashboard() {
-  const [revenueViewMode, setRevenueViewMode] = useState('Theo giờ')
   const [revenueTimeRange, setRevenueTimeRange] = useState('7 ngày qua')
   const [customerTimeRange, setCustomerTimeRange] = useState('Tháng này')
   const [topProductsTimeRange, setTopProductsTimeRange] = useState('7 ngày qua')
+  const revenueViewMode = (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
 
   const timeRanges = ['Hôm nay', 'Hôm qua', '7 ngày qua', 'Tháng này', 'Tháng trước']
 
-  useEffect(() => {
-    if ((revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') && revenueViewMode !== 'Theo giờ') {
-      setRevenueViewMode('Theo giờ')
-    }
-  }, [revenueTimeRange, revenueViewMode])
 
   const { data: salesResults } = useQuery({
     queryKey: ['dashboard-sales', revenueViewMode, revenueTimeRange],
@@ -209,29 +204,6 @@ export default function Dashboard() {
               </Badge>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center bg-muted/30 rounded-full p-1 border">
-                {['Theo ngày', 'Theo giờ', 'Theo thứ']
-                  .filter((tab) => {
-                    if (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') {
-                      return tab === 'Theo giờ'
-                    }
-                    return true
-                  })
-                  .map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setRevenueViewMode(tab)}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
-                        tab === revenueViewMode 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-              </div>
-              
               <TimeRangeDropdown 
                 selected={revenueTimeRange} 
                 onSelect={setRevenueTimeRange} 
@@ -240,7 +212,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="h-[300px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={displaySalesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis
@@ -291,7 +263,7 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent className="h-[250px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={displayCustomerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis
@@ -299,7 +271,7 @@ export default function Dashboard() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
-                  interval={1}
+                  interval={0}
                 />
                 <YAxis
                   axisLine={false}
@@ -344,7 +316,7 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent className="h-[400px] pt-8">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                 <XAxis type="number" hide />

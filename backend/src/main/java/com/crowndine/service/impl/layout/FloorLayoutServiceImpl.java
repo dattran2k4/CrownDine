@@ -52,6 +52,12 @@ public class FloorLayoutServiceImpl implements FloorLayoutService {
                     .orElseThrow(() ->
                             new ResourceNotFoundException("Area not found"));
 
+            if (areaReq.getX() != null) area.setX(areaReq.getX());
+            if (areaReq.getY() != null) area.setY(areaReq.getY());
+            if (areaReq.getWidth() != null) area.setWidth(areaReq.getWidth());
+            if (areaReq.getHeight() != null) area.setHeight(areaReq.getHeight());
+            areaRepository.save(area);
+
             for (LayoutObjectSaveRequest obj : areaReq.getObjects()) {
 
                 RestaurantTable table = tableRepository.findById(obj.getId())
@@ -118,6 +124,10 @@ public class FloorLayoutServiceImpl implements FloorLayoutService {
         AreaLayoutResponse dto = new AreaLayoutResponse();
         dto.setAreaId(area.getId());
         dto.setAreaName(area.getName());
+        dto.setX(area.getX());
+        dto.setY(area.getY());
+        dto.setWidth(area.getWidth());
+        dto.setHeight(area.getHeight());
 
         List<TableLayoutResponse> tables =
                 tableRepository.findByAreaId(area.getId())

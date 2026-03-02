@@ -1,8 +1,11 @@
-'use client'
-
+import { useRef } from 'react'
 import type { User } from '@/types/profile.type'
-import { User as UserIcon, Clock, Lock } from 'lucide-react'
+import { User as UserIcon, Clock, Lock, Camera, Loader2 } from 'lucide-react'
 import { calculateMembershipTier, getMembershipTierConfig } from '@/lib/membership_tier'
+import userApi from '@/apis/user.api'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 interface ProfileSidebarProps {
   user: User
@@ -11,6 +14,33 @@ interface ProfileSidebarProps {
 }
 
 const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const setUser = useAuthStore((state) => state.setUser)
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => userApi.uploadAvatar(file),
+    onSuccess: (res) => {
+      if (res.data?.data) {
+        setUser({ ...user, avatar: res.data.data })
+        toast.success('Avatar updated successfully')
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update avatar')
+    }
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file')
+        return
+      }
+      uploadAvatarMutation.mutate(file)
+    }
+  }
+
   const tabs = [
     { id: 'info', label: 'My Information', icon: UserIcon },
     { id: 'reservations', label: 'Reservation History', icon: Clock },
@@ -23,18 +53,37 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
     <aside className='bg-card border-border sticky top-20 h-fit w-full rounded-lg border p-6'>
       {/* Avatar Section */}
       <div className='mb-8 flex flex-col items-center'>
-        <div className='border-primary bg-primary/10 relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4'>
+        <div
+          className='group border-primary bg-primary/10 relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 cursor-pointer'
+          onClick={() => !uploadAvatarMutation.isPending && fileInputRef.current?.click()}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
           {user.avatar ? (
             <img
               src={user.avatar || '/placeholder.svg'}
               alt={`${user.firstName} ${user.lastName}`}
-              className='object-cover'
+              className='object-cover h-full w-full'
             />
           ) : (
             <div className='from-primary to-primary/70 flex h-full w-full items-center justify-center bg-gradient-to-br'>
               <span className='text-2xl font-bold text-white'>{getInitials()}</span>
             </div>
           )}
+
+          {/* Hover Overlay */}
+          <div className='absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'>
+            {uploadAvatarMutation.isPending ? (
+              <Loader2 className="h-6 w-6 text-white animate-spin" />
+            ) : (
+              <Camera className="h-6 w-6 text-white" />
+            )}
+          </div>
         </div>
         <h3 className='text-center text-lg font-bold'>
           {user.firstName} {user.lastName}
@@ -70,11 +119,10 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 font-medium transition-all duration-300 ${
-                isActive
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-foreground/70 hover:bg-card-foreground/5 hover:text-foreground'
-              }`}
+              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 font-medium transition-all duration-300 ${isActive
+                ? 'bg-primary text-white shadow-lg'
+                : 'text-foreground/70 hover:bg-card-foreground/5 hover:text-foreground'
+                }`}
             >
               <IconComponent className='h-5 w-5' />
               <span className='text-sm'>{tab.label}</span>

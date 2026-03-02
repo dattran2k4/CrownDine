@@ -1,33 +1,28 @@
 package com.crowndine.service.reservation;
 
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
-import com.crowndine.dto.response.AvailableTableResponse;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.OrderDetailResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.ReservationCreateResponse;
 import com.crowndine.dto.response.ReservationHistoryResponse;
 import com.crowndine.model.Reservation;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
-
 public interface ReservationService {
     PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size);
+
     OrderDetailResponse getReservationOrderDetails(Long reservationId);
 
-    List<AvailableTableResponse> findAvailableTables(
-            LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
-            Integer guestNumber
-    );
-
     ReservationCreateResponse createReservation(String username, ReservationCreateRequest request);
-    OrderDetailResponse createOrGetOrder(Long reservationId, String username);
-    OrderDetailResponse addOrderItems(Long reservationId, OrderItemBatchRequest request, String username);
+
+    void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username);
 
     Reservation getReservationByCode(String code);
+
+    void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String name);
+
+    void updateItemInReservation(Long reservationId, OrderItemRequest request, String name);
+
+    Reservation getReservationById(Long reservationId);
+
+    void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name);
 }

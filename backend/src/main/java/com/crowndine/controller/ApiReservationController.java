@@ -1,20 +1,17 @@
 package com.crowndine.controller;
 
-import com.crowndine.dto.request.OrderItemBatchRequest;
-import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.dto.validator.EnumValue;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.Map;
 
 @RestController
 @Validated
@@ -40,7 +37,7 @@ public class ApiReservationController {
 
     @GetMapping("/{reservationId}/order-details")
     public ApiResponse getReservationOrderDetails(
-        @PathVariable Long reservationId){
+            @PathVariable Long reservationId) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get reservation order details successfully")
@@ -48,55 +45,57 @@ public class ApiReservationController {
                 .build();
     }
 
-    @GetMapping("/available-tables")
-    public ApiResponse getAvailableTables(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
-            @RequestParam @Min(1) Integer guestNumber
-    ) {
-        log.info("Find available tables date={} start={} end={} guest={}", date, startTime, endTime, guestNumber);
+    @PostMapping("/create")
+    public ApiResponse createReservation(@Valid @RequestBody ReservationCreateRequest request, Principal principal) {
         return ApiResponse.builder()
-                .status(200)
-                .message("Get available tables successfully")
-                .data(reservationService.findAvailableTables(date, startTime, endTime, guestNumber))
-                .build();
-    }
-
-    @PostMapping
-    public ApiResponse createReservation(
-            @Valid @RequestBody ReservationCreateRequest request,
-            Principal principal
-    ) {
-        return ApiResponse.builder()
-                .status(200)
-                .message("Create reservation successfully")
+                .status(201)
+                .message("Created reservation successfully")
                 .data(reservationService.createReservation(principal.getName(), request))
                 .build();
     }
 
-    @PostMapping("/select-table")
-    public ApiResponse selectTable(
-            @Valid @RequestBody ReservationCreateRequest request,
-            Principal principal
-    ) {
+    @PostMapping("/{reservationId}/add-item")
+    public ApiResponse addOrderItem(@PathVariable Long reservationId,
+                                    @Valid @RequestBody OrderItemRequest request,
+                                    Principal principal) {
+        reservationService.addItemToReservationOrder(reservationId, request, principal.getName());
         return ApiResponse.builder()
-                .status(200)
-                .message("Hold table successfully")
-                .data(reservationService.createReservation(principal.getName(), request))
+                .status(201)
+                .message("Added item successfully")
                 .build();
     }
 
-    @PostMapping("/{reservationId}/order/items/batch")
-    public ApiResponse addOrderItems(
-            @PathVariable Long reservationId,
-            @Valid @RequestBody OrderItemBatchRequest request,
-            Principal principal
-    ) {
+    @PutMapping("/{reservationId}/upd-item")
+    public ApiResponse updateOrderItem(@PathVariable Long reservationId,
+                                       @Valid @RequestBody OrderItemRequest request,
+                                       Principal principal) {
+        reservationService.updateItemInReservation(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
-                .message("Add items successfully")
-                .data(reservationService.addOrderItems(reservationId, request, principal.getName()))
+                .message("Updated item successfully")
+                .build();
+    }
+
+
+    @DeleteMapping("/{reservationId}/remove-item")
+    public ApiResponse deleteOrderItem(@PathVariable Long reservationId,
+                                       @Valid @RequestBody OrderItemRemoveRequest request,
+                                       Principal principal) {
+        reservationService.removeItemFromReservation(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Removed item successfully")
+                .build();
+    }
+
+    @PostMapping("/{reservationId}/add-items")
+    public ApiResponse addOrderItems(@PathVariable Long reservationId,
+                                     @Valid @RequestBody OrderItemBatchRequest request,
+                                     Principal principal) {
+        reservationService.addItemsToReservationOrder(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Deleted items successfully")
                 .build();
     }
 }

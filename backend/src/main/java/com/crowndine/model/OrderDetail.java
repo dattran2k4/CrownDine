@@ -43,4 +43,20 @@ public class OrderDetail extends AbstractEntity<Long> {
         if (item != null) return item.getName();
         return "Unknown Item";
     }
+
+    public void calculateAndSetTotalPrice() {
+        BigDecimal unitPrice = BigDecimal.ZERO;
+
+        if (this.item != null) {
+            unitPrice = this.item.getPrice();
+        } else if (this.combo != null) {
+            unitPrice = this.combo.getPrice();
+        }
+
+        if (this.quantity != null && this.quantity > 0) {
+            this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+        } else {
+            this.totalPrice = BigDecimal.ZERO;
+        }
+    }
 }

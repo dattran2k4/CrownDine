@@ -19,7 +19,7 @@ public class Voucher extends AbstractEntity<Long> {
     @Column(name = "name", unique = true, length = 100)
     private String name;
 
-    @Column(name = "code")
+    @Column(name = "code", unique = true, length = 100)
     private String code;
 
     @Enumerated(EnumType.STRING)

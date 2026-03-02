@@ -3,6 +3,7 @@ import MainLayout from '@/layouts/MainLayout/MainLayout'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Menu from '@/pages/Menu'
+import MenuDetail from '@/pages/MenuDetail'
 import Register from '@/pages/Register'
 import Reservation from '@/pages/Reservation'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
@@ -24,12 +25,13 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: '/menu', element: <Menu /> },
+      { path: '/menu/item/:id', element: <MenuDetail /> },
+      { path: '/menu/combo/:id', element: <MenuDetail /> },
       {
         element: <ProtectedRoute />,
         children: [
           { path: path.profile, element: <Profile /> },
-          { path: path.reservation, element: <Reservation /> },
-          { path: 'admin/layout', element: <LayoutPage /> }
+          { path: path.reservation, element: <Reservation /> }
         ]
       }
     ]
@@ -67,6 +69,10 @@ const router = createBrowserRouter([
       {
         path: 'price-settings',
         element: <PriceSettings />
+      },
+      {
+        path: 'layout',
+        element: <LayoutPage />
       }
     ]
   }

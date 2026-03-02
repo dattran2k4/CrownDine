@@ -21,14 +21,32 @@ export function isAdmin(): boolean {
   return getUserRoles().includes('ADMIN')
 }
 
-export const setAccessTokenToLC = (access_token: string) => {
-  localStorage.setItem('access_token', access_token)
+export const setAccessTokenToLC = (accessToken: string) => {
+  localStorage.setItem('accessToken', accessToken)
+}
+
+export const setRefreshTokenToLC = (refreshToken: string) => {
+  localStorage.setItem('refreshToken', refreshToken)
+}
+
+export const getRefreshTokenFromLC = () => {
+  return localStorage.getItem('refreshToken')
 }
 
 export const getAccessTokenFromLC = () => {
-  return localStorage.getItem('access_token')
+  return localStorage.getItem('accessToken')
 }
 
-export const clearAccessTokenLS = () => {
-  localStorage.removeItem('access_token')
+export const clearLS = () => {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+}
+export const getUserFromLC = () => {
+  try {
+    const user = localStorage.getItem('user')
+    return user ? JSON.parse(user) : null
+  } catch (error) {
+    console.error('Lỗi khi parse User từ LocalStorage:', error)
+    return null
+  }
 }

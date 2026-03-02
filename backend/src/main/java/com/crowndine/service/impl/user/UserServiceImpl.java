@@ -33,7 +33,8 @@ public class UserServiceImpl implements UserService {
     public String updateAvatar(MultipartFile file, String name) {
         log.info("Processing for updating avatar for user {}", name);
 
-        User user = userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
+        User user = userRepository.findByUsername(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
         String avatarUrl = cloudinaryService.uploadAvatar(file, user.getAvatarUrl());
 
@@ -49,9 +50,11 @@ public class UserServiceImpl implements UserService {
     public ProfileResponse getProfile(String name) {
         log.info("Processing for getting profile for user {}", name);
 
-        User user = userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
+        User user = userRepository.findByUsername(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
         ProfileResponse response = ProfileResponse.builder()
+                .id(user.getId())
                 .gender(user.getGender())
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
@@ -59,6 +62,11 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .dateOfBirth(user.getDateOfBirth())
+                .avatarUrl(user.getAvatarUrl())
+                // Only getting the first role's name as a string for simplicity
+                .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                .createdAt(user.getCreatedAt().toLocalDate())
+                .updatedAt(user.getUpdatedAt().toLocalDate())
                 .build();
 
         log.info("Successfully retrieved profile for user {}", name);
@@ -69,7 +77,8 @@ public class UserServiceImpl implements UserService {
     public void updateProfile(UpdateProfileRequest request, String name) {
         log.info("Processing for updating profile for user {}", name);
 
-        User user = userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
+        User user = userRepository.findByUsername(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user"));
 
         user.setFirstName(request.getFirstName().trim().toUpperCase());
         user.setLastName(request.getLastName().trim().toUpperCase());
@@ -86,6 +95,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserByUserName(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

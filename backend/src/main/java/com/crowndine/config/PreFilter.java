@@ -4,6 +4,7 @@ import com.crowndine.common.enums.ETokenType;
 import com.crowndine.exception.ErrorResponse;
 import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.JwtService;
+import com.crowndine.repository.TokenRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -36,10 +37,12 @@ public class PreFilter extends OncePerRequestFilter {
 
     private final CustomUserDetailsService customUserDetailsService;
 
+    private final TokenRepository tokenRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         log.info("----------------------- Pre Filter -----------------------");
 
@@ -57,7 +60,7 @@ public class PreFilter extends OncePerRequestFilter {
         try {
             username = jwtService.extractUsername(token, ETokenType.ACCESS_TOKEN);
         }
-        //Ném message trong extract ra response
+        // Ném message trong extract ra response
         catch (BadCredentialsException | JwtException e) {
             log.error("JWT Authentication Error, message={}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -68,9 +71,8 @@ public class PreFilter extends OncePerRequestFilter {
             errorResponse.setTimestamp(new Date());
             errorResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             errorResponse.setPath(request.getRequestURI());
-            errorResponse.setError("Vui lòng đăng nhập");
+            errorResponse.setError("UNAUTHORIZED");
             errorResponse.setMessage(e.getMessage());
-
 
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = objectMapper.writeValueAsString(errorResponse);
@@ -80,8 +82,10 @@ public class PreFilter extends OncePerRequestFilter {
 
         if (StringUtils.isNotEmpty(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+
             if (jwtService.isTokenValid(token, ETokenType.ACCESS_TOKEN, userDetails)) {
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                        userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }

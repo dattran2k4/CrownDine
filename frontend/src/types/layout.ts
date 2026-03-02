@@ -15,6 +15,10 @@ export type TableLayout = {
 export type AreaLayout = {
   areaId: number;
   areaName: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
   tables: TableLayout[];
 };
 
@@ -27,6 +31,10 @@ export type FloorLayoutResponse = {
 export type LayoutSaveRequest = {
   areas: {
     areaId: number;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
     objects: {
       id: number;
       x: number;
@@ -36,4 +44,25 @@ export type LayoutSaveRequest = {
       rotation: number;
     }[];
   }[];
+};
+
+export type FloorRequest = {
+  name: string;
+};
+
+export type AreaRequest = {
+  name: string;
+  description?: string;
+};
+
+export type TableRequest = {
+  name: string;
+  capacity?: number;
+  shape: "RECT" | "CIRCLE" | "SQUARE";
+  deposit?: number;
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  rotation?: number;
 };

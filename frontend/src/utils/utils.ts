@@ -1,3 +1,5 @@
+import HttpStatusCode from '@/constants/httpStatusCode.enum'
+import type { ErrorResponse } from '@/types/utils.type'
 import axios, { AxiosError } from 'axios'
 
 export const generateTimeSlots = (openHour: number, closeHour: number, stepMinutes: number = 30) => {
@@ -31,14 +33,31 @@ export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
 
+const API_BASE = 'http://localhost:8080'
+/** Chuẩn hóa URL ảnh: nếu path bắt đầu bằng / hoặc không phải http thì ghép với API_BASE */
+export function getImageUrl(imageUrl: string | null | undefined): string {
+  if (!imageUrl) return ''
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) return imageUrl
+  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`
+  return `${API_BASE}${path}`
+}
+
 export function isAxiosError<T>(error: unknown): error is AxiosError<T> {
   return axios.isAxiosError(error)
 }
 
-export function isAxiosErrorUnthorized<T>(error: unknown): error is AxiosError<T> {
-  return axios.isAxiosError(error) && error.response?.status === 401
+export function isAxiosUnauthorizedError<T>(error: unknown): error is AxiosError<T> {
+  return axios.isAxiosError(error) && error.response?.status === HttpStatusCode.Unauthorized
 }
 
 export function isAxiosErrorConfict<T>(error: unknown): error is AxiosError<T> {
-  return axios.isAxiosError(error) && error.response?.status === 403
+  return axios.isAxiosError(error) && error.response?.status === HttpStatusCode.Conflict
+}
+
+export function isAxiosErrorNotFound<T>(error: unknown): error is AxiosError<T> {
+  return axios.isAxiosError(error) && error.response?.status === HttpStatusCode.NotFound
+}
+
+export function isAxiosExpiredTokenError<UnauthorizedError>(error: unknown): error is AxiosError<UnauthorizedError> {
+  return isAxiosUnauthorizedError<ErrorResponse>(error) && error.response?.data.error === 'UNAUTHORIZED'
 }

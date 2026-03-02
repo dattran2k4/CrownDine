@@ -24,13 +24,18 @@ export default function PriceSettings() {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
 
   // Items query based on selected category or search
-  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
+  const { data: itemsData, isLoading: isLoadingItems } = useQuery<Item[]>({
     queryKey: ['items', selectedCategoryId, searchTerm],
-    queryFn: () => {
+    queryFn: async (): Promise<Item[]> => {
       if (selectedCategoryId) {
-        return itemApi.getItemsByCategory(selectedCategoryId)
+        const res = await itemApi.getItemsByCategory(selectedCategoryId)
+        return res.data.data as unknown as Item[]
       }
-      return itemApi.getItems()
+      const res = await itemApi.getItems()
+      // Unwrap pagination to just items or use the array directly
+      // Adjust according to the actual response structure of getItems()
+      // If it's paginated, it might be res.data.data.content or similar, but looking at the type error, res.data.data is Item[]
+      return res.data.data as unknown as Item[]
     }
   })
 
@@ -48,12 +53,7 @@ export default function PriceSettings() {
 
   useEffect(() => {
     if (itemsData) {
-      const data = itemsData.data.data
-      if (Array.isArray(data)) {
-        setItems(data)
-      } else if (data && data.data) {
-        setItems(data.data)
-      }
+      setItems(itemsData)
     }
   }, [itemsData])
 
@@ -104,11 +104,10 @@ export default function PriceSettings() {
             <nav className='space-y-1'>
               <button
                 onClick={() => setSelectedCategoryId(null)}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                  selectedCategoryId === null
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-accent text-muted-foreground'
-                }`}
+                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${selectedCategoryId === null
+                  ? 'bg-primary/10 text-primary'
+                  : 'hover:bg-accent text-muted-foreground'
+                  }`}
               >
                 Tất cả
               </button>
@@ -116,11 +115,10 @@ export default function PriceSettings() {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategoryId(category.id)}
-                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                    selectedCategoryId === category.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-accent text-muted-foreground'
-                  }`}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${selectedCategoryId === category.id
+                    ? 'bg-primary/10 text-primary'
+                    : 'hover:bg-accent text-muted-foreground'
+                    }`}
                 >
                   {category.name}
                 </button>
@@ -181,7 +179,7 @@ export default function PriceSettings() {
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 handlePriceUpdate(item, (e.target as HTMLInputElement).value)
-                                ;(e.target as HTMLInputElement).blur()
+                                  ; (e.target as HTMLInputElement).blur()
                               }
                             }}
                           />

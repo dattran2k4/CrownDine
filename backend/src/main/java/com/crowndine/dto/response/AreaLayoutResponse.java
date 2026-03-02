@@ -10,5 +10,9 @@ public class AreaLayoutResponse {
 
     private Long areaId;
     private String areaName;
+    private Double x;
+    private Double y;
+    private Double width;
+    private Double height;
     private List<TableLayoutResponse> tables;
 }

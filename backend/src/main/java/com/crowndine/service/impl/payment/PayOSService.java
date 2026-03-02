@@ -6,11 +6,9 @@ import com.crowndine.config.PayOSConfig;
 import com.crowndine.dto.request.PaymentRequest;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
-import com.crowndine.model.Order;
-import com.crowndine.model.Payment;
-import com.crowndine.model.Reservation;
-import com.crowndine.model.User;
+import com.crowndine.model.*;
 import com.crowndine.repository.PaymentRepository;
+import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.payment.PaymentStrategy;
 import com.crowndine.service.reservation.ReservationService;
@@ -28,6 +26,7 @@ import vn.payos.model.webhooks.WebhookData;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service("payos")
 @RequiredArgsConstructor
@@ -40,6 +39,7 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
     private final ReservationService reservationService;
     private final OrderService orderService;
     private final UserService userService;
+    private final CalculationService calculationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -66,7 +66,19 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
             payment.setReservation(reservation);
             payment.setTarget(EPaymentTarget.RESERVATION);
             payment.setSource(EPaymentSource.CLIENT_APP);
-            amountToPay = reservation.getTable().getBaseDeposit();
+
+            BigDecimal totalOrder = BigDecimal.ZERO;
+
+            if (reservation.getOrder() != null) {
+                List<OrderDetail> orderDetails = reservation.getOrder().getOrderDetails();
+                totalOrder = calculationService.calculateTotalOrder(orderDetails);
+            }
+
+            amountToPay = calculationService.calculateDepositPayment(totalOrder, reservation.getTable().getBaseDeposit());
+
+            log.info("Base deposit table: {}", reservation.getTable().getBaseDeposit());
+            log.info("Total amount to pay: {}", amountToPay);
+
             payment.setAmount(amountToPay);
             payment.setType(EPaymentType.DEPOSIT);
             description = "Thanh toán đặt cọc bàn";
@@ -146,7 +158,14 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
 
             payment.setStatus(EPaymentStatus.SUCCESS);
             payment.setTransactionCode(data.getReference());
+            String rawApiData = data.toString().replace("WebhookData(", "").replace(")", "");
+            payment.setRawApiData(rawApiData);
             paymentRepository.save(payment);
+
+            Reservation reservation = payment.getReservation();
+            reservation.setStatus(EReservationStatus.CONFIRMED);
+            reservation.setExpiratedAt(null);
+
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {
             log.error("Error while handling PayOS webhook: {}", e.getMessage(), e);

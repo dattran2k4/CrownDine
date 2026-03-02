@@ -29,7 +29,8 @@ export default function AdminHeader() {
         { label: 'Chấm Công', href: '/admin/timekeeping' }
       ]
     },
-    { label: 'Quản lý phòng bàn', href: '/admin/tables' },
+    { label: 'Quản lý phòng bàn', href: '/admin/layout' },
+    { label: 'Báo Cáo doanh thu', href: '/admin/reports' },
     { label: 'Trợ lý AI', href: '/admin/ai-assistant' }
   ]
 

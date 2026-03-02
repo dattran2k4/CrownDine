@@ -11,11 +11,18 @@ import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
 import PriceSettings from '@/pages/Admin/Price/PriceSettings'
 import Dashboard from '@/pages/Admin/Dashboard/Dashboard'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
 import VerifyRegister from '@/pages/VerifyRegister/VerifyRegister'
 import { ProtectedRoute, RejectedRoute } from '@/routes/RouteGuard'
+import StaffLayout from './layouts/StaffLayout/StaffLayout'
+import FloorPlan from './pages/Staffs/FloorPlan'
+import ReservationList from './pages/Staffs/ReservationList'
+import OrderManagement from './pages/Staffs/OrderManagement'
+import KitchenDisplay from './pages/Staffs/KitchenDisplay'
+import WorkSchedule from './pages/Staffs/WorkSchedule'
+import StaffChat from './pages/Staffs/StaffChat'
 
 const router = createBrowserRouter([
   {
@@ -73,6 +80,41 @@ const router = createBrowserRouter([
       {
         path: 'layout',
         element: <LayoutPage />
+      }
+    ]
+  },
+  // Nhóm 4: Staff
+  {
+    path: 'staff',
+    element: <StaffLayout />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to='floor-plan' replace />
+      },
+      {
+        path: 'floor-plan',
+        element: <FloorPlan />
+      },
+      {
+        path: 'reservation-list',
+        element: <ReservationList />
+      },
+      {
+        path: 'order-management',
+        element: <OrderManagement />
+      },
+      {
+        path: 'kitchen-display',
+        element: <KitchenDisplay />
+      },
+      {
+        path: 'work-schedule',
+        element: <WorkSchedule />
+      },
+      {
+        path: 'chat',
+        element: <StaffChat />
       }
     ]
   }

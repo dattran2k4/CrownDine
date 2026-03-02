@@ -52,6 +52,7 @@ public class ApiUserController {
     @GetMapping("/profile")
     public ApiResponse getProfile(Principal principal) {
         ProfileResponse response = userService.getProfile(principal.getName());
+        log.info(response.toString());
         return ApiResponse.builder()
                 .status(200)
                 .message("Get profile successfully")

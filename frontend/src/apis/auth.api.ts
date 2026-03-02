@@ -24,7 +24,17 @@ const authApi = {
     return http.post<ApiResponse<number>>(REGISTER_URL, body)
   },
   verifyRegister(verifyCode: string) {
-    return http.post<ApiResponse<null>>(`${VERIFY_REGISTER_URL}?verifyCode=${verifyCode}`)
+    return http.post<ApiResponse<null>>(`auth/verify-register?verifyCode=${verifyCode}`)
+  },
+  logout(refreshToken?: string) {
+    return http.post<ApiResponse<null>>('auth/logout', {}, {
+      headers: refreshToken ? { 'X-Refresh-Token': refreshToken } : undefined
+    })
+  },
+  refreshToken(refreshToken: string) {
+    return http.post<AuthResponse>('auth/refresh-token', {}, {
+      headers: { 'X-Refresh-Token': refreshToken }
+    })
   }
 }
 

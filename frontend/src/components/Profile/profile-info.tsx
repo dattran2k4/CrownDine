@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import MembershipBenefits from './membership-benefits'
+import useUpdateProfile from '@/hooks/useUpdateProfile'
 
 interface ProfileInfoProps {
   user: User
@@ -15,15 +16,32 @@ interface ProfileInfoProps {
 }
 const profile_info = ({ user, onSave }: ProfileInfoProps) => {
   const [isEditing, setIsEditing] = useState(false)
+  const formatBackendDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) {
+      const [day, month, year] = dateStr.split('/');
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
+  }
+
   const [formData, setFormData] = useState({
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    phone: user.phone,
-    dateOfBirth: user.dateOfBirth || '',
-    gender: user.gender || 'other'
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    dateOfBirth: formatBackendDate(user.dateOfBirth),
+    gender: (user.gender?.toLowerCase() || 'other') as 'male' | 'female' | 'other'
   })
-  const [isSaving, setIsSaving] = useState(false)
+
+  React.useEffect(() => {
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      dateOfBirth: formatBackendDate(user.dateOfBirth),
+      gender: (user.gender?.toLowerCase() || 'other') as 'male' | 'female' | 'other'
+    })
+  }, [user])
+
+  const updateProfileMutation = useUpdateProfile()
 
   /* Cập nhật dòng này trong file ProfileInfo.tsx của bạn */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -31,19 +49,28 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSave = async () => {
-    setIsSaving(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    if (onSave) {
-      onSave(formData)
+  const handleSave = () => {
+    let formattedDate = formData.dateOfBirth
+    if (formattedDate && formattedDate.includes('-')) {
+      const [year, month, day] = formattedDate.split('-')
+      formattedDate = `${day}/${month}/${year}`
     }
-    setIsSaving(false)
-    setIsEditing(false)
+
+    const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      dateOfBirth: formattedDate,
+      gender: formData.gender?.toUpperCase() as any
+    }
+
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => {
+        if (onSave) {
+          onSave(formData)
+        }
+        setIsEditing(false)
+      }
+    })
   }
 
   return (
@@ -89,42 +116,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
             className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
           />
         </div>
-
-        {/* Email */}
-        <div>
-          <Label htmlFor='email' className='text-sm font-semibold'>
-            Email Address
-          </Label>
-          <Input
-            id='email'
-            name='email'
-            type='email'
-            value={formData.email}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
-          />
-          {isEditing && (
-            <p className='text-foreground/60 mt-1 text-xs'>A confirmation email will be sent to verify this change</p>
-          )}
-        </div>
-
-        {/* Phone */}
-        <div>
-          <Label htmlFor='phone' className='text-sm font-semibold'>
-            Phone Number
-          </Label>
-          <Input
-            id='phone'
-            name='phone'
-            value={formData.phone}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className='border-border disabled:bg-foreground/5 mt-2 rounded-lg border-2'
-          />
-          {isEditing && <p className='text-foreground/60 mt-1 text-xs'>An OTP will be sent to verify this number</p>}
-        </div>
-
         {/* Date of Birth */}
         <div>
           <Label htmlFor='dateOfBirth' className='text-sm font-semibold'>
@@ -190,8 +181,8 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
       {/* Action Buttons */}
       {isEditing && (
         <div className='flex gap-4'>
-          <Button onClick={handleSave} disabled={isSaving} className='bg-primary hover:bg-primary/90 flex-1 text-white'>
-            {isSaving ? 'Saving...' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={updateProfileMutation.isPending} className='bg-primary hover:bg-primary/90 flex-1 text-white'>
+            {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
           <Button
             onClick={() => {
@@ -199,8 +190,6 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
               setFormData({
                 firstName: user.firstName,
                 lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
                 dateOfBirth: user.dateOfBirth || '',
                 gender: user.gender || 'other'
               })

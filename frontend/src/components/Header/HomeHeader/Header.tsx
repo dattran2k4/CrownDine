@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button'
 import { Menu, X, Moon, Sun, User, LogOut, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Link, useNavigate } from 'react-router-dom'
-import { Logo } from '../ui/logo'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useMutation } from '@tanstack/react-query'
 import authApi from '@/apis/auth.api'
@@ -17,6 +16,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Logo } from '@/components/ui/logo'
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)

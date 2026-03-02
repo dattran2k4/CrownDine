@@ -1,18 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { mockCurrentUser, mockReservations } from '@/lib/mock-user'
 import ProfileSidebar from '@/components/Profile/sidebar'
 import ProfileInfo from '@/components/Profile/profile-info'
 import ReservationHistory from '@/components/Profile/reservation-history'
 import SecuritySettings from '@/components/Profile/security-setting'
+import { useAuthStore } from '@/stores/useAuthStore'
+import type { User } from '@/types/profile.type'
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('info')
-  const [user, setUser] = useState(mockCurrentUser)
+  const authUser = useAuthStore((state) => state.user)
 
-  const handleSaveProfile = (updatedData: any) => {
-    setUser((prev) => ({ ...prev, ...updatedData }))
+  // Use local state, initialize with authUser, but also update if authUser changes
+  const [user, setUser] = useState<User>((authUser as any) || mockCurrentUser)
+
+  React.useEffect(() => {
+    if (authUser) {
+      setUser(authUser as any)
+    }
+  }, [authUser])
+
+  const handleSaveProfile = (updatedData: Partial<User>) => {
+    setUser((prev: User) => ({ ...prev, ...updatedData }))
     console.log('[v0] Profile updated:', updatedData)
   }
   return (

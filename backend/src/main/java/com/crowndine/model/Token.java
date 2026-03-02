@@ -1,10 +1,14 @@
 package com.crowndine.model;
 
-import jakarta.persistence.*;
-import jakarta.persistence.Table;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -16,6 +20,8 @@ public class Token extends AbstractEntity<Long> {
 
     @Column(name = "username")
     private String username;
+    @Column(columnDefinition = "TEXT")
+    private String token;
 
     @Column(name = "refresh_token", length = 1000)
     private String refreshToken;

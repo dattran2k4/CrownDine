@@ -81,7 +81,12 @@ export function VerifyRegister({ className, ...props }: React.ComponentProps<'di
                 {errors.root && <p className='text-destructive mt-1 text-xs break-words'>{errors.root.message}</p>}
               </div>
 
-              <Button type='submit' className='btn-auth w-full' size='lg' disabled={verifyMutation.isPending}>
+              <Button
+                type='submit'
+                className='btn-auth w-full cursor-pointer'
+                size='lg'
+                disabled={verifyMutation.isPending}
+              >
                 {verifyMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
               </Button>
             </div>

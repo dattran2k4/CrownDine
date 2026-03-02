@@ -8,13 +8,13 @@ spring:
   application:
     name: backend-service
   profiles:
-    active: @spring.profiles.active@
+    active: "@spring.profiles.active@"
 
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: "*"
 
 endpoint:
   confirmUser: ${app.base-url}/auth/verify-register

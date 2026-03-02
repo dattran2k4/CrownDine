@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dashboardApi from '@/apis/dashboard.api'
 import {
@@ -29,47 +29,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-const salesData = [
-  { time: '08:00', value: 1.2 },
-  { time: '09:00', value: 1.5 },
-  { time: '10:00', value: 2.1 },
-  { time: '12:00', value: 3.4 },
-  { time: '13:00', value: 0.8 },
-  { time: '14:00', value: 1.1 },
-  { time: '19:00', value: 3.4 },
-  { time: '20:00', value: 0.9 },
-  { time: '21:00', value: 2.5 },
-  { time: '22:00', value: 0.2 }
-]
 
-const customerData = [
-  { time: '08:00', value: 7 },
-  { time: '10:00', value: 12 },
-  { time: '12:00', value: 4 },
-  { time: '14:00', value: 7 },
-  { time: '16:00', value: 6 },
-  { time: '18:00', value: 7 },
-  { time: '19:00', value: 2 },
-  { time: '20:00', value: 4 },
-  { time: '21:00', value: 8 },
-  { time: '22:00', value: 10 },
-  { time: '23:00', value: 4 },
-  { time: '00:00', value: 9 },
-  { time: '01:00', value: 0 }
-]
-
-const topProductsData = [
-  { name: 'Súp kem gà nữ hoàng', value: 4.4 },
-  { name: 'Xúc xích Đức nướng mù tạt vàng', value: 2.8 },
-  { name: 'Thịt nguội & phomai viên chiên...', value: 2.7 },
-  { name: 'Súp kem bí đỏ với sữa dừa', value: 1.9 },
-  { name: 'BLOODY MARY', value: 1.5 },
-  { name: 'Thuốc lá Kent HD', value: 1.5 },
-  { name: 'CBánh mì bò lò đắm bông & phom...', value: 1.2 },
-  { name: 'CUBA LIBRE', value: 1.0 },
-  { name: 'Súp kem kiểu Paris', value: 1.0 },
-  { name: 'Bia Hà Nội', value: 0.8 }
-]
 
 const recentActivities = [
   { id: 1, user: 'asldkj', action: 'bán đơn giao hàng', value: '508,000', time: '2 days ago', type: 'sale' },
@@ -142,12 +102,33 @@ export default function Dashboard() {
 
   const timeRanges = ['Hôm nay', 'Hôm qua', '7 ngày qua', 'Tháng này', 'Tháng trước']
 
+  useEffect(() => {
+    if ((revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') && revenueViewMode !== 'Theo giờ') {
+      setRevenueViewMode('Theo giờ')
+    }
+  }, [revenueTimeRange, revenueViewMode])
+
   const { data: salesResults } = useQuery({
-    queryKey: ['dashboard-sales'],
-    queryFn: () => dashboardApi.getSalesResults()
+    queryKey: ['dashboard-sales', revenueViewMode, revenueTimeRange],
+    queryFn: () => dashboardApi.getSalesResults(revenueViewMode, revenueTimeRange)
   })
 
   const results = salesResults?.data.data
+
+  const displaySalesData = results?.revenueChart?.map(item => ({
+    time: item.label,
+    value: item.value
+  })) || []
+
+  const displayCustomerData = results?.customerChart?.map(item => ({
+    time: item.label,
+    value: item.value
+  })) || []
+
+  const displayTopProductsData = results?.topProducts?.map(item => ({
+    name: item.label,
+    value: item.value
+  })) || []
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-1 bg-muted/5 min-h-screen">
@@ -226,24 +207,31 @@ export default function Dashboard() {
                 Doanh số {revenueTimeRange.toLowerCase()}
               </CardTitle>
               <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
-                15,701,000
+                {(results?.rangeTotalAmount || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center bg-muted/30 rounded-full p-1 border">
-                {['Theo ngày', 'Theo giờ', 'Theo thứ'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setRevenueViewMode(tab)}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
-                      tab === revenueViewMode 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-muted-foreground hover:bg-muted/50'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {['Theo ngày', 'Theo giờ', 'Theo thứ']
+                  .filter((tab) => {
+                    if (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') {
+                      return tab === 'Theo giờ'
+                    }
+                    return true
+                  })
+                  .map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setRevenueViewMode(tab)}
+                      className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
+                        tab === revenueViewMode 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-muted-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
               </div>
               
               <TimeRangeDropdown 
@@ -255,7 +243,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[300px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={displaySalesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis 
                   dataKey="time" 
@@ -278,7 +266,7 @@ export default function Dashboard() {
                   }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                   {salesData.map((_, index) => (
+                   {displaySalesData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill="#0EA5E9" />
                   ))}
                 </Bar>
@@ -306,7 +294,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[250px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={customerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={displayCustomerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis 
                   dataKey="time" 
@@ -359,7 +347,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[400px] pt-8">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={topProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
+              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                 <XAxis type="number" hide />
                 <YAxis 

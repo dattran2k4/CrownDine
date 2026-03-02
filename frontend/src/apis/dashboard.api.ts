@@ -3,8 +3,10 @@ import type { ApiResponse } from '@/types/utils.type'
 import http from '@/utils/http'
 
 const dashboardApi = {
-  getSalesResults() {
-    return http.get<ApiResponse<DashboardSalesResponse>>('/dashboard/sales-results')
+  getSalesResults(viewMode?: string, timeRange?: string) {
+    return http.get<ApiResponse<DashboardSalesResponse>>('/dashboard/sales-results', {
+      params: { viewMode, timeRange }
+    })
   }
 }
 

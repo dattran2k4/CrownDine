@@ -17,11 +17,13 @@ public class ApiDashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/sales-results")
-    public ApiResponse getTodaySalesResults() {
-        DashboardSalesResponse data = dashboardService.getTodaySalesResults();
+    public ApiResponse getTodaySalesResults(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "Theo giờ") String viewMode,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "7 ngày qua") String timeRange) {
+        DashboardSalesResponse data = dashboardService.getTodaySalesResults(viewMode, timeRange);
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())
-                .message("Lấy kết quả bán hàng hôm nay thành công")
+                .message("Lấy kết quả bán hàng thành công")
                 .data(data)
                 .build();
     }

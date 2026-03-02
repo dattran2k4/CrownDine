@@ -48,7 +48,7 @@ export default function AdminHeader() {
 
   return (
     <header className='bg-background/95 supports-[backdrop-filter]:bg-background/60 border-border/50 sticky top-0 z-50 border-b backdrop-blur'>
-      <nav className='container mx-auto flex items-center justify-between px-4 py-3'>
+      <nav className='w-full flex items-center justify-between px-4 py-3'>
         {/* Logo */}
         <Link to='/admin' className='flex items-center gap-2 transition-opacity hover:opacity-80'>
           <Logo />
@@ -141,7 +141,7 @@ export default function AdminHeader() {
       {/* Mobile Navigation */}
       {isOpen && (
         <div className='animate-in fade-in slide-in-from-top-2 border-t border-border bg-card duration-200 xl:hidden'>
-          <div className='container mx-auto flex flex-col px-4 py-4'>
+          <div className='w-full flex flex-col px-4 py-4'>
             {navItems.map((item) => (
               <div key={item.label}>
                 {item.children ? (

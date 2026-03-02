@@ -95,32 +95,47 @@ const TimeRangeDropdown = ({
 }
 
 export default function Dashboard() {
-  const [revenueTimeRange, setRevenueTimeRange] = useState('7 ngày qua')
-  const [customerTimeRange, setCustomerTimeRange] = useState('Tháng này')
-  const [topProductsTimeRange, setTopProductsTimeRange] = useState('7 ngày qua')
+  const [revenueTimeRange, setRevenueTimeRange] = useState('Hôm nay')
+  const [customerTimeRange, setCustomerTimeRange] = useState('Hôm nay')
+  const [topProductsTimeRange, setTopProductsTimeRange] = useState('Hôm nay')
+
   const revenueViewMode = (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
+  const customerViewMode = (customerTimeRange === 'Hôm nay' || customerTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
 
   const timeRanges = ['Hôm nay', 'Hôm qua', '7 ngày qua', 'Tháng này', 'Tháng trước']
 
 
-  const { data: salesResults } = useQuery({
-    queryKey: ['dashboard-sales', revenueViewMode, revenueTimeRange],
+  const { data: revenueResults } = useQuery({
+    queryKey: ['dashboard-sales', 'revenue', revenueViewMode, revenueTimeRange],
     queryFn: () => dashboardApi.getSalesResults(revenueViewMode, revenueTimeRange)
   })
 
-  const results = salesResults?.data.data
+  const { data: customerResults } = useQuery({
+    queryKey: ['dashboard-sales', 'customer', customerViewMode, customerTimeRange],
+    queryFn: () => dashboardApi.getSalesResults(customerViewMode, customerTimeRange)
+  })
 
-  const displaySalesData = results?.revenueChart?.map(item => ({
+  const { data: topProductsResults } = useQuery({
+    queryKey: ['dashboard-sales', 'topProducts', topProductsTimeRange],
+    queryFn: () => dashboardApi.getSalesResults('Theo ngày', topProductsTimeRange)
+  })
+
+  const summaryResults = revenueResults?.data.data // Base analytics use the revenue range but usually they are for Today anyway
+  const revenueData = revenueResults?.data.data
+  const customerData = customerResults?.data.data
+  const topProductsData = topProductsResults?.data.data
+
+  const displaySalesData = revenueData?.revenueChart?.map(item => ({
     time: item.label,
     value: item.value
   })) || []
 
-  const displayCustomerData = results?.customerChart?.map(item => ({
+  const displayCustomerData = customerData?.customerChart?.map(item => ({
     time: item.label,
     value: item.value
   })) || []
 
-  const displayTopProductsData = results?.topProducts?.map(item => ({
+  const displayTopProductsData = topProductsData?.topProducts?.map(item => ({
     name: item.label,
     value: item.value
   })) || []
@@ -142,18 +157,18 @@ export default function Dashboard() {
                 <CircleDollarSign size={24} />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-muted-foreground">{results?.completedOrdersToday || 0} đơn đã xong</p>
+                <p className="text-xs font-semibold text-muted-foreground">{summaryResults?.completedOrdersToday || 0} đơn đã xong</p>
                 <div className="flex items-end gap-2">
                   <div className="text-blue-500 font-bold text-2xl leading-none">
-                    {(results?.completedTotalAmount || 0).toLocaleString('vi-VN')}
+                    {(summaryResults?.completedTotalAmount || 0).toLocaleString('vi-VN')}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(summaryResults?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                     }`}>
-                    {(results?.completedGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    <span>{Math.abs(results?.completedGrowthPercentage || 0).toFixed(0)}%</span>
+                    {(summaryResults?.completedGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <span>{Math.abs(summaryResults?.completedGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(results?.completedOrdersYesterday || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(summaryResults?.completedOrdersYesterday || 0).toLocaleString('vi-VN')}</p>
               </div>
             </div>
 
@@ -162,9 +177,9 @@ export default function Dashboard() {
                 <Utensils size={24} />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-muted-foreground">{results?.servingOrdersToday || 0} đơn đang phục vụ</p>
+                <p className="text-xs font-semibold text-muted-foreground">{summaryResults?.servingOrdersToday || 0} đơn đang phục vụ</p>
                 <div className="text-green-500 font-bold text-2xl leading-none">
-                  {(results?.servingTotalAmount || 0).toLocaleString('vi-VN')}
+                  {(summaryResults?.servingTotalAmount || 0).toLocaleString('vi-VN')}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1">&nbsp;</p>
               </div>
@@ -178,15 +193,15 @@ export default function Dashboard() {
                 <p className="text-xs font-semibold text-muted-foreground">Khách hàng</p>
                 <div className="flex items-end gap-2">
                   <div className="text-cyan-500 font-bold text-2xl leading-none">
-                    {results?.totalCustomersToday || 0}
+                    {summaryResults?.totalCustomersToday || 0}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(summaryResults?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                     }`}>
-                    {(results?.customersGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    <span>{Math.abs(results?.customersGrowthPercentage || 0).toFixed(0)}%</span>
+                    {(summaryResults?.customersGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <span>{Math.abs(summaryResults?.customersGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(results?.totalCustomersYesterday || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(summaryResults?.totalCustomersYesterday || 0).toLocaleString('vi-VN')}</p>
               </div>
             </div>
           </CardContent>
@@ -200,7 +215,7 @@ export default function Dashboard() {
                 Doanh số {revenueTimeRange.toLowerCase()}
               </CardTitle>
               <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
-                {(results?.rangeTotalAmount || 0).toLocaleString('vi-VN')}
+                {(revenueData?.rangeTotalAmount || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
             <div className="flex items-center gap-4">
@@ -252,8 +267,8 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
                 Số lượng khách {customerTimeRange.toLowerCase()}
               </CardTitle>
-              <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
-                102
+            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
+                {(customerData?.rangeTotalCustomers || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
             <TimeRangeDropdown 
@@ -277,6 +292,7 @@ export default function Dashboard() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
+                  allowDecimals={false}
                 />
                 <Tooltip
                   contentStyle={{
@@ -315,9 +331,9 @@ export default function Dashboard() {
               options={timeRanges} 
             />
           </CardHeader>
-          <CardContent className="h-[400px] pt-8">
+          <CardContent className="h-[480px] p-0 pt-8 pb-4">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
+              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 15, left: 140, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                 <XAxis type="number" hide />
                 <YAxis
@@ -326,7 +342,7 @@ export default function Dashboard() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#4B5563' }}
-                  width={150}
+                  width={135}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -336,7 +352,7 @@ export default function Dashboard() {
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
                 />
-                <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-8 mt-2 overflow-x-auto pb-2">

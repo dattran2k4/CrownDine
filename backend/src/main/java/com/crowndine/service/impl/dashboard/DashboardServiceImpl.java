@@ -13,8 +13,13 @@ import java.time.LocalTime;
 
 import com.crowndine.dto.response.ChartDataResponse;
 import com.crowndine.model.Order;
+import com.crowndine.model.OrderDetail;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -167,6 +172,7 @@ public class DashboardServiceImpl implements DashboardService {
                         LocalDateTime start,
                         LocalDateTime end, long currentTotal) {
                 List<Order> orders = orderRepository.findAllByCreatedAtBetween(start, end);
+                response.setRangeTotalCustomers(orders.size());
                 List<ChartDataResponse> customerChart = new ArrayList<>();
 
                 if ("Theo giờ".equals(viewMode)) {
@@ -197,10 +203,29 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         private void addTopProductsWidgetData(DashboardSalesResponse response, LocalDateTime start, LocalDateTime end) {
-                List<ChartDataResponse> topProducts = new ArrayList<>();
-                // TODO: Replace with real aggregation logic
-                topProducts.add(new ChartDataResponse("Súp kem gà nữ hoàng", 4.4));
-                topProducts.add(new ChartDataResponse("Xúc xích Đức nướng", 2.8));
+                List<Order> completedOrders = orderRepository.findAllByStatusAndCreatedAtBetween(EOrderStatus.COMPLETED,
+                                start,
+                                end);
+                Map<String, BigDecimal> productRevenue = new HashMap<>();
+
+                for (Order order : completedOrders) {
+                        for (OrderDetail detail : order.getOrderDetails()) {
+                                String name = detail.getProductName();
+                                BigDecimal revenue = detail.getTotalPrice();
+                                if (revenue != null) {
+                                        productRevenue.put(name, productRevenue.getOrDefault(name, BigDecimal.ZERO)
+                                                        .add(revenue));
+                                }
+                        }
+                }
+
+                List<ChartDataResponse> topProducts = productRevenue.entrySet().stream()
+                                .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
+                                .limit(10)
+                                .map(entry -> new ChartDataResponse(entry.getKey(),
+                                                entry.getValue().doubleValue() / 1000000.0))
+                                .collect(Collectors.toList());
+
                 response.setTopProducts(topProducts);
         }
 

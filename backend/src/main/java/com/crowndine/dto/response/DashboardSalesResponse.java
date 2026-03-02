@@ -25,6 +25,7 @@ public class DashboardSalesResponse {
     private double customersGrowthPercentage;
 
     private double rangeTotalAmount;
+    private long rangeTotalCustomers;
     private List<ChartDataResponse> revenueChart;
     private List<ChartDataResponse> customerChart;
     private List<ChartDataResponse> topProducts;

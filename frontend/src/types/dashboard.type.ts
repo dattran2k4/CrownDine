@@ -14,6 +14,7 @@ export interface DashboardSalesResponse {
   totalCustomersYesterday: number
   customersGrowthPercentage: number
   rangeTotalAmount: number
+  rangeTotalCustomers: number
   revenueChart: ChartData[]
   customerChart: ChartData[]
   topProducts: ChartData[]

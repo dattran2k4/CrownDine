@@ -7,7 +7,7 @@ export default function AdminLayout() {
       <AdminHeader />
       {/* --- MAIN CONTENT --- */}
       <main className='bg-muted/20 min-h-0 flex-1'>
-        <div className='w-full px-4 py-8'>
+        <div className='container mx-auto px-4 py-8'>
           <Outlet />
         </div>
       </main>

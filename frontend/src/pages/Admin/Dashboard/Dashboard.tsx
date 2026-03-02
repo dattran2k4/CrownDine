@@ -141,7 +141,7 @@ export default function Dashboard() {
   })) || []
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-1 bg-muted/5 min-h-screen">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 bg-muted/5 min-h-screen">
       {/* Left Column (Main Content) */}
       <div className="lg:col-span-3 space-y-6">
         {/* Sales Summary Cards */}

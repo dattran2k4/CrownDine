@@ -7,6 +7,12 @@ const dashboardApi = {
     return http.get<ApiResponse<DashboardSalesResponse>>('/dashboard/sales-results', {
       params: { viewMode, timeRange }
     })
+  },
+  exportSales(timeRange: string) {
+    return http.get('/dashboard/export-sales', {
+      params: { timeRange },
+      responseType: 'blob'
+    })
   }
 }
 

@@ -26,16 +26,15 @@ export default function PriceSettings() {
   // Items query based on selected category or search
   const { data: itemsData, isLoading: isLoadingItems } = useQuery<Item[]>({
     queryKey: ['items', selectedCategoryId, searchTerm],
-    queryFn: async (): Promise<Item[]> => {
+    queryFn: async () => {
       if (selectedCategoryId) {
         const res = await itemApi.getItemsByCategory(selectedCategoryId)
-        return res.data.data as unknown as Item[]
+        return res.data.data.data // Access the array inside PageResponse
       }
       const res = await itemApi.getItems()
-      // Unwrap pagination to just items or use the array directly
-      // Adjust according to the actual response structure of getItems()
-      // If it's paginated, it might be res.data.data.content or similar, but looking at the type error, res.data.data is Item[]
-      return res.data.data as unknown as Item[]
+      // If getItems also returns PageResponse, adjust accordingly. 
+      // Based on item.api.ts line 18, it returns Item[] directly after res.data.data
+      return Array.isArray(res.data.data) ? res.data.data : (res.data.data as any).data
     }
   })
 
@@ -83,46 +82,64 @@ export default function PriceSettings() {
       {/* Sidebar Filters */}
       <aside className='w-64 shrink-0 space-y-6'>
         <div className='bg-card border-border rounded-xl border p-4 shadow-sm'>
-          <h3 className='mb-3 text-sm font-semibold'>Tìm kiếm</h3>
+          <h3 className='mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground'>Tìm kiếm</h3>
           <div className='relative'>
             <Search className='text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2' />
             <Input
               placeholder='Theo mã, tên hàng (F3)'
-              className='pl-9 text-xs'
+              className='pl-9 text-xs border-gray-200 focus:border-blue-400 focus:ring-blue-100 transition-all placeholder:text-gray-400'
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className='bg-card border-border rounded-xl border shadow-sm'>
-          <div className='flex items-center justify-between border-b p-4'>
-            <h3 className='text-sm font-semibold'>Nhóm hàng</h3>
-            <ChevronDown className='h-4 w-4' />
+        <div className='bg-card border-border overflow-hidden rounded-xl border shadow-sm'>
+          <div className='flex items-center justify-between border-b bg-muted/30 p-4'>
+            <h3 className='text-sm font-bold uppercase tracking-wider text-[#003A8C]'>Nhóm hàng</h3>
+            <ChevronDown className='h-4 w-4 text-muted-foreground' />
           </div>
           <div className='p-2'>
-            <nav className='space-y-1'>
+            <nav className='space-y-0.5'>
               <button
                 onClick={() => setSelectedCategoryId(null)}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${selectedCategoryId === null
-                  ? 'bg-primary/10 text-primary'
-                  : 'hover:bg-accent text-muted-foreground'
-                  }`}
+                className={`flex w-full items-center justify-between rounded-lg px-4 py-2 text-left text-xs font-bold transition-all ${
+                  selectedCategoryId === null
+                    ? 'bg-blue-50 text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
               >
-                Tất cả
+                <span>Tất cả</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                  selectedCategoryId === null ? 'bg-blue-100' : 'bg-gray-100'
+                }`}>
+                  {items.length}
+                </span>
               </button>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategoryId(category.id)}
-                  className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${selectedCategoryId === category.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-accent text-muted-foreground'
+              <div className='my-2 h-px bg-border/50'></div>
+              {categories.map((category) => {
+                const itemCount = items.filter(i => i.categoryId === category.id).length
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategoryId(category.id)}
+                    className={`flex w-full items-center justify-between rounded-lg px-4 py-2 text-left text-xs font-medium transition-all ${
+                      selectedCategoryId === category.id
+                        ? 'bg-blue-50 text-blue-600 shadow-sm border-l-2 border-blue-600 rounded-l-none'
+                        : 'text-gray-600 hover:bg-gray-50 hover:pl-5'
                     }`}
-                >
-                  {category.name}
-                </button>
-              ))}
+                  >
+                    <span>{category.name}</span>
+                    {itemCount > 0 && (
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                        selectedCategoryId === category.id ? 'bg-blue-100' : 'bg-gray-50'
+                      }`}>
+                        {itemCount}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </nav>
           </div>
         </div>

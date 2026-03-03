@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -233,5 +236,160 @@ public class DashboardServiceImpl implements DashboardService {
                 if (previous == 0)
                         return current > 0 ? 100 : 0;
                 return ((double) (current - previous) / previous) * 100;
+        }
+
+        @Override
+        public byte[] exportSalesReport(String timeRange) throws java.io.IOException {
+                LocalDate today = LocalDate.now();
+                LocalDateTime start = calculateRangeStart(today, timeRange);
+                LocalDateTime end = calculateRangeEnd(today, timeRange);
+
+                List<Order> orders = orderRepository.findAllByStatusAndCreatedAtBetween(EOrderStatus.COMPLETED, start,
+                                end);
+
+                // Group top products
+                Map<String, Long> productQuantity = new HashMap<>();
+                Map<String, BigDecimal> productRevenue = new HashMap<>();
+                for (Order order : orders) {
+                        for (OrderDetail detail : order.getOrderDetails()) {
+                                String name = detail.getProductName();
+                                productQuantity.put(name,
+                                                productQuantity.getOrDefault(name, 0L) + detail.getQuantity());
+                                productRevenue.put(name, productRevenue.getOrDefault(name, BigDecimal.ZERO)
+                                                .add(detail.getTotalPrice()));
+                        }
+                }
+
+                try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                        // 1. Sheet Summary
+                        Sheet summarySheet = workbook.createSheet("Báo cáo chung");
+                        createSummarySheet(summarySheet, workbook, timeRange, orders, start, end);
+
+                        // 2. Sheet Orders
+                        Sheet orderSheet = workbook.createSheet("Danh sách đơn hàng");
+                        createOrderSheet(orderSheet, workbook, orders);
+
+                        // 3. Sheet Products
+                        Sheet productSheet = workbook.createSheet("Top sản phẩm");
+                        createProductSheet(productSheet, workbook, productRevenue, productQuantity);
+
+                        workbook.write(out);
+                        return out.toByteArray();
+                }
+        }
+
+        private void createSummarySheet(Sheet sheet, Workbook workbook, String timeRange, List<Order> orders,
+                        LocalDateTime start, LocalDateTime end) {
+                // Header style
+                CellStyle headerStyle = workbook.createCellStyle();
+                Font headerFont = workbook.createFont();
+                headerFont.setBold(true);
+                headerFont.setFontHeightInPoints((short) 14);
+                headerStyle.setFont(headerFont);
+                headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+                // Normal bold style
+                CellStyle boldStyle = workbook.createCellStyle();
+                Font boldFont = workbook.createFont();
+                boldFont.setBold(true);
+                boldStyle.setFont(boldFont);
+
+                Row titleRow = sheet.createRow(0);
+                Cell titleCell = titleRow.createCell(0);
+                titleCell.setCellValue("BÁO CÁO DOANH THU - " + timeRange.toUpperCase());
+                titleCell.setCellStyle(headerStyle);
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 3));
+
+                Row rangeRow = sheet.createRow(1);
+                rangeRow.createCell(0).setCellValue("Thời gian:");
+                rangeRow.createCell(1).setCellValue(start.toLocalDate() + " đến " + end.toLocalDate());
+
+                double totalRevenue = orders.stream().mapToDouble(o -> o.getFinalPrice().doubleValue()).sum();
+
+                Row revRow = sheet.createRow(3);
+                revRow.createCell(0).setCellValue("Tổng doanh thu:");
+                Cell revVal = revRow.createCell(1);
+                revVal.setCellValue(totalRevenue);
+                revVal.setCellStyle(boldStyle);
+
+                Row orderCountRow = sheet.createRow(4);
+                orderCountRow.createCell(0).setCellValue("Tổng số đơn hàng:");
+                orderCountRow.createCell(1).setCellValue(orders.size());
+
+                long totalCustomers = orders.size(); // Simplified
+                Row customerRow = sheet.createRow(5);
+                customerRow.createCell(0).setCellValue("Tổng số khách hàng:");
+                customerRow.createCell(1).setCellValue(totalCustomers);
+
+                sheet.autoSizeColumn(0);
+                sheet.autoSizeColumn(1);
+        }
+
+        private void createOrderSheet(Sheet sheet, Workbook workbook, List<Order> orders) {
+                String[] headers = { "Mã đơn", "Ngày tạo", "Bàn/Phòng", "Khách hàng", "Tổng tiền", "Trạng thái" };
+                Row headerRow = sheet.createRow(0);
+                CellStyle headerStyle = workbook.createCellStyle();
+                Font font = workbook.createFont();
+                font.setBold(true);
+                headerStyle.setFont(font);
+                headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+                headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+                for (int i = 0; i < headers.length; i++) {
+                        Cell cell = headerRow.createCell(i);
+                        cell.setCellValue(headers[i]);
+                        cell.setCellStyle(headerStyle);
+                }
+
+                int rowIdx = 1;
+                for (Order order : orders) {
+                        Row row = sheet.createRow(rowIdx++);
+                        row.createCell(0).setCellValue(order.getCode());
+                        row.createCell(1).setCellValue(order.getCreatedAt().toString());
+                        row.createCell(2).setCellValue(
+                                        order.getRestaurantTable() != null ? order.getRestaurantTable().getName()
+                                                        : "Mang về");
+                        row.createCell(3).setCellValue(
+                                        order.getUser() != null ? order.getUser().getFullName() : "Khách lẻ");
+                        row.createCell(4).setCellValue(order.getFinalPrice().doubleValue());
+                        row.createCell(5).setCellValue("Hoàn thành");
+                }
+
+                for (int i = 0; i < headers.length; i++) {
+                        sheet.autoSizeColumn(i);
+                }
+        }
+
+        private void createProductSheet(Sheet sheet, Workbook workbook, Map<String, BigDecimal> revenue,
+                        Map<String, Long> quantity) {
+                String[] headers = { "Tên sản phẩm", "Số lượng bán", "Doanh thu (VNĐ)" };
+                Row headerRow = sheet.createRow(0);
+                CellStyle headerStyle = workbook.createCellStyle();
+                Font font = workbook.createFont();
+                font.setBold(true);
+                headerStyle.setFont(font);
+
+                for (int i = 0; i < headers.length; i++) {
+                        Cell cell = headerRow.createCell(i);
+                        cell.setCellValue(headers[i]);
+                        cell.setCellStyle(headerStyle);
+                }
+
+                List<Map.Entry<String, BigDecimal>> sorted = revenue.entrySet().stream()
+                                .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
+                                .limit(50)
+                                .collect(Collectors.toList());
+
+                int rowIdx = 1;
+                for (Map.Entry<String, BigDecimal> entry : sorted) {
+                        Row row = sheet.createRow(rowIdx++);
+                        row.createCell(0).setCellValue(entry.getKey());
+                        row.createCell(1).setCellValue(quantity.get(entry.getKey()));
+                        row.createCell(2).setCellValue(entry.getValue().doubleValue());
+                }
+
+                sheet.autoSizeColumn(0);
+                sheet.autoSizeColumn(1);
+                sheet.autoSizeColumn(2);
         }
 }

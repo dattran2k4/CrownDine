@@ -140,6 +140,21 @@ export default function Dashboard() {
     value: item.value
   })) || []
 
+  const handleExport = async () => {
+    try {
+      const response = await dashboardApi.exportSales(revenueTimeRange)
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `bao_cao_doanh_thu_${revenueTimeRange.replace(' ', '_')}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      console.error('Export failed:', error)
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 bg-muted/5 min-h-screen">
       {/* Left Column (Main Content) */}
@@ -249,6 +264,7 @@ export default function Dashboard() {
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  formatter={(value: any) => [`${(Number(value) * 1000000).toLocaleString('vi-VN')} VNĐ`, 'Doanh thu']}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                    {displaySalesData.map((_, index) => (
@@ -300,6 +316,7 @@ export default function Dashboard() {
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  formatter={(value: any) => [`${Number(value).toLocaleString('vi-VN')} khách`, 'Số lượng']}
                 />
                 <Line
                   type="monotone"
@@ -333,16 +350,28 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[480px] p-0 pt-8 pb-4">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 15, left: 140, bottom: 0 }}>
+              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 25, left: 20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                <XAxis type="number" hide />
+                <XAxis 
+                  type="number" 
+                  domain={[0, 'auto']}
+                  padding={{ left: 0, right: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#9CA3AF', textAnchor: 'start' }}
+                  tickFormatter={(value) => {
+                    if (value === 0) return '0'
+                    if (value < 1) return `${(value * 1000).toFixed(0)}k`
+                    return `${value} tr`
+                  }}
+                />
                 <YAxis
                   dataKey="name"
                   type="category"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#4B5563' }}
-                  width={135}
+                  width={140}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -351,15 +380,11 @@ export default function Dashboard() {
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  formatter={(value: any) => [`${(Number(value) * 1000000).toLocaleString('vi-VN')} VNĐ`, 'Doanh thu']}
                 />
                 <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
-            <div className="flex justify-center gap-8 mt-2 overflow-x-auto pb-2">
-              {['0', '500k', '1 tr', '1.5 tr', '2 tr', '2.5 tr', '3 tr', '3.5 tr', '4 tr', '4.5 tr', '5 tr'].map((val, idx) => (
-                <span key={idx} className="text-[9px] text-muted-foreground">{val}</span>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -367,7 +392,10 @@ export default function Dashboard() {
       {/* Right Column (Sidebar) */}
       <div className="space-y-6">
         {/* Export File Widget */}
-        <Card className="rounded-xl overflow-hidden shadow-sm relative group cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 border-none min-h-[140px] flex items-center justify-center text-white">
+        <Card 
+          onClick={handleExport}
+          className="rounded-xl overflow-hidden shadow-sm relative group cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 border-none min-h-[140px] flex items-center justify-center text-white active:scale-95 transition-transform"
+        >
           <div className="text-center p-4">
             <div className="mb-3 flex justify-center">
               <div className="p-3 bg-white/20 rounded-full backdrop-blur-md">

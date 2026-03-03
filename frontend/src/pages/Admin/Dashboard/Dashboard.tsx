@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dashboardApi from '@/apis/dashboard.api'
 import {
@@ -20,52 +21,15 @@ import {
   TrendingUp,
   TrendingDown,
   History,
-  FileDown
+  FileDown,
+  ChevronDown,
+  ChevronUp,
+  Check
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-const salesData = [
-  { time: '08:00', value: 1.2 },
-  { time: '09:00', value: 1.5 },
-  { time: '10:00', value: 2.1 },
-  { time: '12:00', value: 3.4 },
-  { time: '13:00', value: 0.8 },
-  { time: '14:00', value: 1.1 },
-  { time: '19:00', value: 3.4 },
-  { time: '20:00', value: 0.9 },
-  { time: '21:00', value: 2.5 },
-  { time: '22:00', value: 0.2 }
-]
 
-const customerData = [
-  { time: '08:00', value: 7 },
-  { time: '10:00', value: 12 },
-  { time: '12:00', value: 4 },
-  { time: '14:00', value: 7 },
-  { time: '16:00', value: 6 },
-  { time: '18:00', value: 7 },
-  { time: '19:00', value: 2 },
-  { time: '20:00', value: 4 },
-  { time: '21:00', value: 8 },
-  { time: '22:00', value: 10 },
-  { time: '23:00', value: 4 },
-  { time: '00:00', value: 9 },
-  { time: '01:00', value: 0 }
-]
-
-const topProductsData = [
-  { name: 'Súp kem gà nữ hoàng', value: 4.4 },
-  { name: 'Xúc xích Đức nướng mù tạt vàng', value: 2.8 },
-  { name: 'Thịt nguội & phomai viên chiên...', value: 2.7 },
-  { name: 'Súp kem bí đỏ với sữa dừa', value: 1.9 },
-  { name: 'BLOODY MARY', value: 1.5 },
-  { name: 'Thuốc lá Kent HD', value: 1.5 },
-  { name: 'CBánh mì bò lò đắm bông & phom...', value: 1.2 },
-  { name: 'CUBA LIBRE', value: 1.0 },
-  { name: 'Súp kem kiểu Paris', value: 1.0 },
-  { name: 'Bia Hà Nội', value: 0.8 }
-]
 
 const recentActivities = [
   { id: 1, user: 'asldkj', action: 'bán đơn giao hàng', value: '508,000', time: '2 days ago', type: 'sale' },
@@ -79,16 +43,105 @@ const recentActivities = [
   { id: 9, user: 'Hương - Kế Toán', action: 'bán đơn hàng', value: '1,250,000', time: '3 days ago', type: 'sale' }
 ]
 
+
+const TimeRangeDropdown = ({ 
+  selected, 
+  onSelect, 
+  options 
+}: { 
+  selected: string, 
+  onSelect: (val: string) => void, 
+  options: string[] 
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-xs text-blue-600 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-50/50 hover:bg-blue-50 transition-all border border-blue-100/50"
+      >
+        {selected} 
+        {isOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-border shadow-2xl rounded-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="py-1">
+              {options.map((range) => (
+                <button
+                  key={range}
+                  onClick={() => {
+                    onSelect(range)
+                    setIsOpen(false)
+                  }}
+                  className="w-full px-4 py-2.5 text-sm font-bold text-left hover:bg-blue-50/50 flex items-center justify-between transition-colors border-b last:border-b-0 border-border/10"
+                >
+                  <span className={range === selected ? 'text-blue-600' : 'text-gray-700'}>{range}</span>
+                  {range === selected && <Check size={16} className="text-blue-600" strokeWidth={3} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const { data: salesResults } = useQuery({
-    queryKey: ['dashboard-sales'],
-    queryFn: () => dashboardApi.getSalesResults()
+  const [revenueTimeRange, setRevenueTimeRange] = useState('Hôm nay')
+  const [customerTimeRange, setCustomerTimeRange] = useState('Hôm nay')
+  const [topProductsTimeRange, setTopProductsTimeRange] = useState('Hôm nay')
+
+  const revenueViewMode = (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
+  const customerViewMode = (customerTimeRange === 'Hôm nay' || customerTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
+
+  const timeRanges = ['Hôm nay', 'Hôm qua', '7 ngày qua', 'Tháng này', 'Tháng trước']
+
+
+  const { data: revenueResults } = useQuery({
+    queryKey: ['dashboard-sales', 'revenue', revenueViewMode, revenueTimeRange],
+    queryFn: () => dashboardApi.getSalesResults(revenueViewMode, revenueTimeRange)
   })
 
-  const results = salesResults?.data.data
+  const { data: customerResults } = useQuery({
+    queryKey: ['dashboard-sales', 'customer', customerViewMode, customerTimeRange],
+    queryFn: () => dashboardApi.getSalesResults(customerViewMode, customerTimeRange)
+  })
+
+  const { data: topProductsResults } = useQuery({
+    queryKey: ['dashboard-sales', 'topProducts', topProductsTimeRange],
+    queryFn: () => dashboardApi.getSalesResults('Theo ngày', topProductsTimeRange)
+  })
+
+  const summaryResults = revenueResults?.data.data // Base analytics use the revenue range but usually they are for Today anyway
+  const revenueData = revenueResults?.data.data
+  const customerData = customerResults?.data.data
+  const topProductsData = topProductsResults?.data.data
+
+  const displaySalesData = revenueData?.revenueChart?.map(item => ({
+    time: item.label,
+    value: item.value
+  })) || []
+
+  const displayCustomerData = customerData?.customerChart?.map(item => ({
+    time: item.label,
+    value: item.value
+  })) || []
+
+  const displayTopProductsData = topProductsData?.topProducts?.map(item => ({
+    name: item.label,
+    value: item.value
+  })) || []
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-1 bg-muted/5 min-h-screen">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 bg-muted/5 min-h-screen">
       {/* Left Column (Main Content) */}
       <div className="lg:col-span-3 space-y-6">
         {/* Sales Summary Cards */}
@@ -104,18 +157,18 @@ export default function Dashboard() {
                 <CircleDollarSign size={24} />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-muted-foreground">{results?.completedOrdersToday || 0} đơn đã xong</p>
+                <p className="text-xs font-semibold text-muted-foreground">{summaryResults?.completedOrdersToday || 0} đơn đã xong</p>
                 <div className="flex items-end gap-2">
                   <div className="text-blue-500 font-bold text-2xl leading-none">
-                    {(results?.completedTotalAmount || 0).toLocaleString('vi-VN')}
+                    {(summaryResults?.completedTotalAmount || 0).toLocaleString('vi-VN')}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(summaryResults?.completedGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                     }`}>
-                    {(results?.completedGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    <span>{Math.abs(results?.completedGrowthPercentage || 0).toFixed(0)}%</span>
+                    {(summaryResults?.completedGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <span>{Math.abs(summaryResults?.completedGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(results?.completedOrdersYesterday || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(summaryResults?.completedOrdersYesterday || 0).toLocaleString('vi-VN')}</p>
               </div>
             </div>
 
@@ -124,9 +177,9 @@ export default function Dashboard() {
                 <Utensils size={24} />
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-muted-foreground">{results?.servingOrdersToday || 0} đơn đang phục vụ</p>
+                <p className="text-xs font-semibold text-muted-foreground">{summaryResults?.servingOrdersToday || 0} đơn đang phục vụ</p>
                 <div className="text-green-500 font-bold text-2xl leading-none">
-                  {(results?.servingTotalAmount || 0).toLocaleString('vi-VN')}
+                  {(summaryResults?.servingTotalAmount || 0).toLocaleString('vi-VN')}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1">&nbsp;</p>
               </div>
@@ -140,15 +193,15 @@ export default function Dashboard() {
                 <p className="text-xs font-semibold text-muted-foreground">Khách hàng</p>
                 <div className="flex items-end gap-2">
                   <div className="text-cyan-500 font-bold text-2xl leading-none">
-                    {results?.totalCustomersToday || 0}
+                    {summaryResults?.totalCustomersToday || 0}
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(results?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                  <div className={`flex items-center gap-0.5 text-[13px] font-bold mb-0.5 ${(summaryResults?.customersGrowthPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                     }`}>
-                    {(results?.customersGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    <span>{Math.abs(results?.customersGrowthPercentage || 0).toFixed(0)}%</span>
+                    {(summaryResults?.customersGrowthPercentage || 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <span>{Math.abs(summaryResults?.customersGrowthPercentage || 0).toFixed(0)}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(results?.totalCustomersYesterday || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Hôm qua {(summaryResults?.totalCustomersYesterday || 0).toLocaleString('vi-VN')}</p>
               </div>
             </div>
           </CardContent>
@@ -159,34 +212,23 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Doanh số 7 ngày qua
+                Doanh số {revenueTimeRange.toLowerCase()}
               </CardTitle>
               <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
-                15,701,000
+                {(revenueData?.rangeTotalAmount || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center bg-muted/30 rounded-full p-1 border">
-                {['Theo ngày', 'Theo giờ', 'Theo thứ'].map((tab) => (
-                  <button
-                    key={tab}
-                    className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${tab === 'Theo giờ'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-muted-foreground hover:bg-muted/50'
-                      }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-              <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                7 ngày qua <ChevronRight size={14} />
-              </button>
+              <TimeRangeDropdown 
+                selected={revenueTimeRange} 
+                onSelect={setRevenueTimeRange} 
+                options={timeRanges} 
+              />
             </div>
           </CardHeader>
           <CardContent className="h-[300px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <BarChart data={displaySalesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis
                   dataKey="time"
@@ -209,7 +251,7 @@ export default function Dashboard() {
                   }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {salesData.map((_, index) => (
+                   {displaySalesData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill="#0EA5E9" />
                   ))}
                 </Bar>
@@ -223,31 +265,34 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Số lượng khách tháng này
+                Số lượng khách {customerTimeRange.toLowerCase()}
               </CardTitle>
-              <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
-                102
+            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 font-bold">
+                {(customerData?.rangeTotalCustomers || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
-            <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-              Tháng này <ChevronRight size={14} />
-            </button>
+            <TimeRangeDropdown 
+              selected={customerTimeRange} 
+              onSelect={setCustomerTimeRange} 
+              options={timeRanges} 
+            />
           </CardHeader>
           <CardContent className="h-[250px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={customerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <LineChart data={displayCustomerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis
                   dataKey="time"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
-                  interval={1}
+                  interval={0}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#6B7280' }}
+                  allowDecimals={false}
                 />
                 <Tooltip
                   contentStyle={{
@@ -274,19 +319,21 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between py-4 border-b">
             <div className="flex items-center gap-6">
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                Top 10 hàng hóa bán chạy 7 ngày qua
+                Top 10 hàng hóa bán chạy {topProductsTimeRange.toLowerCase()}
               </CardTitle>
               <div className="flex items-center gap-1 text-xs text-blue-600 font-bold uppercase cursor-pointer">
                 Theo doanh thu <ChevronRight size={14} />
               </div>
             </div>
-            <button className="text-xs text-blue-600 font-medium flex items-center gap-1">
-              7 ngày qua <ChevronRight size={14} />
-            </button>
+            <TimeRangeDropdown 
+              selected={topProductsTimeRange} 
+              onSelect={setTopProductsTimeRange} 
+              options={timeRanges} 
+            />
           </CardHeader>
-          <CardContent className="h-[400px] pt-8">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={topProductsData} margin={{ top: 0, right: 30, left: 150, bottom: 0 }}>
+          <CardContent className="h-[480px] p-0 pt-8 pb-4">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <BarChart layout="vertical" data={displayTopProductsData} margin={{ top: 0, right: 15, left: 140, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                 <XAxis type="number" hide />
                 <YAxis
@@ -295,7 +342,7 @@ export default function Dashboard() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 11, fill: '#4B5563' }}
-                  width={150}
+                  width={135}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -305,7 +352,7 @@ export default function Dashboard() {
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
                 />
-                <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-8 mt-2 overflow-x-auto pb-2">

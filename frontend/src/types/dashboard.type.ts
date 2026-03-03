@@ -1,3 +1,8 @@
+export interface ChartData {
+  label: string
+  value: number
+}
+
 export interface DashboardSalesResponse {
   completedOrdersToday: number
   completedGrowthPercentage: number
@@ -8,4 +13,9 @@ export interface DashboardSalesResponse {
   totalCustomersToday: number
   totalCustomersYesterday: number
   customersGrowthPercentage: number
+  rangeTotalAmount: number
+  rangeTotalCustomers: number
+  revenueChart: ChartData[]
+  customerChart: ChartData[]
+  topProducts: ChartData[]
 }

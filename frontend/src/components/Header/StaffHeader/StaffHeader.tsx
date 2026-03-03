@@ -4,7 +4,7 @@ import { Menu, X, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useContext, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AppContext } from '@/contexts/app.context'
+import { AppProvider } from '@/contexts/app.context'
 
 const StaffHeader = () => {
   const [isOpen, setIsOpen] = useState(false)

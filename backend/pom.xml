@@ -151,6 +151,12 @@
             <artifactId>payos-java</artifactId>
             <version>2.0.1</version>
         </dependency>
+
+        <!--  WEB SOCKET      -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

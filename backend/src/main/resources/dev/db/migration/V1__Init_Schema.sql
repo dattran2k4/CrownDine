@@ -276,6 +276,7 @@ CREATE TABLE `orders` (
                           `restaurant_table_id` bigint DEFAULT NULL,
                           `updated_at` datetime(6) DEFAULT NULL,
                           `user_id` bigint DEFAULT NULL,
+                          `staff_id` bigint DEFAULT NULL,
                           `voucher_id` bigint DEFAULT NULL,
                           `status` enum('CANCELLED','COMPLETED','PENDING','PRE_ORDER','SERVED') DEFAULT NULL,
                           PRIMARY KEY (`id`),
@@ -286,6 +287,7 @@ CREATE TABLE `orders` (
                           CONSTRAINT `fk_orders_reservation_id_reservations` FOREIGN KEY (`reservation_id`) REFERENCES `reservations` (`id`),
                           CONSTRAINT `fk_orders_restaurant_table_id_restaurant_tables` FOREIGN KEY (`restaurant_table_id`) REFERENCES `restaurant_tables` (`id`),
                           CONSTRAINT `fk_orders_user_id_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+                          CONSTRAINT `fk_orders_staff_id_users` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`),
                           CONSTRAINT `fk_orders_voucher_id_vouchers` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 

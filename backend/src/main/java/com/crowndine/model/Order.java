@@ -52,6 +52,10 @@ public class Order extends AbstractEntity<Long> {
     private User user;
 
     @ManyToOne
+    @JoinColumn(name = "staff_id")
+    private User staff;
+
+    @ManyToOne
     @JoinColumn(name = "restaurant_table_id")
     private RestaurantTable restaurantTable;
 

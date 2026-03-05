@@ -1,11 +1,16 @@
 package com.crowndine.service.order;
 
+import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.response.OrderResponse;
+import com.crowndine.dto.response.PageResponse;
 import com.crowndine.model.Order;
 import com.crowndine.model.Reservation;
 import com.crowndine.model.User;
+
+import java.time.LocalDate;
 
 public interface OrderService {
     Order getOrderByCode(String code);
@@ -14,9 +19,15 @@ public interface OrderService {
 
     Order createOrderForReservation(Reservation reservation, User user);
 
-    void addOrUpdateItemToOrder(Long orderId, OrderItemRequest requestt);
+    void addOrUpdateItemToOrder(Long orderId, OrderItemRequest request);
 
     void updateOrderItemInReservation(Order order, OrderItemRequest request);
 
     void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request);
+
+    PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size);
+
+    void updateOrderStatus(Long id, EOrderStatus status, String username);
+
+    void createOrderByStaff(OrderItemBatchRequest request, String username);
 }

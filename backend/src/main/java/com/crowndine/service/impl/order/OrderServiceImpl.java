@@ -52,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
     public void addOrderForReservation(Reservation reservation, OrderItemBatchRequest request, User user) {
         Order order = (reservation.getOrder() != null) ? reservation.getOrder() : new Order();
 
-        order.setStatus(EOrderStatus.PENDING);
+        order.setStatus(EOrderStatus.PRE_ORDER);
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
@@ -113,7 +113,7 @@ public class OrderServiceImpl implements OrderService {
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
-        order.setStatus(EOrderStatus.PENDING);
+        order.setStatus(EOrderStatus.PRE_ORDER);
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
@@ -244,13 +244,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateOrderStatus(Long id, EOrderStatus status, String username) {
+    public UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
         order.setStatus(status);
-        order.setStaff(staff);
         orderRepository.save(order);
+
+        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
+        response.setId(order.getId());
+        response.setStatus(order.getStatus());
+        return response;
     }
 
     @Override

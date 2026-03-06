@@ -120,7 +120,6 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     }
 
     private RestaurantTableResponse toResponse(RestaurantTable restaurantTable) {
-        log.info("Table id {}", restaurantTable.getId());
         RestaurantTableResponse response = new RestaurantTableResponse();
         BeanUtils.copyProperties(restaurantTable, response);
         response.setId(restaurantTable.getId());

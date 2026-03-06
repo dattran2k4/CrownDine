@@ -28,7 +28,7 @@ public class ApiOrderController {
                                     @RequestParam(required = false) LocalDate toDate,
                                     @RequestParam(required = false) EOrderStatus status,
                                     @RequestParam(required = false, defaultValue = "0") int page,
-                                    @RequestParam(required = false, defaultValue = "10") int size) {
+                                    @RequestParam(required = false, defaultValue = "20") int size) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully retrieved all Orders")

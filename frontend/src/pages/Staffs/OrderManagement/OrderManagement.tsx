@@ -1,8 +1,13 @@
+import orderApi from '@/apis/order.api'
 import tableApi from '@/apis/table.api'
+import { queryClient } from '@/main'
+import OrderStatusSelect from '@/pages/Staffs/OrderManagement/components/OrderStatusSelect/OrderStatusSelect'
+import type { Order } from '@/types/order.type'
 import type { ETableShape, ETableStatus, Table } from '@/types/table.type'
 import { useQuery } from '@tanstack/react-query'
+import type { AxiosResponse } from 'axios'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { useStompClient, useSubscription } from 'react-stomp-hooks'
 import { toast } from 'sonner'
 
@@ -22,41 +27,84 @@ const SHAPE_STYLES: Record<ETableShape, string> = {
 
 const OrderManagement = () => {
   const stompClient = useStompClient()
-  const [tables, setTables] = useState<Table[]>([])
+
+  const { data: orderData } = useQuery({
+    queryKey: ['orders'],
+    queryFn: () => orderApi.getAllOrders({})
+  })
+
+  const orders = orderData?.data.data.data || []
 
   // 1. Fetch dữ liệu ban đầu bằng React Query
-  const { data: initialData, isLoading } = useQuery({
+  const { data: tableData, isLoading } = useQuery({
     queryKey: ['tables'],
     queryFn: () => tableApi.getAllTables()
   })
 
-  // Cập nhật state khi có dữ liệu ban đầu
-  useEffect(() => {
-    if (initialData?.data?.data) {
-      setTables(initialData.data.data)
-    }
-  }, [initialData])
-
-  // 2. Lắng nghe Real-time cập nhật từ WebSocket
-  useSubscription('/topic/tables', (message) => {
-    const updatedTable = JSON.parse(message.body) as Table
-
-    setTables((prev) => prev.map((t) => (t.id === updatedTable.id ? updatedTable : t)))
-
-    toast.info(`Bàn ${updatedTable.name} vừa thay đổi trạng thái!`)
-  })
+  const tables = tableData?.data.data || []
 
   // 3. Hàm giả lập Staff cập nhật trạng thái
   const updateStatus = (tableId: string, newStatus: ETableStatus) => {
     if (stompClient) {
       stompClient.publish({
         destination: `/app/table/${tableId}`,
-        body: JSON.stringify(newStatus) // Gửi Enum trực tiếp theo Backend mong đợi
+        body: JSON.stringify(newStatus)
       })
     } else {
       toast.error('Chưa kết nối được máy chủ WebSocket')
     }
   }
+
+  // 2. Lắng nghe Real-time cập nhật từ WebSocket
+  useSubscription('/topic/tables', (message) => {
+    const updatedTable = JSON.parse(message.body) as Table
+
+    // Cập nhật Cache mà không cần gọi lại API
+    queryClient.setQueryData(['tables'], (oldData: AxiosResponse) => {
+      if (!oldData) return oldData
+
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: oldData.data.data.map((t: Table) => (t.id === updatedTable.id ? updatedTable : t))
+        }
+      }
+    })
+
+    toast.info(`Bàn ${updatedTable.name} vừa thay đổi trạng thái!`)
+  })
+
+  const stats = useMemo(() => {
+    const defaultStatus = { TOTAL: 0, PRE_ORDER: 0, CONFIRMED: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0 }
+    return orders.reduce((acc, order) => {
+      acc.TOTAL++
+      if (acc[order.status] !== undefined) acc[order.status]++
+      return acc
+    }, defaultStatus)
+  }, [orders])
+
+  // 2. Lắng nghe Real-time cập nhật từ WebSocket
+  useSubscription('/topic/orders', (message) => {
+    console.log('WS message received')
+    const updatedOrder = JSON.parse(message.body) as Order
+
+    queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
+      if (!oldData) return oldData
+
+      return {
+        ...oldData, // Tầng 1: AxiosResponse
+        data: {
+          ...oldData.data, //ApiResponse (success, message, data)
+          data: {
+            ...oldData.data.data, //PageResponse (data, ....)
+            data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
+          }
+        }
+      }
+    })
+    toast.success(`Đơn hàng #${updatedOrder.id} đã cập nhật real-time!`)
+  })
 
   if (isLoading) return <div className='p-10 text-center'>Đang tải sơ đồ nhà hàng...</div>
 
@@ -103,7 +151,7 @@ const OrderManagement = () => {
               </p>
             </div>
 
-            {/* Menu cập nhật nhanh (Action Buttons) */}
+            {/* Action Buttons */}
             <div className='smooth-transition mt-4 flex flex-wrap justify-center gap-2 opacity-0 group-hover:opacity-100'>
               {(['AVAILABLE', 'RESERVED', 'OCCUPIED', 'UNAVAILABLE'] as ETableStatus[]).map((s) => (
                 <button
@@ -120,6 +168,79 @@ const OrderManagement = () => {
           </div>
         ))}
       </div>
+
+      {/* --- 4 Thẻ thống kê chuẩn màu dự án --- */}
+      <div className='mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5'>
+        <StatBox title='Tất cả' count={stats.TOTAL} color='bg-white' isMain />
+        <StatBox title='Đặt trước' count={stats.PRE_ORDER} color='bg-[#f5a623]' />
+        <StatBox title='Đã xác nhận' count={stats.CONFIRMED} color='bg-secondary' isDark />
+        <StatBox title='Đang phục vụ' count={stats.IN_PROGRESS} color='bg-primary' />
+        <StatBox title='Hoàn tất' count={stats.COMPLETED} color='bg-[#00ff00]' />
+        <StatBox title='Huỷ' count={stats.CANCELLED} color='bg-red-500' />
+      </div>
+
+      {/* --- Danh sách Đơn hàng --- */}
+      <div className='glass border-secondary border-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]'>
+        <div className='overflow-x-auto'>
+          <table className='w-full text-left'>
+            <thead className='bg-secondary text-white'>
+              <tr className='text-xs font-bold tracking-widest uppercase'>
+                <th className='p-4'>Code</th>
+                <th className='p-4'>Khách hàng</th>
+                <th className='p-4'>Chi tiết món ({'Qty'})</th>
+                <th className='p-4'>Tổng tiền</th>
+                <th className='p-4'>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className='divide-border divide-y bg-white'>
+              {orders.map((order) => (
+                <tr key={order.id} className='hover:bg-primary/5 group transition-colors'>
+                  <td className='text-secondary p-4 font-black'>#{order.code}</td>
+                  <td className='p-4'>
+                    <div className='font-bold'>{order.guestName}</div>
+                    <div className='text-muted-foreground text-[10px] italic'>
+                      {new Date(order.createdAt).toLocaleTimeString()}
+                    </div>
+                  </td>
+                  <td className='p-4'>
+                    <div className='flex flex-wrap gap-1'>
+                      {order.orderDetails.map((detail) => (
+                        <span
+                          key={detail.id}
+                          className='border-secondary bg-background border px-1 text-[10px] font-medium'
+                          title={detail.note}
+                        >
+                          {detail.quantity}x {detail.item?.name || 'Món ăn'}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className='text-primary p-4 font-bold'>{order.totalPrice.toLocaleString()}đ</td>
+                  <td className='p-4'>
+                    <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Sub-component: StatBox ---
+function StatBox({ title, count, color, isDark, isMain }: any) {
+  return (
+    <div
+      className={clsx(
+        'border-secondary border-2 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1',
+        color,
+        isDark ? 'text-white' : 'text-secondary'
+      )}
+    >
+      <p className='mb-2 text-[10px] font-black tracking-widest uppercase opacity-80'>{title}</p>
+      <p className='text-3xl font-black italic'>{count}</p>
     </div>
   )
 }

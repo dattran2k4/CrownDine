@@ -19,7 +19,7 @@ public class CalculationServiceImpl implements CalculationService {
     @Override
     public BigDecimal calculateTotalOrder(List<OrderDetail> details) {
         return details.stream()
-                .filter(d -> !d.getStatus().equals(EOrderDetailStatus.REJECTED))
+                .filter(d -> !d.getStatus().equals(EOrderDetailStatus.CANCELLED))
                 .map(OrderDetail::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

@@ -6,6 +6,7 @@ import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
+import com.crowndine.dto.response.UpdateStatusOrderResponse;
 import com.crowndine.model.Order;
 import com.crowndine.model.Reservation;
 import com.crowndine.model.User;
@@ -27,7 +28,7 @@ public interface OrderService {
 
     PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size);
 
-    void updateOrderStatus(Long id, EOrderStatus status, String username);
+    UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
     void createOrderByStaff(OrderItemBatchRequest request, String username);
 }

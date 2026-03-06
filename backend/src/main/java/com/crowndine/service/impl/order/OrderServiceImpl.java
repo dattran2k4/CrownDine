@@ -262,11 +262,13 @@ public class OrderServiceImpl implements OrderService {
         log.info("Processing create new order by staff username {}", username);
         User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
         Order order = new Order();
+        order.setCode(UUID.randomUUID().toString());
         order.setStaff(staff);
-
+        order.setStatus(EOrderStatus.CONFIRMED);
         orderDetailService.addOrderDetailForOrder(order, request);
 
-        orderRepository.save(order);
+        Order result = orderRepository.save(order);
+        log.info("Created order with id {}", result.getId());
     }
 
     private OrderResponse toResponse(Order order) {

@@ -152,6 +152,10 @@
             <version>2.0.1</version>
         </dependency>
 
+        <!--  WEB SOCKET      -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         <!-- Excel Export -->
         <dependency>
             <groupId>org.apache.poi</groupId>

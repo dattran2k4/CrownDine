@@ -1,5 +1,6 @@
 package com.crowndine.model;
 
+import com.crowndine.common.enums.EOrderDetailStatus;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,10 @@ public class OrderDetail extends AbstractEntity<Long> {
 
     @Column(name = "total_price")
     private BigDecimal totalPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private EOrderDetailStatus status;
 
     @Column(name = "note")
     private String note;

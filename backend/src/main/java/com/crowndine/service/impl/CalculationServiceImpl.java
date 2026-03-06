@@ -1,8 +1,7 @@
 package com.crowndine.service.impl;
 
-import com.crowndine.model.Order;
+import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.model.OrderDetail;
-import com.crowndine.model.Reservation;
 import com.crowndine.service.CalculationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +19,7 @@ public class CalculationServiceImpl implements CalculationService {
     @Override
     public BigDecimal calculateTotalOrder(List<OrderDetail> details) {
         return details.stream()
+                .filter(d -> !d.getStatus().equals(EOrderDetailStatus.CANCELLED))
                 .map(OrderDetail::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

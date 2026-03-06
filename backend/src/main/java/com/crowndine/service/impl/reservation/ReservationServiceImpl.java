@@ -23,12 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.crowndine.service.impl.CalculationServiceImpl.DEPOSIT_RATE;
@@ -82,7 +79,7 @@ public class ReservationServiceImpl implements ReservationService {
         return resp;
     }
 
-    public OrderDetailResponse getReservationOrderDetails(Long reservationId) {
+    public OrderDetailHistoryResponse getReservationOrderDetails(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not founded"));
 
         Order order = reservation.getOrder();
@@ -94,7 +91,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         List<OrderLineResponse> data = orderDetails.stream().map(this::toLineResponse).toList();
 
-        OrderDetailResponse resp = new OrderDetailResponse();
+        OrderDetailHistoryResponse resp = new OrderDetailHistoryResponse();
         resp.setOrderId(order.getId());
         resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : null);
         resp.setStatus(order.getStatus());
@@ -327,7 +324,7 @@ public class ReservationServiceImpl implements ReservationService {
         return table.getBaseDeposit();
     }
 
-    private OrderDetailResponse toOrderDetailPageResponse(Order order) {
+    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order) {
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
                 .map(this::toLineResponse)
@@ -341,7 +338,7 @@ public class ReservationServiceImpl implements ReservationService {
         BigDecimal remainingAmount = itemsTotal.subtract(itemsTotal.multiply(DEPOSIT_RATE))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        OrderDetailResponse resp = new OrderDetailResponse();
+        OrderDetailHistoryResponse resp = new OrderDetailHistoryResponse();
         resp.setOrderId(order.getId());
         resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : null);
         resp.setStatus(order.getStatus());

@@ -16,9 +16,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.Collections;
 
@@ -47,6 +52,27 @@ public class ApiWorkScheduleController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get work schedules successfully")
+                .data(workScheduleService.getWorkSchedules(fromDate, toDate, date, status, userId, shiftId))
+                .build();
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+    public ApiResponse getMyWorkSchedules(@RequestParam(required = false) LocalDate fromDate,
+                                          @RequestParam(required = false) LocalDate toDate,
+                                          @RequestParam(required = false) LocalDate date,
+                                          @RequestParam(required = false) EWorkScheduleStatus status,
+                                          @RequestParam(required = false) Long shiftId, Principal principal) {
+
+        String username = principal.getName();
+        Long userId = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username))
+                .getId();
+
+
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get my work schedules successfully")
                 .data(workScheduleService.getWorkSchedules(fromDate, toDate, date, status, userId, shiftId))
                 .build();
     }

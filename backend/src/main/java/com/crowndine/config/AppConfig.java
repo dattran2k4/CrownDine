@@ -44,12 +44,14 @@ public class AppConfig {
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/combos/**").permitAll()
                         .requestMatchers("/api/items/**").permitAll()
                         .requestMatchers("/api/combos/**").permitAll()
                         .requestMatchers("/img/**").permitAll()
                         .requestMatchers("/ws-restaurant/**").permitAll()
                         .requestMatchers("/api/feedbacks/items/**").permitAll()
                         .requestMatchers("/api/payments/payos-ipn").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -95,5 +97,4 @@ public class AppConfig {
             }
         };
     }
-
-};
+}

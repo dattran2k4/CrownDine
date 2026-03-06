@@ -63,7 +63,7 @@ public class ComboServiceImpl implements ComboService {
         combo.setDescription(req.getDescription());
         combo.setPrice(req.getPrice());
         combo.setPriceAfterDiscount(req.getPriceAfterDiscount());
-        combo.setStatus(req.getStatus());
+        combo.setStatus(req.getStatus() != null ? req.getStatus() : com.crowndine.common.enums.EComboStatus.AVAILABLE);
         combo.setSlug(toSlug(req.getName()));
         combo.setSoldCount(0L);
 
@@ -99,7 +99,9 @@ public class ComboServiceImpl implements ComboService {
         combo.setDescription(req.getDescription());
         combo.setPrice(req.getPrice());
         combo.setPriceAfterDiscount(req.getPriceAfterDiscount());
-        combo.setStatus(req.getStatus());
+        if (req.getStatus() != null) {
+            combo.setStatus(req.getStatus());
+        }
         combo.setSlug(toSlug(req.getName()));
 
         // ✅ Không replace list
@@ -141,8 +143,8 @@ public class ComboServiceImpl implements ComboService {
     private ComboResponse mapToResponse(Combo combo) {
         List<ComboItemResponse> items = (combo.getComboItems() == null) ? new ArrayList<>()
                 : combo.getComboItems().stream()
-                .map(this::mapComboItemToResponse)
-                .toList();
+                        .map(this::mapComboItemToResponse)
+                        .toList();
 
         return ComboResponse.builder()
                 .id(combo.getId())

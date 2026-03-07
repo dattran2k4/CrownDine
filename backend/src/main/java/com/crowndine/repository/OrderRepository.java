@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
@@ -18,7 +19,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     @Query("SELECT SUM(o.finalPrice) FROM Order o WHERE o.status = :status AND o.createdAt BETWEEN :start AND :end")
     BigDecimal sumTotalAmountByStatusAndCreatedAtBetween(com.crowndine.common.enums.EOrderStatus status,
-            java.time.LocalDateTime start, java.time.LocalDateTime end);
+                                                         java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     List<Order> findAllByStatusAndCreatedAtBetween(EOrderStatus status, LocalDateTime start, LocalDateTime end);
 

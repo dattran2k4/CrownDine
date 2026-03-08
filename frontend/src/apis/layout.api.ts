@@ -3,7 +3,8 @@ import type {
   FloorLayoutResponse,
   FloorRequest,
   LayoutSaveRequest,
-  TableRequest
+  TableRequest,
+  TableLayout
 } from '@/types/layout'
 import type { ApiResponse } from '@/types/utils.type'
 import http from '@/utils/http'
@@ -81,6 +82,18 @@ const layoutApi = {
   /* ======================= SAVE FULL LAYOUT ======================= */
   saveLayout(floorId: number, data: LayoutSaveRequest) {
     return http.post<ApiResponse<FloorLayoutResponse>>(`${LAYOUT_URL}/floors/${floorId}/save`, data)
+  },
+
+  /* ======================= GET AVAILABLE TABLES ======================= */
+  getAvailableTables(params: {
+    date: string
+    startTime: string
+    endTime: string
+    guestNumber: number
+  }) {
+    return http.get<ApiResponse<TableLayout[]>>('/restaurent-tables/available', {
+      params
+    })
   }
 }
 

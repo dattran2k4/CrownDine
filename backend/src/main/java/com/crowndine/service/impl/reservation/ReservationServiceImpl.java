@@ -83,29 +83,23 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     public OrderDetailResponse getReservationOrderDetails(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not founded"));
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not founded"));
 
         Order order = reservation.getOrder();
+        // Tự động tạo order trống nếu chưa có (khi khách không chọn món)
         if (order == null) {
-            throw new ResourceNotFoundException("Order not found for reservation");
+            if (reservation.getCustomer() == null) {
+                throw new ResourceNotFoundException("Customer not found for reservation");
+        }
+            order = orderService.createOrderForReservation(reservation, reservation.getCustomer());
+            reservation.setOrder(order);
+            reservationRepository.save(reservation);
         }
 
-        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
-
-        List<OrderLineResponse> data = orderDetails.stream().map(this::toLineResponse).toList();
-
-        OrderDetailResponse resp = new OrderDetailResponse();
-        resp.setOrderId(order.getId());
-        resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : null);
-        resp.setStatus(order.getStatus());
-        resp.setTotalPrice(order.getTotalPrice());
-        resp.setDiscountPrice(order.getDiscountPrice());
-        resp.setFinalPrice(order.getFinalPrice());
-        resp.setCreatedAt(order.getCreatedAt());
-        resp.setItems(data);
-
-        return resp;
-
+        // Use the unified mapping to ensure response contains:
+        // itemsTotal, tableDeposit (base_deposit), depositAmount (20% items + tableDeposit), remainingAmount, and items.
+        return toOrderDetailPageResponse(order);
     }
 
     private OrderLineResponse toLineResponse(OrderDetail od) {
@@ -318,6 +312,28 @@ public class ReservationServiceImpl implements ReservationService {
         if (startDateTime.toLocalTime().isBefore(OPEN_TIME) || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
             throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelReservation(Long reservationId, String username) {
+        log.info("Cancelling reservation id {} for user {}", reservationId, username);
+        
+        Reservation reservation = getReservationById(reservationId);
+        User user = getUserByUserName(username);
+        
+        validateReservationForUser(reservation, user);
+        
+        // Chỉ cho phép cancel reservation ở trạng thái PENDING hoặc CONFIRMED
+        if (!reservation.getStatus().equals(EReservationStatus.PENDING) && 
+            !reservation.getStatus().equals(EReservationStatus.CONFIRMED)) {
+            throw new InvalidDataException("Không thể hủy đặt bàn ở trạng thái này");
+        }
+        
+        reservation.setStatus(EReservationStatus.CANCELLED);
+        reservationRepository.save(reservation);
+        
+        log.info("Reservation id {} has been cancelled", reservationId);
     }
 
     private BigDecimal getTableDeposit(RestaurantTable table) {

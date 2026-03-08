@@ -109,6 +109,7 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         dto.setWidth(table.getWidth());
         dto.setHeight(table.getHeight());
         dto.setRotation(table.getRotation());
+        dto.setCapacity(table.getCapacity());
         return dto;
     }
 }

@@ -98,4 +98,13 @@ public class ApiReservationController {
                 .message("Deleted items successfully")
                 .build();
     }
+
+    @DeleteMapping("/{reservationId}/cancel")
+    public ApiResponse cancelReservation(@PathVariable Long reservationId, Principal principal) {
+        reservationService.cancelReservation(reservationId, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Cancelled reservation successfully")
+                .build();
+    }
 }

@@ -29,12 +29,11 @@ const SHAPE_STYLES: Record<ETableShape, string> = {
 const OrderManagement = () => {
   const stompClient = useStompClient()
 
-  const { data: orderData } = useQuery({
+  const { data: orders = [] } = useQuery({
     queryKey: ['orders'],
-    queryFn: () => orderApi.getAllOrders({})
+    queryFn: () => orderApi.getAllOrders({}),
+    select: (response) => response?.data?.data?.data ?? []
   })
-
-  const orders = orderData?.data.data.data || []
 
   // 1. Fetch dữ liệu ban đầu bằng React Query
   const { data: tableData, isLoading } = useQuery({

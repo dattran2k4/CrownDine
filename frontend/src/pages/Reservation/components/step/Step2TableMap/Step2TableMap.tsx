@@ -109,13 +109,8 @@ const Step2TableMap = ({
       return
     }
     
-    // Không cho chọn bàn OCCUPIED hoặc RESERVED
-    if (tableLayout.status === 'OCCUPIED' || tableLayout.status === 'RESERVED') {
-      return
-    }
-    
-    // Không cho chọn bàn đã được đặt trong khung giờ này
-    if (!availableTableIds.has(tableLayout.id)) {
+    // Không cho chọn bàn đã được đặt trong khung giờ này (chỉ áp dụng cho bàn AVAILABLE)
+    if (tableLayout.status === 'AVAILABLE' && !availableTableIds.has(tableLayout.id)) {
       return
     }
     

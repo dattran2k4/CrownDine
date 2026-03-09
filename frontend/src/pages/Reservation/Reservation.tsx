@@ -60,8 +60,6 @@ export default function Reservation() {
     if (isPaid) {
       return
     }
-    
-    if (table.status !== 'AVAILABLE') return
     const exists = selectedTables.find((t) => t.id === table.id)
     if (exists) {
       // Nếu bàn đã được chọn, bỏ chọn nó

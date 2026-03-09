@@ -147,21 +147,22 @@ export default function LayoutCanvas({
     areaId: number,
     table: TableLayout
   ) => {
+    // Nếu đã thanh toán, không cho chọn bàn mới
+    if (isPaid) {
+      return
+    }
 
-    
-    // Không cho chọn bàn đã được đặt trong khung giờ này
-    if (availableTableIds && !availableTableIds.has(table.id)) {
+    // Không cho chọn bàn đã được đặt trong khung giờ này (chỉ áp dụng cho bàn AVAILABLE)
+    if (table.status === 'AVAILABLE' && availableTableIds && !availableTableIds.has(table.id)) {
       return
     }
     
-    // Chỉ cho phép chọn bàn AVAILABLE và phù hợp với yêu cầu (nếu có guests)
-    if (guests !== undefined) {
+    // Chỉ kiểm tra capacity cho bàn AVAILABLE
+    if (guests !== undefined && table.status === 'AVAILABLE') {
       const capacity = table.capacity || 2
-      if (table.status !== 'AVAILABLE' || capacity < guests) {
-        return // Không cho chọn bàn đỏ
+      if (capacity < guests) {
+        return // Không cho chọn bàn AVAILABLE nhưng capacity < guests
       }
-    } else if (table.status !== 'AVAILABLE') {
-      return // Không cho chọn bàn OCCUPIED hoặc RESERVED
     }
     
     setSelectedId(table.id)

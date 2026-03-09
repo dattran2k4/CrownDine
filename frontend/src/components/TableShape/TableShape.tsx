@@ -44,18 +44,25 @@ export default function TableShape({
   let style = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
   let seatColor = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
   
-  // Bàn AVAILABLE, capacity >= guests, và chưa được đặt trong khung giờ -> màu xanh lá cây (có thể chọn)
-  if (statusKey === 'AVAILABLE' && isAvailableInTimeSlot && guests !== undefined && capacity >= guests) {
-    style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
-    seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+  // Bàn AVAILABLE, OCCUPIED, hoặc RESERVED -> màu xanh lá cây (có thể chọn)
+  if (statusKey === 'AVAILABLE' || statusKey === 'OCCUPIED' || statusKey === 'RESERVED') {
+    // Kiểm tra capacity cho bàn AVAILABLE
+    if (statusKey === 'AVAILABLE') {
+      // Bàn AVAILABLE nhưng capacity < guests hoặc đã được đặt -> màu đỏ
+      if (!isAvailableInTimeSlot || (guests !== undefined && capacity < guests)) {
+        style = { fill: '#d9534f', text: '#fff' } // Màu đỏ
+        seatColor = '#a83a31' // Màu đỏ đậm cho ghế
+      } else {
+        style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
+        seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+      }
+    } else {
+      // Bàn OCCUPIED hoặc RESERVED -> màu xanh lá cây
+      style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
+      seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+    }
   }
-  // Bàn OCCUPIED, RESERVED, hoặc đã được đặt trong khung giờ -> màu đỏ
-  // Bàn AVAILABLE nhưng capacity < guests -> màu đỏ (không phù hợp)
-  else if (statusKey === 'OCCUPIED' || statusKey === 'RESERVED' || !isAvailableInTimeSlot || 
-           (statusKey === 'AVAILABLE' && guests !== undefined && capacity < guests)) {
-    style = { fill: '#d9534f', text: '#fff' } // Màu đỏ
-    seatColor = '#a83a31' // Màu đỏ đậm cho ghế
-  }
+  // Bàn UNAVAILABLE hoặc các trường hợp khác -> giữ màu mặc định (xám hoặc đỏ)
 
   /* ===== FIX TỈ LỆ ===== */
   let width = table.width
@@ -179,9 +186,13 @@ export default function TableShape({
       />
     ) : null
 
-  // Xác định bàn có thể chọn được không (không phụ thuộc vào isPaid ở đây, vì isPaid sẽ được kiểm tra ở LayoutCanvas)
-  const isSelectable = statusKey === 'AVAILABLE' && isAvailableInTimeSlot && (guests === undefined || capacity >= guests)
-  const isDisabled = !isSelectable || statusKey === 'OCCUPIED' || statusKey === 'RESERVED' || !isAvailableInTimeSlot
+  // Xác định bàn có thể chọn được không
+  // Cho phép chọn bàn OCCUPIED và RESERVED
+  // Chỉ disable bàn UNAVAILABLE hoặc bàn AVAILABLE nhưng không phù hợp yêu cầu
+  const isSelectable = statusKey === 'AVAILABLE' 
+    ? (isAvailableInTimeSlot && (guests === undefined || capacity >= guests))
+    : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED') // Cho phép chọn OCCUPIED và RESERVED
+  const isDisabled = statusKey === 'UNAVAILABLE' || (statusKey === 'AVAILABLE' && !isSelectable)
 
   return (
     <g

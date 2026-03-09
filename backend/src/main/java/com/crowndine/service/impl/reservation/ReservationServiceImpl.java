@@ -419,7 +419,7 @@ public class ReservationServiceImpl implements ReservationService {
         return table.getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private OrderDetailResponse toOrderDetailPageResponse(Order order, LocalTime startTime, LocalTime endTime) {
+    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order, LocalTime startTime, LocalTime endTime) {
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
                 .map(this::toLineResponse)

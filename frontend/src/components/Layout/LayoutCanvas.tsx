@@ -147,15 +147,7 @@ export default function LayoutCanvas({
     areaId: number,
     table: TableLayout
   ) => {
-    // Nếu đã thanh toán, không cho chọn bàn mới
-    if (isPaid) {
-      return
-    }
-    
-    // Không cho chọn bàn OCCUPIED hoặc RESERVED
-    if (table.status === 'OCCUPIED' || table.status === 'RESERVED') {
-      return
-    }
+
     
     // Không cho chọn bàn đã được đặt trong khung giờ này
     if (availableTableIds && !availableTableIds.has(table.id)) {

@@ -91,7 +91,7 @@ const layoutApi = {
     endTime: string
     guestNumber: number
   }) {
-    return http.get<ApiResponse<TableLayout[]>>('/restaurent-tables/available', {
+    return http.get<ApiResponse<TableLayout[]>>('/restaurant-tables/available', {
       params
     })
   }

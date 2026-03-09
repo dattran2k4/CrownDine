@@ -1,7 +1,7 @@
 import { RESTAURANT_CONFIG, type Table } from '@/pages/Reservation/data'
 import { formatCurrency } from '@/utils/utils'
 import { CreditCard, XCircle, Utensils, Loader2, Info } from 'lucide-react'
-import type { OrderDetailResponse } from '@/apis/reservation.api'
+import type { OrderDetailResponse } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 
 interface CartItem {

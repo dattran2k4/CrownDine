@@ -6,7 +6,8 @@ import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Ste
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
-import reservationApi, { type OrderDetailResponse } from '@/apis/reservation.api'
+import reservationApi from '@/apis/reservation.api'
+import type { OrderDetailResponse } from '@/types/reservation.type'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {

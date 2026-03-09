@@ -34,9 +34,6 @@ public class UserVoucher {
     @Column(name = "usage_limit")
     private Integer usageLimit = 1;
 
-    @Column(name = "is_used")
-    private Boolean isUsed = false;
-
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt = LocalDateTime.now();
 

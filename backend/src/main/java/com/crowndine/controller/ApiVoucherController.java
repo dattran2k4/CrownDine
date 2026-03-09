@@ -1,8 +1,10 @@
 package com.crowndine.controller;
 
 import com.crowndine.common.enums.EVoucherType;
+import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.request.VoucherRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.service.voucher.VoucherService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class ApiVoucherController {
 
     private final VoucherService voucherService;
+    private final UserVoucherService userVoucherService;
 
     @PostMapping
     public ApiResponse createVoucher(@Valid @RequestBody VoucherRequest request) {
@@ -57,6 +60,25 @@ public class ApiVoucherController {
                 .status(HttpStatus.OK.value())
                 .message("Update voucher successfully")
                 .data(voucherService.updateVoucher(id, request))
+                .build();
+    }
+
+    @PostMapping("/{id}/assign-users")
+    public ApiResponse assignUsers(@Min(1) @PathVariable Long id,
+                                   @Valid @RequestBody VoucherAssignUsersRequest request) {
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Assign voucher to users successfully")
+                .data(userVoucherService.assignUsers(id, request))
+                .build();
+    }
+
+    @GetMapping("/{id}/assignments")
+    public ApiResponse getAssignments(@Min(1) @PathVariable Long id) {
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Get voucher assignments successfully")
+                .data(userVoucherService.getVoucherAssignments(id))
                 .build();
     }
 }

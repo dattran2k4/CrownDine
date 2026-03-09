@@ -91,18 +91,20 @@ public class VoucherServiceImpl implements VoucherService {
     @Transactional(rollbackFor = Exception.class)
     public VoucherResponse updateVoucher(Long id, VoucherRequest request) {
         Voucher voucher = getVoucher(id);
+        String normalizedName = request.getName().trim();
+        String normalizedCode = request.getCode().trim().toUpperCase(Locale.ROOT);
 
-        if (voucherRepository.existsByNameAndIdNot(request.getName(), id)) {
+        if (voucherRepository.existsByNameAndIdNot(normalizedName, id)) {
             throw new InvalidDataException("Tên voucher đã tồn tại");
         }
 
-        voucher.setName(voucher.getName());
+        voucher.setName(normalizedName);
 
-        if (voucherRepository.existsByCodeAndIdNot(request.getCode(), id)) {
+        if (voucherRepository.existsByCodeAndIdNot(normalizedCode, id)) {
             throw new InvalidDataException("Mã voucher đã tồn tại");
         }
 
-        voucher.setCode(request.getCode());
+        voucher.setCode(normalizedCode);
         voucher.setType(request.getType());
         voucher.setDiscountValue(request.getDiscountValue());
         voucher.setMaxDiscountValue(request.getMaxDiscountValue());
@@ -113,7 +115,6 @@ public class VoucherServiceImpl implements VoucherService {
         Voucher updatedVoucher = voucherRepository.save(voucher);
         return toResponse(updatedVoucher);
     }
-
 
     private Voucher getVoucher(Long id) {
         return voucherRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));

@@ -199,7 +199,6 @@ CREATE TABLE `user_vouchers` (
                                  `voucher_id` bigint DEFAULT NULL,
                                  `usage_count` int NOT NULL DEFAULT 0,
                                  `usage_limit` int NOT NULL DEFAULT 1,
-                                 `is_used` bit(1) NOT NULL DEFAULT b'0',
                                  `assigned_at` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
                                  `expired_at` datetime(6) DEFAULT NULL,
                                  PRIMARY KEY (`id`),

@@ -4,6 +4,7 @@ import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -38,6 +39,7 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final ComboRepository comboRepository;
     private final UserRepository userRepository;
+    private final RestaurantTableRepository tableRepository;
 
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
@@ -245,7 +247,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status) {
-        Order order = orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        Order order = getOrder(id);
 
         order.setStatus(status);
         orderRepository.save(order);
@@ -258,17 +260,43 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createOrderByStaff(OrderItemBatchRequest request, String username) {
+    public void createOrderByStaff(OrderRequest request, String username) {
         log.info("Processing create new order by staff username {}", username);
         User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
         Order order = new Order();
         order.setCode(UUID.randomUUID().toString());
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
-        orderDetailService.addOrderDetailForOrder(order, request);
+        order.setRestaurantTable(table);
+        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+
+        //Tính lại tổng hoá đơn
+        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
+        order.setFinalPrice(order.getTotalPrice());
 
         Order result = orderRepository.save(order);
         log.info("Created order with id {}", result.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
+        Order order = getOrder(id);
+
+        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+
+        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
+        order.setFinalPrice(order.getTotalPrice());
+        orderRepository.save(order);
+
+        log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
+    }
+
+    @Override
+    public Order getOrder(Long id) {
+        return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
     private OrderResponse toResponse(Order order) {

@@ -7,6 +7,7 @@ import type { ETableShape, ETableStatus, Table } from '@/types/table.type'
 import { useQuery } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 import clsx from 'clsx'
+import { CloudCog } from 'lucide-react'
 import { useMemo } from 'react'
 import { useStompClient, useSubscription } from 'react-stomp-hooks'
 import { toast } from 'sonner'
@@ -86,7 +87,6 @@ const OrderManagement = () => {
 
   // 2. Lắng nghe Real-time cập nhật từ WebSocket
   useSubscription('/topic/orders', (message) => {
-    console.log('WS message received')
     const updatedOrder = JSON.parse(message.body) as Order
 
     queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
@@ -204,15 +204,24 @@ const OrderManagement = () => {
                   </td>
                   <td className='p-4'>
                     <div className='flex flex-wrap gap-1'>
-                      {order.orderDetails.map((detail) => (
-                        <span
-                          key={detail.id}
-                          className='border-secondary bg-background border px-1 text-[10px] font-medium'
-                          title={detail.note}
-                        >
-                          {detail.quantity}x {detail.item?.name || 'Món ăn'}
+                      {order.orderDetails.length > 0 ? (
+                        order.orderDetails.map((detail) => {
+                          const displayName = detail.item?.name || detail.combo?.name
+                          return (
+                            <span
+                              key={detail.id}
+                              className='border-secondary bg-background border px-1 text-[10px] font-medium'
+                              title={detail.note || 'Không có ghi chú'}
+                            >
+                              {detail.quantity}x {displayName || 'Chưa xác định'}
+                            </span>
+                          )
+                        })
+                      ) : (
+                        <span className='text-destructive text-[10px] font-bold uppercase italic opacity-70'>
+                          Chưa có món ăn
                         </span>
-                      ))}
+                      )}
                     </div>
                   </td>
                   <td className='text-primary p-4 font-bold'>{order.totalPrice.toLocaleString()}đ</td>

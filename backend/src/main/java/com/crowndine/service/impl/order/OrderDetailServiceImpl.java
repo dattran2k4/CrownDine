@@ -3,6 +3,8 @@ package com.crowndine.service.impl.order;
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
+import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.request.UpdateOrderDetailRequest;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -35,12 +37,12 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addOrderDetailForOrder(Order order, OrderItemBatchRequest request) {
-        log.info("Processing {} items for order {}", request.getItems().size(), order.getId());
+    public void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request) {
+        log.info("Processing {} items for order {}", request.size(), order.getId());
 
         List<OrderDetail> orderDetails = new ArrayList<>();
 
-        request.getItems().forEach(item -> {
+        request.forEach(item -> {
             OrderDetail orderDetailItem = new OrderDetail();
             orderDetailItem.setOrder(order);
             if (item.getItemId() != null) {
@@ -60,9 +62,6 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         orderDetailRepository.saveAll(orderDetails);
 
-        //Tính lại tổng hoá đơn
-        order.setTotalPrice(calculationService.calculateTotalOrder(orderDetails));
-
         log.info("Added successfully order detail for order {}", order.getId());
     }
 
@@ -76,7 +75,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         if (order.getStatus().equals(EOrderStatus.COMPLETED) || order.getStatus().equals(EOrderStatus.CANCELLED)) {
             throw new InvalidDataException("Không thể cập nhật món cho hóa đơn đã đóng.");
         }
-        
+
         BigDecimal oldOrderDetailTotalPrice = orderDetail.getTotalPrice();
 
         orderDetail.setNote(request.getNote());
@@ -96,9 +95,22 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteOrderDetail(Long id) {
         orderDetailRepository.delete(findById(id));
+
+        Order order = findById(id).getOrder();
+        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
         log.info("Deleted successfully order detail id {}", id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changeStatus(Long id, EOrderDetailStatus status) {
+        OrderDetail detail = findById(id);
+        detail.setStatus(status);
+        orderDetailRepository.save(detail);
+        log.info("Updated successfully order detail id {}", id);
     }
 
     private OrderDetail findById(Long id) {

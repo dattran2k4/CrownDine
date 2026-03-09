@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ public class ApiOrderDetailController {
 
     private final OrderDetailService orderDetailService;
 
+    @PreAuthorize("hasAnyAuthority('STAFF, ADMIN')")
     @PatchMapping("/{id}/upd")
     public ApiResponse updateOrderDetail(@Min(1) @PathVariable Long id, @Valid @RequestBody UpdateOrderDetailRequest request) {
         orderDetailService.updateOrderDetail(id, request);
@@ -29,6 +31,7 @@ public class ApiOrderDetailController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('STAFF, ADMIN')")
     @DeleteMapping("/{id}/del")
     public ApiResponse deleteOrderDetail(@Min(1) @PathVariable Long id) {
         orderDetailService.deleteOrderDetail(id);

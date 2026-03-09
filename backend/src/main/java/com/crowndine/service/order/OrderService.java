@@ -4,6 +4,7 @@ import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.UpdateStatusOrderResponse;
@@ -30,5 +31,9 @@ public interface OrderService {
 
     UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
-    void createOrderByStaff(OrderItemBatchRequest request, String username);
+    void createOrderByStaff(OrderRequest request, String username);
+
+    void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
+
+    Order getOrder(Long id);
 }

@@ -1,3 +1,4 @@
+import type { Combo } from '@/types/combo.type'
 import type { Item } from '@/types/item.type'
 
 export type OrderStatus = 'PRE_ORDER' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
@@ -20,7 +21,7 @@ export interface Order {
 export interface OrderDetail {
   id: number
   item?: Item
-  order?: Order
+  combo?: Combo
   note: string
   quantity: number
   status: OrderDetailStatus

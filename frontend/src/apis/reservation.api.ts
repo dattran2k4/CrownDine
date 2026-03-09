@@ -63,6 +63,10 @@ export interface OrderItemRemoveRequest {
   comboId?: number
 }
 
+export interface ReservationUpdateTableRequest {
+  tableId: number
+}
+
 const reservationApi = {
   createReservation(data: ReservationCreateRequest) {
     return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/create`, data)
@@ -86,6 +90,10 @@ const reservationApi = {
 
   removeItemFromReservation(reservationId: number, data: OrderItemRemoveRequest) {
     return http.delete<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/remove-item`, { data })
+  },
+
+  updateReservationTable(reservationId: number, data: ReservationUpdateTableRequest) {
+    return http.put<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/update-table`, data)
   }
 }
 

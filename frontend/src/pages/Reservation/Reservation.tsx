@@ -81,43 +81,21 @@ export default function Reservation() {
       const previousTableId = selectedTables[0]?.id
       const previousReservationId = reservationId
       
-      // Nếu chọn bàn khác, tạo reservation mới TRƯỚC, sau đó mới cancel reservation cũ
-      // Điều này đảm bảo luôn có ít nhất 1 reservation đang giữ chỗ
+      // Nếu đã có reservation và chọn bàn khác → update tableId thay vì tạo mới
       if (previousReservationId && previousTableId && previousTableId !== table.id) {
         try {
           setIsCreatingReservation(true)
-          // Tạo reservation mới cho bàn mới trước
-          const response = await reservationApi.createReservation({
-            date,
-            startTime,
-            endTime,
-            guestNumber: guests,
-            tableId: parseInt(table.id),
-            note: '' // Temporary reservation để lock bàn
+          // Update reservation table thay vì tạo mới
+          await reservationApi.updateReservationTable(previousReservationId, {
+            tableId: parseInt(table.id)
           })
           
-          if (response.data.data) {
-            // Chỉ khi tạo reservation mới thành công, mới cancel reservation cũ
-            try {
-              await reservationApi.cancelReservation(previousReservationId)
-            } catch (cancelError) {
-              console.error('Failed to cancel old reservation:', cancelError)
-              // Nếu cancel thất bại, vẫn giữ reservation mới
-            }
-            
-            // Cập nhật state với reservation mới
-            setReservationId(response.data.data.reservationId)
-            setExpiratedAt(response.data.data.expiratedAt)
-            setSelectedTables([table])
-          } else {
-            // Nếu tạo reservation mới thất bại, không thay đổi gì
-            console.error('Failed to create new reservation: No data returned')
-            alert('Không thể giữ chỗ bàn mới. Vui lòng thử lại.')
-          }
+          // Cập nhật state với bàn mới
+          setSelectedTables([table])
         } catch (error) {
-          console.error('Failed to create new reservation:', error)
-          alert('Không thể giữ chỗ bàn mới. Vui lòng thử lại.')
-          // Không thay đổi selectedTables và reservationId để giữ nguyên bàn cũ
+          console.error('Failed to update reservation table:', error)
+          alert('Không thể thay đổi bàn. Vui lòng thử lại.')
+          // Không thay đổi selectedTables để giữ nguyên bàn cũ
         } finally {
           setIsCreatingReservation(false)
         }

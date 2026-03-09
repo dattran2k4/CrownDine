@@ -27,4 +27,6 @@ public interface ReservationService {
     void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name);
 
     void cancelReservation(Long reservationId, String username);
+
+    void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
 }

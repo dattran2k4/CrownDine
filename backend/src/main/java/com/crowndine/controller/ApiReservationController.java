@@ -107,4 +107,15 @@ public class ApiReservationController {
                 .message("Cancelled reservation successfully")
                 .build();
     }
+
+    @PutMapping("/{reservationId}/update-table")
+    public ApiResponse updateReservationTable(@PathVariable Long reservationId,
+                                              @Valid @RequestBody ReservationUpdateTableRequest request,
+                                              Principal principal) {
+        reservationService.updateReservationTable(reservationId, request, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Updated reservation table successfully")
+                .build();
+    }
 }

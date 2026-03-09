@@ -138,8 +138,8 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                     <Search className='h-8 w-8 text-gray-400' />
                   </div>
                   <p className='text-gray-500 text-sm font-medium'>
-                    {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
-                  </p>
+                {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
+              </p>
                 </div>
               </div>
             ) : (
@@ -190,7 +190,7 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                 {cartItems.length}
               </span>
               Đã chọn món
-            </h4>
+          </h4>
             <span className='rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200'>
               Thanh toán tại nhà hàng
             </span>
@@ -207,9 +207,9 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                   </span>
                   <div>
                     <p className='font-medium text-gray-900 text-sm'>{item.name}</p>
-                    {item.type === 'combo' && (
+                  {item.type === 'combo' && (
                       <span className='text-orange-600 text-[10px] font-medium'>Combo</span>
-                    )}
+                  )}
                   </div>
                 </span>
                 <div className='flex items-center gap-3'>

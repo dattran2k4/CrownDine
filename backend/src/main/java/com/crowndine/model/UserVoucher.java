@@ -6,13 +6,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "user_vouchers")
-public class UserVoucher extends AbstractEntity<Long> {
+public class UserVoucher {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "voucher_id")
@@ -21,4 +27,19 @@ public class UserVoucher extends AbstractEntity<Long> {
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private User customer;
+
+    @Column(name = "usage_count")
+    private Integer usageCount = 0;
+
+    @Column(name = "usage_limit")
+    private Integer usageLimit = 1;
+
+    @Column(name = "is_used")
+    private Boolean isUsed = false;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt = LocalDateTime.now();
+
+    @Column(name = "expired_at")
+    private LocalDateTime expiredAt;
 }

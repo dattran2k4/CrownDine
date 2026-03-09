@@ -116,9 +116,9 @@ INSERT INTO orders
 (user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at)
 VALUES
 -- Order gắn với reservation 1
-(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'PENDING', NOW(), NOW()),
+(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'CONFIRMED', NOW(), NOW()),
 -- Order walk-in (không reservation), gắn table 2
-(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'SERVED', NOW(), NOW());
+(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'CONFIRMED', NOW(), NOW());
 
 -- DỮ LIỆU SEED CHO DASHBOARD: HÔM NAY, HÔM QUA, 7 NGÀY QUA, THÁNG NÀY, THÁNG TRƯỚC
 -- Lưu ý: Sử dụng CURDATE() và DATE_SUB() để dữ liệu luôn phản ánh đúng theo thời điểm hiện tại khi chạy script.
@@ -131,7 +131,7 @@ INSERT INTO orders (user_id, reservation_id, restaurant_table_id, voucher_id, to
 (2, NULL, 4, NULL, 320000.00, 0, 320000.00, 'COMPLETED', CONCAT(CURDATE(), ' 15:20:00'), CONCAT(CURDATE(), ' 15:20:00')),
 (3, NULL, 1, NULL, 850000.00, 0, 850000.00, 'COMPLETED', CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),
 (1, NULL, 2, NULL, 620000.00, 0, 620000.00, 'COMPLETED', CONCAT(CURDATE(), ' 21:10:00'), CONCAT(CURDATE(), ' 21:10:00')),
-(2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'SERVED',    CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
+(2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'COMPLETED',    CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
 
 -- 2. HÔM QUA (YESTERDAY): Các mốc thời gian từ 8g-22g
 INSERT INTO orders (user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at) VALUES

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from 'sonner'
+import { StompSessionProvider } from 'react-stomp-hooks'
 import '@/index.css'
 import router from '@/router'
 import { AppProvider } from '@/contexts/app.context'
@@ -21,8 +22,19 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <RouterProvider router={router} />
-        <Toaster richColors position='top-right' />
+        <StompSessionProvider
+          // Thay makeSocket bằng webSocketFactory
+          url='ws://localhost:8080/ws-restaurant'
+          heartbeatIncoming={10000}
+          heartbeatOutgoing={10000}
+          onConnect={() => console.log('WebSocket Connected!')}
+          onDisconnect={() => console.log('WebSocket Disconnected!')}
+          // Một số phiên bản dùng debug thay vì debugConfig
+          debug={(str) => console.log(str)}
+        >
+          <RouterProvider router={router} />
+          <Toaster richColors position='top-right' />
+        </StompSessionProvider>
       </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

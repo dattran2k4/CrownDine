@@ -289,7 +289,7 @@ CREATE TABLE `orders` (
                           `updated_at` datetime(6) DEFAULT NULL,
                           `user_id` bigint DEFAULT NULL,
                           `voucher_id` bigint DEFAULT NULL,
-                          `status` enum('CANCELLED','COMPLETED','PENDING','PRE_ORDER','SERVED') DEFAULT NULL,
+                          `status` enum('PRE_ORDER','CONFIRMED','IN_PROGRESS', 'SERVED', 'COMPLETED','CANCELLED') DEFAULT NULL,
                           PRIMARY KEY (`id`),
                           UNIQUE KEY `UK72hx6qp7pqavtjrwde9gbm13x` (`reservation_id`),
                           KEY `FKgowqti7ase2e3o3k76kuani2w` (`restaurant_table_id`),

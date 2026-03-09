@@ -9,7 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-
 public class ComboResponse {
     private Long id;
 

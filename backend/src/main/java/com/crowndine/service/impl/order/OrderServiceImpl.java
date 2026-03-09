@@ -4,18 +4,27 @@ import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
+import com.crowndine.dto.request.OrderRequest;
+import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.*;
 import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
+import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +38,11 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ItemRepository itemRepository;
     private final ComboRepository comboRepository;
+    private final UserRepository userRepository;
+    private final RestaurantTableRepository tableRepository;
 
     private final CalculationService calculationService;
+    private final OrderDetailService orderDetailService;
 
     @Override
     public Order getOrderByCode(String code) {
@@ -42,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
     public void addOrderForReservation(Reservation reservation, OrderItemBatchRequest request, User user) {
         Order order = (reservation.getOrder() != null) ? reservation.getOrder() : new Order();
 
-        order.setStatus(EOrderStatus.PENDING);
+        order.setStatus(EOrderStatus.PRE_ORDER);
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
@@ -103,7 +115,7 @@ public class OrderServiceImpl implements OrderService {
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
-        order.setStatus(EOrderStatus.PENDING);
+        order.setStatus(EOrderStatus.PRE_ORDER);
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
@@ -209,6 +221,132 @@ public class OrderServiceImpl implements OrderService {
         order.setFinalPrice(newTotalPrice);
 
         orderRepository.save(order);
+    }
+
+    @Override
+    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size) {
+        int pageNumber = (page > 0) ? page - 1 : 0;
+
+        PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
+
+        Specification<Order> specification = OrderSpecification.filterOrders(fromDate, toDate, status);
+
+        Page<Order> entityPage = orderRepository.findAll(specification, pageRequest);
+
+        List<OrderResponse> response = entityPage.stream().map(this::toResponse).toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .page(page)
+                .pageSize(size)
+                .totalPages(entityPage.getTotalPages())
+                .totalItems(entityPage.getTotalElements())
+                .data(response)
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status) {
+        Order order = getOrder(id);
+
+        order.setStatus(status);
+        orderRepository.save(order);
+
+        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
+        response.setId(order.getId());
+        response.setStatus(order.getStatus());
+        return response;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createOrderByStaff(OrderRequest request, String username) {
+        log.info("Processing create new order by staff username {}", username);
+        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+        Order order = new Order();
+        order.setCode(UUID.randomUUID().toString());
+        order.setStaff(staff);
+        order.setStatus(EOrderStatus.CONFIRMED);
+        order.setRestaurantTable(table);
+        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+
+        //Tính lại tổng hoá đơn
+        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
+        order.setFinalPrice(order.getTotalPrice());
+
+        Order result = orderRepository.save(order);
+        log.info("Created order with id {}", result.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
+        Order order = getOrder(id);
+
+        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+
+        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
+        order.setFinalPrice(order.getTotalPrice());
+        orderRepository.save(order);
+
+        log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
+    }
+
+    @Override
+    public Order getOrder(Long id) {
+        return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    }
+
+    private OrderResponse toResponse(Order order) {
+        OrderResponse response = new OrderResponse();
+        BeanUtils.copyProperties(order, response);
+        response.setId(order.getId());
+
+        if (order.getStaff() != null) {
+            response.setStaffName(order.getStaff().getFullName());
+        }
+
+        if (order.getUser() != null) {
+            response.setGuestName(order.getUser().getFullName());
+        }
+
+        List<OrderDetailResponse> details = order.getOrderDetails().stream().map(d -> {
+            OrderDetailResponse od = new OrderDetailResponse();
+            od.setId(d.getId());
+            if (d.getCombo() != null) {
+                od.setCombo(toComboResponse(d.getCombo()));
+            } else if (d.getItem() != null) {
+                od.setItem(toItemResponse(d.getItem()));
+            }
+            od.setQuantity(d.getQuantity());
+            od.setNote(d.getNote());
+            od.setTotalPrice(d.getTotalPrice());
+            return od;
+        }).toList();
+
+        response.setOrderDetails(details);
+
+        return response;
+    }
+
+    private ComboResponse toComboResponse(Combo combo) {
+        return ComboResponse.builder()
+                .id(combo.getId())
+                .name(combo.getName())
+                .description(combo.getDescription())
+                .price(combo.getPrice())
+                .build();
+    }
+
+    private ItemResponse toItemResponse(Item item) {
+        return ItemResponse.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .price(item.getPrice())
+                .build();
     }
 
     private boolean isSameProduct(OrderDetail detail, Long itemId, Long comboId) {

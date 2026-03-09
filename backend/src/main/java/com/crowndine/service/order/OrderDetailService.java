@@ -3,6 +3,7 @@ package com.crowndine.service.order;
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.UpdateOrderDetailRequest;
+import com.crowndine.dto.response.UpdateStatusOrderDetailResponse;
 import com.crowndine.model.Order;
 
 import java.util.List;
@@ -15,5 +16,5 @@ public interface OrderDetailService {
 
     void deleteOrderDetail(Long id);
 
-    void changeStatus(Long id, EOrderDetailStatus status);
+    UpdateStatusOrderDetailResponse changeStatus(Long id, EOrderDetailStatus status);
 }

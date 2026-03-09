@@ -6,6 +6,7 @@ import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.request.UpdateOrderDetailRequest;
+import com.crowndine.dto.response.UpdateStatusOrderDetailResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Order;
@@ -106,11 +107,13 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void changeStatus(Long id, EOrderDetailStatus status) {
+    public UpdateStatusOrderDetailResponse changeStatus(Long id, EOrderDetailStatus status) {
         OrderDetail detail = findById(id);
         detail.setStatus(status);
         orderDetailRepository.save(detail);
         log.info("Updated successfully order detail id {}", id);
+
+        return UpdateStatusOrderDetailResponse.builder().id(id).status(status).build();
     }
 
     private OrderDetail findById(Long id) {

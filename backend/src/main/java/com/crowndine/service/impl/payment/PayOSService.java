@@ -18,6 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
@@ -74,9 +77,21 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
                 totalOrder = calculationService.calculateTotalOrder(orderDetails);
             }
 
-            amountToPay = calculationService.calculateDepositPayment(totalOrder, reservation.getTable().getBaseDeposit());
+            // Tính tiền cọc bàn theo giờ
+            BigDecimal tableDeposit = BigDecimal.ZERO;
+            if (reservation.getTable() != null && reservation.getTable().getBaseDeposit() != null 
+                    && reservation.getStartTime() != null && reservation.getEndTime() != null) {
+                long minutes = java.time.Duration.between(reservation.getStartTime(), reservation.getEndTime()).toMinutes();
+                BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+                tableDeposit = reservation.getTable().getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
+            }
 
-            log.info("Base deposit table: {}", reservation.getTable().getBaseDeposit());
+            amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
+
+            log.info("Table deposit (per hour): {}", reservation.getTable() != null ? reservation.getTable().getBaseDeposit() : 0);
+            log.info("Hours: {}", reservation.getStartTime() != null && reservation.getEndTime() != null 
+                    ? java.time.Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours() : 0);
+            log.info("Table deposit (total): {}", tableDeposit);
             log.info("Total amount to pay: {}", amountToPay);
 
             payment.setAmount(amountToPay);

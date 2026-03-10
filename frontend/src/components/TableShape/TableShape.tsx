@@ -10,6 +10,8 @@ type Props = {
     e: React.PointerEvent,
     dir: 'nw' | 'ne' | 'sw' | 'se'
   ) => void
+  guests?: number // Số khách để kiểm tra capacity
+  isAvailableInTimeSlot?: boolean // Bàn có available trong khung giờ đã chọn không
 }
 
 const STATUS_STYLE = {
@@ -31,13 +33,36 @@ export default function TableShape({
   editable,
   selected,
   onPointerDown,
-  onResizeStart
+  onResizeStart,
+  guests,
+  isAvailableInTimeSlot = true
 }: Props) {
   const statusKey = table.status as keyof typeof STATUS_STYLE
-  const style = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
-  const seatColor = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
-  
   const capacity = table.capacity || 2
+  
+  // Xác định màu sắc dựa trên trạng thái và yêu cầu khách hàng
+  let style = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
+  let seatColor = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
+  
+  // Bàn AVAILABLE, OCCUPIED, hoặc RESERVED -> màu xanh lá cây (có thể chọn)
+  if (statusKey === 'AVAILABLE' || statusKey === 'OCCUPIED' || statusKey === 'RESERVED') {
+    // Kiểm tra capacity cho bàn AVAILABLE
+    if (statusKey === 'AVAILABLE') {
+      // Bàn AVAILABLE nhưng capacity < guests hoặc đã được đặt -> màu đỏ
+      if (!isAvailableInTimeSlot || (guests !== undefined && capacity < guests)) {
+        style = { fill: '#d9534f', text: '#fff' } // Màu đỏ
+        seatColor = '#a83a31' // Màu đỏ đậm cho ghế
+      } else {
+        style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
+        seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+      }
+    } else {
+      // Bàn OCCUPIED hoặc RESERVED -> màu xanh lá cây
+      style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
+      seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+    }
+  }
+  // Bàn UNAVAILABLE hoặc các trường hợp khác -> giữ màu mặc định (xám hoặc đỏ)
 
   /* ===== FIX TỈ LỆ ===== */
   let width = table.width
@@ -161,46 +186,106 @@ export default function TableShape({
       />
     ) : null
 
+  // Xác định bàn có thể chọn được không
+  // Cho phép chọn bàn OCCUPIED và RESERVED
+  // Chỉ disable bàn UNAVAILABLE hoặc bàn AVAILABLE nhưng không phù hợp yêu cầu
+  const isSelectable = statusKey === 'AVAILABLE' 
+    ? (isAvailableInTimeSlot && (guests === undefined || capacity >= guests))
+    : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED') // Cho phép chọn OCCUPIED và RESERVED
+  const isDisabled = statusKey === 'UNAVAILABLE' || (statusKey === 'AVAILABLE' && !isSelectable)
+
   return (
     <g
       transform={`translate(${table.x}, ${table.y})`}
-      onPointerDown={onPointerDown}
-      style={{ cursor: editable ? 'move' : 'default' }}
+      onPointerDown={isDisabled ? undefined : onPointerDown}
+      style={{ 
+        cursor: isDisabled ? 'not-allowed' : (editable ? 'move' : 'pointer'),
+        opacity: isDisabled ? 0.6 : 1,
+        pointerEvents: isDisabled ? 'none' : 'auto'
+      }}
     >
       {/* ===== GHẾ ===== */}
       {renderSeats()}
 
       {/* ===== BÀN ===== */}
       {isCircle ? (
+        <>
+          {/* Shadow/Glow effect khi selected */}
+          {selected && (
+            <circle
+              cx={r}
+              cy={r}
+              r={r + 4}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={4}
+              opacity={0.5}
+            />
+          )}
         <circle
           cx={r}
           cy={r}
           r={r}
           fill={style.fill}
-          stroke={selected ? '#ff9800' : 'none'}
-          strokeWidth={selected ? 2 : 0}
-        />
+            stroke={selected ? '#3b82f6' : 'none'}
+            strokeWidth={selected ? 4 : 0}
+            style={{
+              filter: selected ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none'
+            }}
+          />
+        </>
       ) : (
+        <>
+          {/* Shadow/Glow effect khi selected */}
+          {selected && (
+            <rect
+              x={-4}
+              y={-4}
+              width={width + 8}
+              height={height + 8}
+              rx={18}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={4}
+              opacity={0.5}
+            />
+          )}
         <rect
           width={width}
           height={height}
           rx={14}
           fill={style.fill}
-          stroke={selected ? '#ff9800' : 'none'}
-          strokeWidth={selected ? 2 : 0}
-        />
+            stroke={selected ? '#3b82f6' : 'none'}
+            strokeWidth={selected ? 4 : 0}
+            style={{
+              filter: selected ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none'
+            }}
+          />
+        </>
       )}
 
       {/* ===== TÊN ===== */}
       <text
         x={isCircle ? r : width / 2}
-        y={isCircle ? r + 4 : height / 2 + 4}
+        y={isCircle ? r - 8 : height / 2 - 8}
         textAnchor="middle"
         fontSize={12}
         fontWeight={600}
         fill={style.text}
       >
         {table.name}
+      </text>
+      
+      {/* ===== SỐ LƯỢNG KHÁCH ===== */}
+      <text
+        x={isCircle ? r : width / 2}
+        y={isCircle ? r + 12 : height / 2 + 12}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={500}
+        fill={style.text}
+      >
+        {capacity} khách
       </text>
 
       {/* ===== RESIZE ===== */}

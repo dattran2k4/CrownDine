@@ -4,7 +4,8 @@ import itemApi from '@/apis/item.api'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { Search, Trash2, Utensils } from 'lucide-react'
+import { Search, Trash2, Utensils, Info } from 'lucide-react'
+import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 
 /** Một mục có thể thêm vào giỏ (món hoặc combo) */
 type PreOrderEntry = Omit<PreOrderCartItem, 'quantity'>
@@ -13,9 +14,11 @@ interface Props {
   cartItems: PreOrderCartItem[]
   onAdd: (entry: PreOrderEntry) => void
   onRemove: (type: 'item' | 'combo', id: number) => void
+  reservationId: number
+  expiratedAt: string | null
 }
 
-const Step3FoodMenu = ({ cartItems, onAdd, onRemove }: Props) => {
+const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt }: Props) => {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data: itemsData, isPending: itemsLoading } = useQuery({
@@ -64,75 +67,111 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove }: Props) => {
   const foodTotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
   return (
-    <div className='animate-fade-in space-y-6 p-4 m-4'>
-      {/* Header & Subtotal */}
-      <div className='flex items-end justify-between border-b pb-4'>
-        <div>
-          <h3 className='flex items-center gap-2 text-lg font-bold'>
-            <Utensils size={20} /> Đặt món trước (Tuỳ chọn)
-          </h3>
-          <p className='text-muted-foreground text-sm'>Món ăn sẽ được chuẩn bị sẵn khi bạn đến.</p>
+    <div className='animate-fade-in space-y-6 p-6'>
+      {/* Alert Header & Timer */}
+      {expiratedAt && (
+        <div className='rounded-lg border border-yellow-300 bg-yellow-50 p-4'>
+          <div className='flex flex-col items-center justify-between gap-4 md:flex-row'>
+            <div className='flex items-center gap-3'>
+              <Info className='text-yellow-600' size={20} />
+              <span className='text-sm font-medium text-yellow-900'>Vui lòng hoàn tất trong thời gian giữ vé.</span>
+            </div>
+            <CountdownTimer
+              expiratedAt={expiratedAt}
+              onExpire={() => {
+                alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                window.location.reload()
+              }}
+            />
+          </div>
         </div>
-        <div className='text-right'>
-          <p className='text-muted-foreground text-xs'>Tạm tính món ăn</p>
-          <p className='text-primary text-xl font-bold'>{formatCurrency(foodTotal)}</p>
+      )}
+
+      {/* Header & Subtotal */}
+      <div className='flex items-end justify-between rounded-lg bg-gray-50 p-5 border border-gray-200'>
+        <div className='flex-1'>
+          <h3 className='flex items-center gap-3 text-xl font-bold text-gray-900 mb-2'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500'>
+              <Utensils className='text-white' size={20} />
+            </div>
+            Đặt món trước (Tuỳ chọn)
+          </h3>
+          <p className='text-gray-600 text-sm ml-[3.25rem]'>Món ăn sẽ được chuẩn bị sẵn khi bạn đến.</p>
+        </div>
+        <div className='text-right bg-white rounded-lg px-4 py-3 border border-gray-200'>
+          <p className='text-gray-500 text-xs font-medium mb-1'>Tạm tính món ăn</p>
+          <p className='text-orange-600 text-2xl font-bold'>{formatCurrency(foodTotal)}</p>
         </div>
       </div>
 
       {/* Search theo tên */}
       {!isLoading && hasEntries && (
         <div className='relative'>
-          <Search className='text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2' />
+          <div className='absolute left-4 top-1/2 -translate-y-1/2 z-10'>
+            <Search className='text-gray-400 h-5 w-5' />
+          </div>
           <input
             type='text'
             placeholder='Tìm theo tên món...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className='border-border bg-card w-full rounded-lg border py-2.5 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary'
+            className='w-full rounded-lg border border-gray-200 bg-white py-3 pl-12 pr-4 text-sm outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-200'
           />
         </div>
       )}
 
-      {/* Menu Grid - món + combo, có con lăn chuột */}
+      {/* Menu Grid - Modern Card Design */}
       {isLoading ? (
-        <p className='text-muted-foreground py-8 text-center text-sm'>Đang tải danh sách món và combo...</p>
+        <div className='py-12 text-center'>
+          <div className='inline-flex flex-col items-center gap-3'>
+            <div className='h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500'></div>
+            <p className='text-gray-500 text-sm font-medium'>Đang tải danh sách món và combo...</p>
+          </div>
+        </div>
       ) : (
-        <div className='custom-scrollbar max-h-[45vh] overflow-y-auto pr-1'>
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+        <div className='custom-scrollbar max-h-[45vh] overflow-y-auto pr-2'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {filteredEntries.length === 0 ? (
-              <p className='text-muted-foreground col-span-full py-6 text-center text-sm'>
+              <div className='col-span-full py-12 text-center'>
+                <div className='inline-flex flex-col items-center gap-3'>
+                  <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gray-100'>
+                    <Search className='h-8 w-8 text-gray-400' />
+                  </div>
+                  <p className='text-gray-500 text-sm font-medium'>
                 {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
               </p>
+                </div>
+              </div>
             ) : (
               filteredEntries.map((entry) => (
                 <div
                   key={`${entry.type}-${entry.id}`}
-                  className='bg-card group flex gap-4 rounded-lg border p-3 transition-all hover:shadow-md'
+                  className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-orange-400 hover:shadow-md'
                 >
-                  <div className='h-24 w-24 overflow-hidden rounded-md'>
+                  <div className='mb-3 h-40 w-full overflow-hidden rounded-lg bg-gray-100'>
                     <img
                       src={getImageUrl(entry.image)}
                       alt={entry.name}
-                      className='h-full w-full bg-gray-200 object-cover transition-transform duration-300 group-hover:scale-110'
+                      className='h-full w-full object-cover'
                     />
                   </div>
-                  <div className='flex flex-1 flex-col justify-between'>
+                  <div className='space-y-3'>
                     <div>
-                      <div className='flex items-center gap-2'>
-                        <h4 className='line-clamp-1 font-bold'>{entry.name}</h4>
+                      <div className='flex items-start justify-between gap-2 mb-2'>
+                        <h4 className='line-clamp-2 flex-1 font-semibold text-gray-900 text-sm leading-tight'>{entry.name}</h4>
                         {entry.type === 'combo' && (
-                          <span className='bg-primary/10 text-primary shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium'>
-                            Combo
+                          <span className='shrink-0 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold text-white'>
+                            COMBO
                           </span>
                         )}
                       </div>
-                      <p className='text-primary text-sm font-bold'>{formatCurrency(entry.price)}</p>
+                      <p className='text-orange-600 text-lg font-bold'>{formatCurrency(entry.price)}</p>
                     </div>
                     <button
                       onClick={() => onAdd(entry)}
-                      className='bg-foreground hover:bg-primary self-end rounded px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors'
+                      className='w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600'
                     >
-                      + Thêm
+                      + Thêm vào giỏ
                     </button>
                   </div>
                 </div>
@@ -142,33 +181,42 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove }: Props) => {
         </div>
       )}
 
-      {/* Mini Cart Display (Chỉ hiện khi có món) */}
+      {/* Mini Cart Display */}
       {cartItems.length > 0 && (
-        <div className='animate-slide-up mt-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4'>
-          <h4 className='mb-3 flex items-center justify-between text-sm font-bold'>
-            <span>Đã chọn ({cartItems.length} món):</span>
-            <span className='text-muted-foreground text-xs font-normal'>Sẽ thanh toán tại nhà hàng</span>
+        <div className='mt-6 rounded-lg border border-dashed border-orange-300 bg-orange-50 p-5'>
+          <div className='mb-4 flex items-center justify-between'>
+            <h4 className='flex items-center gap-2 text-base font-bold text-gray-900'>
+              <span className='flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white text-xs font-bold'>
+                {cartItems.length}
+              </span>
+              Đã chọn món
           </h4>
-          <div className='custom-scrollbar max-h-48 space-y-2 overflow-y-auto pr-2'>
+            <span className='rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200'>
+              Thanh toán tại nhà hàng
+            </span>
+          </div>
+          <div className='custom-scrollbar max-h-64 space-y-2 overflow-y-auto'>
             {cartItems.map((item) => (
               <div
                 key={`${item.type}-${item.id}`}
-                className='flex items-center justify-between rounded border border-gray-100 bg-white p-2 text-sm shadow-sm'
+                className='flex items-center justify-between rounded-lg border border-orange-200 bg-white p-3'
               >
-                <span className='flex items-center gap-2'>
-                  <span className='flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-bold'>
+                <span className='flex items-center gap-3'>
+                  <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
                     {item.quantity}x
                   </span>
-                  {item.name}
+                  <div>
+                    <p className='font-medium text-gray-900 text-sm'>{item.name}</p>
                   {item.type === 'combo' && (
-                    <span className='text-primary text-[10px] font-medium'>Combo</span>
+                      <span className='text-orange-600 text-[10px] font-medium'>Combo</span>
                   )}
+                  </div>
                 </span>
                 <div className='flex items-center gap-3'>
-                  <span className='font-medium text-gray-600'>{formatCurrency(item.price * item.quantity)}</span>
+                  <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
                   <button
                     onClick={() => onRemove(item.type, item.id)}
-                    className='rounded p-1 text-gray-400 transition-all hover:bg-red-50 hover:text-red-500'
+                    className='rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
                     title='Xoá món này'
                   >
                     <Trash2 size={16} />

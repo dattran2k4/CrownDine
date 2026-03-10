@@ -12,50 +12,50 @@ const reviews: Review[] = [
   {
     id: '1',
     author: 'Sarah Mitchell',
-    role: 'Food Critic, NY Times',
+    role: 'Nhà Phê Bình Ẩm Thực, NY Times',
     rating: 5,
-    text: 'An extraordinary culinary journey. Every dish tells a story, and the attention to detail is incomparable. A must-visit for anyone who loves fine dining.',
-    date: '2 weeks ago'
+    text: 'Một hành trình ẩm thực phi thường. Mỗi món ăn đều kể một câu chuyện, và sự chú ý đến từng chi tiết là không thể so sánh. Một nơi phải đến cho bất kỳ ai yêu thích ẩm thực cao cấp.',
+    date: '2 tuần trước'
   },
   {
     id: '2',
     author: 'James Rodriguez',
-    role: 'Regular Guest',
+    role: 'Khách Hàng Thường Xuyên',
     rating: 5,
-    text: "We've celebrated every anniversary here for the past 5 years. The ambiance, service, and food never disappoint. Simply the best in the city.",
-    date: '1 month ago'
+    text: 'Chúng tôi đã tổ chức mọi kỷ niệm ở đây trong 5 năm qua. Không gian, dịch vụ và thức ăn không bao giờ làm chúng tôi thất vọng. Đơn giản là tốt nhất trong thành phố.',
+    date: '1 tháng trước'
   },
   {
     id: '3',
     author: 'Emily Chen',
-    role: 'Food Blogger',
+    role: 'Blogger Ẩm Thực',
     rating: 5,
-    text: "The Wagyu ribeye here is better than anything I've ever had. Chef Marco truly has a gift for creating culinary masterpieces!",
-    date: '3 weeks ago'
+    text: 'Món sườn Wagyu ở đây ngon hơn bất cứ thứ gì tôi từng ăn. Đầu bếp Marco thực sự có tài năng trong việc tạo ra những kiệt tác ẩm thực!',
+    date: '3 tuần trước'
   },
   {
     id: '4',
     author: 'Michael Johnson',
-    role: 'Tourist',
+    role: 'Du Khách',
     rating: 5,
-    text: "An exceptional experience. I will definitely return when I'm back in the city. This is what I envision a fine dining restaurant should be.",
-    date: '1 week ago'
+    text: 'Một trải nghiệm đặc biệt. Tôi chắc chắn sẽ quay lại khi tôi trở lại thành phố. Đây chính là những gì tôi hình dung về một nhà hàng ẩm thực cao cấp nên có.',
+    date: '1 tuần trước'
   },
   {
     id: '5',
     author: 'Jessica Williams',
-    role: 'Customer',
+    role: 'Khách Hàng',
     rating: 5,
-    text: 'Perfect for special occasions. Elegant ambiance, attentive service, and exquisite food. Beyond five stars!',
-    date: 'Yesterday'
+    text: 'Hoàn hảo cho những dịp đặc biệt. Không gian thanh lịch, dịch vụ chu đáo và thức ăn tinh tế. Vượt quá năm sao!',
+    date: 'Hôm qua'
   },
   {
     id: '6',
     author: 'David Anderson',
-    role: 'Restaurant Critic',
+    role: 'Nhà Phê Bình Nhà Hàng',
     rating: 5,
-    text: 'The highest marks. Every aspect—from the preparation to the service—is executed flawlessly. CrownDine deserves every one of its Michelin stars.',
-    date: '5 days ago'
+    text: 'Điểm số cao nhất. Mọi khía cạnh—từ việc chuẩn bị đến dịch vụ—đều được thực hiện hoàn hảo. CrownDine xứng đáng với mọi ngôi sao Michelin của mình.',
+    date: '5 ngày trước'
   }
 ]
 function RatingStars({ rating }: { rating: number }) {
@@ -96,15 +96,15 @@ const Reviews = () => {
         <div className='mb-12 text-center'>
           <p className='text-primary mb-2 flex items-center justify-center gap-2 text-sm font-semibold tracking-widest uppercase'>
             <span className='bg-primary inline-block h-1 w-1 rounded-full'></span>
-            TESTIMONIALS
+            ĐÁNH GIÁ
           </p>
           <h2 className='mb-4 text-4xl font-bold md:text-5xl'>
-            What Our Guests
+            Khách Hàng Của Chúng Tôi
             <br />
-            <span className='text-primary'>Say</span>
+            <span className='text-primary'>Nói Gì</span>
           </h2>
           <p className='text-foreground/70 mx-auto max-w-2xl'>
-            Don't just take our word for it—hear from our valued guests
+            Đừng chỉ nghe lời chúng tôi—hãy lắng nghe từ những khách hàng quý giá của chúng tôi
           </p>
         </div>
 

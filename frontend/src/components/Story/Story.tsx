@@ -26,24 +26,24 @@ const Story = () => {
           <div className='animate-in fade-in slide-in-from-right-8 duration-700'>
             <p className='text-primary mb-2 flex items-center gap-2 text-sm font-semibold tracking-widest uppercase'>
               <span className='bg-primary inline-block h-1 w-1 rounded-full'></span>
-              Our Story
+              Câu Chuyện Của Chúng Tôi
             </p>
             <h2 className='mb-6 text-4xl font-bold md:text-5xl'>
-              From Passion to
+              Từ Đam Mê Đến
               <br />
-              <span className='text-primary'>Table</span>
+              <span className='text-primary'>Bàn Ăn</span>
             </h2>
 
             <div className='text-foreground/70 mb-8 space-y-4 leading-relaxed'>
               <p>
-                Founded in 2008, CrownDine has become a cornerstone of culinary excellence in the heart of New York
-                City. Our journey began with a simple vision: to create dishes that tell stories and bring people
-                together.
+                Được thành lập vào năm 2008, CrownDine đã trở thành một nền tảng vững chắc của sự xuất sắc ẩm thực tại trung tâm
+                thành phố New York. Hành trình của chúng tôi bắt đầu với một tầm nhìn đơn giản: tạo ra những món ăn kể câu chuyện và
+                kết nối mọi người lại với nhau.
               </p>
               <p>
-                Under the guidance of Executive Chef Marco Bellini, our kitchen transforms the finest seasonal
-                ingredients into memorable dining experiences. Every dish is a celebration of tradition, innovation, and
-                passion.
+                Dưới sự hướng dẫn của Bếp Trưởng Điều Hành Marco Bellini, nhà bếp của chúng tôi biến đổi những nguyên liệu theo mùa
+                tốt nhất thành những trải nghiệm ẩm thực đáng nhớ. Mỗi món ăn là một sự tôn vinh truyền thống, đổi mới và
+                đam mê.
               </p>
             </div>
 
@@ -51,15 +51,15 @@ const Story = () => {
             <div className='border-border grid grid-cols-3 gap-4 border-t pt-8'>
               <div>
                 <div className='text-primary text-4xl font-bold'>15+</div>
-                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Years</p>
+                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Năm</p>
               </div>
               <div>
                 <div className='text-primary text-4xl font-bold'>50K+</div>
-                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Happy Guests</p>
+                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Khách Hàng Hài Lòng</p>
               </div>
               <div>
                 <div className='text-primary text-4xl font-bold'>3</div>
-                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Michelin Stars</p>
+                <p className='text-foreground/70 mt-2 text-sm font-semibold uppercase'>Sao Michelin</p>
               </div>
             </div>
           </div>

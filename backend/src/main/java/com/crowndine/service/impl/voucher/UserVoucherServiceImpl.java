@@ -1,24 +1,32 @@
 package com.crowndine.service.impl.voucher;
 
+import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.response.MyVoucherResponse;
 import com.crowndine.dto.response.VoucherAssignmentResponse;
+import com.crowndine.dto.response.VoucherValidateResponse;
+import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
+import com.crowndine.model.Order;
 import com.crowndine.model.User;
 import com.crowndine.model.UserVoucher;
 import com.crowndine.model.Voucher;
+import com.crowndine.repository.OrderRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.repository.UserVoucherRepository;
 import com.crowndine.repository.VoucherRepository;
+import com.crowndine.service.CalculationService;
 import com.crowndine.service.voucher.UserVoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,6 +38,8 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     private final UserRepository userRepository;
     private final UserVoucherRepository userVoucherRepository;
     private final VoucherRepository voucherRepository;
+    private final OrderRepository orderRepository;
+    private final CalculationService calculationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -98,8 +108,95 @@ public class UserVoucherServiceImpl implements UserVoucherService {
                 .toList();
     }
 
+    @Override
+    public VoucherValidateResponse validateVoucher(String code, Long orderId, String username) {
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.getUser().getUsername().equals(username)) {
+            throw new InvalidDataException("Đơn hàng này không phải của user");
+        }
+
+        if (order.getStatus() == EOrderStatus.COMPLETED || order.getStatus() == EOrderStatus.CANCELLED) {
+            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
+        }
+
+        if (order.getOrderDetails().isEmpty()) {
+            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
+        }
+
+        BigDecimal totalOrder = calculationService.calculateTotalOrder(order.getOrderDetails());
+        if (totalOrder.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
+        }
+
+        UserVoucher userVoucher = getValidUserVoucher(code, username);
+        Voucher voucher = userVoucher.getVoucher();
+
+        BigDecimal discountAmount = calculationService.calculateVoucherDiscount(totalOrder, voucher);
+        BigDecimal finalAmount = calculationService.calculateFinalTotalPrice(totalOrder, discountAmount);
+
+        return VoucherValidateResponse.builder()
+                .voucherId(voucher.getId())
+                .code(voucher.getCode())
+                .name(voucher.getName())
+                .type(voucher.getType())
+                .orderAmount(totalOrder)
+                .discountAmount(discountAmount)
+                .finalAmount(finalAmount)
+                .usageCount(userVoucher.getUsageCount())
+                .usageLimit(userVoucher.getUsageLimit())
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Voucher consumeVoucher(String code, String username) {
+        UserVoucher userVoucher = getValidUserVoucher(code, username);
+        int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
+        userVoucher.setUsageCount(usageCount + 1);
+        userVoucherRepository.save(userVoucher);
+        return userVoucher.getVoucher();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void releaseVoucher(String code, String username) {
+        UserVoucher userVoucher = getValidUserVoucher(code, username);
+        int usageCount = userVoucher.getUsageCount();
+        if (usageCount < 1) {
+            return;
+        }
+        userVoucher.setUsageCount(usageCount - 1);
+        userVoucherRepository.save(userVoucher);
+        log.info("voucher code {} has been released, usage count {}", code, userVoucher.getUsageCount());
+    }
+
     private Voucher getVoucher(Long id) {
         return voucherRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));
+    }
+
+    private UserVoucher getValidUserVoucher(String code, String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
+        Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("Mã voucher không hợp lệ"));
+
+        UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
+
+        validateUserVoucherAvailability(userVoucher);
+        return userVoucher;
+    }
+
+    private void validateUserVoucherAvailability(UserVoucher userVoucher) {
+        if (userVoucher.getExpiredAt() != null && !userVoucher.getExpiredAt().isAfter(LocalDateTime.now())) {
+            throw new InvalidDataException("Voucher đã hết hạn");
+        }
+
+        int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
+        Integer usageLimit = userVoucher.getUsageLimit();
+        if (usageLimit != null && usageCount >= usageLimit) {
+            throw new InvalidDataException("Voucher đã hết lượt sử dụng");
+        }
     }
 
     private VoucherAssignmentResponse toAssignmentResponse(UserVoucher userVoucher) {

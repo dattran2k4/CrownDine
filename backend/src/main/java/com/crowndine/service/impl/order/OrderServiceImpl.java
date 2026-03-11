@@ -13,6 +13,7 @@ import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.voucher.UserVoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -43,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
+    private final UserVoucherService userVoucherService;
 
     @Override
     public Order getOrderByCode(String code) {
@@ -297,6 +299,54 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order getOrder(Long id) {
         return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username) {
+        log.info("Applying voucher to order with id {}", orderId);
+
+        Order order = getOrder(orderId);
+
+        if (order.getStatus().equals(EOrderStatus.COMPLETED) || order.getStatus().equals(EOrderStatus.CANCELLED)) {
+            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
+        }
+
+        if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
+            userVoucherService.releaseVoucher(order.getVoucher().getCode(), username);
+        }
+
+        if (order.getOrderDetails().isEmpty()) {
+            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
+        }
+
+        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
+        }
+
+        Voucher voucher = userVoucherService.consumeVoucher(code, username);
+
+        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
+        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+
+        order.setVoucher(voucher);
+        order.setTotalPrice(totalPrice);
+        order.setDiscountPrice(discountPrice);
+        order.setFinalPrice(finalPrice);
+
+        Order updatedOrder = orderRepository.save(order);
+        log.info("Applied successfully voucher {} to order {}", voucher.getCode(), updatedOrder.getId());
+
+        return OrderApplyVoucherResponse.builder()
+                .orderId(updatedOrder.getId())
+                .orderCode(updatedOrder.getCode())
+                .voucherId(voucher.getId())
+                .voucherCode(voucher.getCode())
+                .totalPrice(updatedOrder.getTotalPrice())
+                .discountPrice(updatedOrder.getDiscountPrice())
+                .finalPrice(updatedOrder.getFinalPrice())
+                .build();
     }
 
     private OrderResponse toResponse(Order order) {

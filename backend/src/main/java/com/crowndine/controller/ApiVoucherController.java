@@ -3,6 +3,7 @@ package com.crowndine.controller;
 import com.crowndine.common.enums.EVoucherType;
 import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.request.VoucherRequest;
+import com.crowndine.dto.request.VoucherValidateRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.service.voucher.VoucherService;
@@ -13,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RestController
 @Validated
@@ -79,6 +82,15 @@ public class ApiVoucherController {
                 .status(HttpStatus.OK.value())
                 .message("Get voucher assignments successfully")
                 .data(userVoucherService.getVoucherAssignments(id))
+                .build();
+    }
+
+    @PostMapping("/validate")
+    public ApiResponse validateVoucher(@Valid @RequestBody VoucherValidateRequest request, Principal principal) {
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Validate voucher successfully")
+                .data(userVoucherService.validateVoucher(request.getCode(), request.getOrderId(), principal.getName()))
                 .build();
     }
 }

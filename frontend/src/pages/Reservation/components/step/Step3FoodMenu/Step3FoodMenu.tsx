@@ -1,4 +1,4 @@
-import { type PreOrderCartItem } from '@/pages/Reservation/data'
+import type { PreOrderCartItem } from '@/types/reservation.type'
 import comboApi from '@/apis/combo.api'
 import itemApi from '@/apis/item.api'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
@@ -14,11 +14,10 @@ interface Props {
   cartItems: PreOrderCartItem[]
   onAdd: (entry: PreOrderEntry) => void
   onRemove: (type: 'item' | 'combo', id: number) => void
-  reservationId: number
   expiratedAt: string | null
 }
 
-const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt }: Props) => {
+const Step3FoodMenu = ({ cartItems, onAdd, onRemove, expiratedAt }: Props) => {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data: itemsData, isPending: itemsLoading } = useQuery({
@@ -88,34 +87,34 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
       )}
 
       {/* Header & Subtotal */}
-      <div className='flex items-end justify-between rounded-lg bg-gray-50 p-5 border border-gray-200'>
+      <div className='flex items-end justify-between rounded-lg border border-gray-200 bg-gray-50 p-5'>
         <div className='flex-1'>
-          <h3 className='flex items-center gap-3 text-xl font-bold text-gray-900 mb-2'>
+          <h3 className='mb-2 flex items-center gap-3 text-xl font-bold text-gray-900'>
             <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500'>
               <Utensils className='text-white' size={20} />
             </div>
             Đặt món trước (Tuỳ chọn)
           </h3>
-          <p className='text-gray-600 text-sm ml-[3.25rem]'>Món ăn sẽ được chuẩn bị sẵn khi bạn đến.</p>
+          <p className='ml-[3.25rem] text-sm text-gray-600'>Món ăn sẽ được chuẩn bị sẵn khi bạn đến.</p>
         </div>
-        <div className='text-right bg-white rounded-lg px-4 py-3 border border-gray-200'>
-          <p className='text-gray-500 text-xs font-medium mb-1'>Tạm tính món ăn</p>
-          <p className='text-orange-600 text-2xl font-bold'>{formatCurrency(foodTotal)}</p>
+        <div className='rounded-lg border border-gray-200 bg-white px-4 py-3 text-right'>
+          <p className='mb-1 text-xs font-medium text-gray-500'>Tạm tính món ăn</p>
+          <p className='text-2xl font-bold text-orange-600'>{formatCurrency(foodTotal)}</p>
         </div>
       </div>
 
       {/* Search theo tên */}
       {!isLoading && hasEntries && (
         <div className='relative'>
-          <div className='absolute left-4 top-1/2 -translate-y-1/2 z-10'>
-            <Search className='text-gray-400 h-5 w-5' />
+          <div className='absolute top-1/2 left-4 z-10 -translate-y-1/2'>
+            <Search className='h-5 w-5 text-gray-400' />
           </div>
           <input
             type='text'
             placeholder='Tìm theo tên món...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className='w-full rounded-lg border border-gray-200 bg-white py-3 pl-12 pr-4 text-sm outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-200'
+            className='w-full rounded-lg border border-gray-200 bg-white py-3 pr-4 pl-12 text-sm outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-200'
           />
         </div>
       )}
@@ -125,7 +124,7 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
         <div className='py-12 text-center'>
           <div className='inline-flex flex-col items-center gap-3'>
             <div className='h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500'></div>
-            <p className='text-gray-500 text-sm font-medium'>Đang tải danh sách món và combo...</p>
+            <p className='text-sm font-medium text-gray-500'>Đang tải danh sách món và combo...</p>
           </div>
         </div>
       ) : (
@@ -137,9 +136,9 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                   <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gray-100'>
                     <Search className='h-8 w-8 text-gray-400' />
                   </div>
-                  <p className='text-gray-500 text-sm font-medium'>
-                {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
-              </p>
+                  <p className='text-sm font-medium text-gray-500'>
+                    {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -149,23 +148,21 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                   className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-orange-400 hover:shadow-md'
                 >
                   <div className='mb-3 h-40 w-full overflow-hidden rounded-lg bg-gray-100'>
-                    <img
-                      src={getImageUrl(entry.image)}
-                      alt={entry.name}
-                      className='h-full w-full object-cover'
-                    />
+                    <img src={getImageUrl(entry.image)} alt={entry.name} className='h-full w-full object-cover' />
                   </div>
                   <div className='space-y-3'>
                     <div>
-                      <div className='flex items-start justify-between gap-2 mb-2'>
-                        <h4 className='line-clamp-2 flex-1 font-semibold text-gray-900 text-sm leading-tight'>{entry.name}</h4>
+                      <div className='mb-2 flex items-start justify-between gap-2'>
+                        <h4 className='line-clamp-2 flex-1 text-sm leading-tight font-semibold text-gray-900'>
+                          {entry.name}
+                        </h4>
                         {entry.type === 'combo' && (
                           <span className='shrink-0 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold text-white'>
                             COMBO
                           </span>
                         )}
                       </div>
-                      <p className='text-orange-600 text-lg font-bold'>{formatCurrency(entry.price)}</p>
+                      <p className='text-lg font-bold text-orange-600'>{formatCurrency(entry.price)}</p>
                     </div>
                     <button
                       onClick={() => onAdd(entry)}
@@ -186,12 +183,12 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
         <div className='mt-6 rounded-lg border border-dashed border-orange-300 bg-orange-50 p-5'>
           <div className='mb-4 flex items-center justify-between'>
             <h4 className='flex items-center gap-2 text-base font-bold text-gray-900'>
-              <span className='flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white text-xs font-bold'>
+              <span className='flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white'>
                 {cartItems.length}
               </span>
               Đã chọn món
-          </h4>
-            <span className='rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200'>
+            </h4>
+            <span className='rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700'>
               Thanh toán tại nhà hàng
             </span>
           </div>
@@ -206,10 +203,8 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, reservationId, expiratedAt 
                     {item.quantity}x
                   </span>
                   <div>
-                    <p className='font-medium text-gray-900 text-sm'>{item.name}</p>
-                  {item.type === 'combo' && (
-                      <span className='text-orange-600 text-[10px] font-medium'>Combo</span>
-                  )}
+                    <p className='text-sm font-medium text-gray-900'>{item.name}</p>
+                    {item.type === 'combo' && <span className='text-[10px] font-medium text-orange-600'>Combo</span>}
                   </div>
                 </span>
                 <div className='flex items-center gap-3'>

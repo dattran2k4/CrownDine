@@ -1,7 +1,7 @@
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
-import { addMinutesToTime, calculateDuration, isDateTimeInPast } from '@/utils/utils'
+import { addMinutesToTime, isDateTimeInPast } from '@/utils/utils'
 import { AlertCircle, Calendar, Clock, Hourglass, Users } from 'lucide-react'
-import { useMemo, useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 interface Props {
   guests: number
@@ -12,6 +12,7 @@ interface Props {
   setStartTime: (s: string) => void
   endTime: string
   setEndTime: (s: string) => void
+  duration: number
   timeSlots: string[]
 }
 const Step1DateTime = ({
@@ -23,17 +24,15 @@ const Step1DateTime = ({
   setStartTime,
   endTime,
   setEndTime,
+  duration,
   timeSlots
 }: Props) => {
-  // Tính duration từ startTime và endTime
-  const duration = useMemo(() => calculateDuration(startTime, endTime), [startTime, endTime])
-
   // Reset startTime và endTime nếu chúng trong quá khứ khi date thay đổi
   useEffect(() => {
     if (isDateTimeInPast(date, startTime)) {
       // Tìm giờ hợp lệ đầu tiên trong tương lai từ timeSlots
       const nextValidTime = timeSlots.find((slot) => !isDateTimeInPast(date, slot))
-      
+
       if (nextValidTime) {
         setStartTime(nextValidTime)
         const defaultEndTime = addMinutesToTime(nextValidTime, 120) // 2 giờ mặc định
@@ -52,15 +51,15 @@ const Step1DateTime = ({
     const options: string[] = []
     const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
     let currentTime = addMinutesToTime(startTime, 30) // Bắt đầu từ 30 phút sau startTime
-    
+
     while (currentTime <= closingTimeStr) {
       options.push(currentTime)
       currentTime = addMinutesToTime(currentTime, 30)
-      
+
       // Giới hạn tối đa 6 giờ (12 options)
       if (options.length >= 12) break
     }
-    
+
     return options
   }, [startTime])
 
@@ -70,7 +69,7 @@ const Step1DateTime = ({
   // Note: Logic so sánh chuỗi thời gian đơn giản, thực tế nên dùng Date object nếu qua ngày mới
 
   return (
-    <div className='animate-fade-in space-y-8 m-4 p-4'>
+    <div className='animate-fade-in m-4 space-y-8 p-4'>
       {/* 1. Chọn Ngày & Số khách */}
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         <div className='space-y-2'>
@@ -118,8 +117,8 @@ const Step1DateTime = ({
           {timeSlots.map((slot) => {
             const isPast = isDateTimeInPast(date, slot)
             return (
-            <button
-              key={slot}
+              <button
+                key={slot}
                 onClick={() => !isPast && setStartTime(slot)}
                 disabled={isPast}
                 className={`rounded border px-1 py-2 text-sm transition-all ${
@@ -129,9 +128,9 @@ const Step1DateTime = ({
                       ? 'bg-primary border-primary ring-primary/30 text-white shadow-md ring-2'
                       : 'hover:border-primary border-gray-200 bg-white text-gray-700'
                 }`}
-            >
-              {slot}
-            </button>
+              >
+                {slot}
+              </button>
             )
           })}
         </div>
@@ -146,7 +145,7 @@ const Step1DateTime = ({
           {endTimeOptions.map((time) => {
             const isPast = isDateTimeInPast(date, time)
             return (
-            <button
+              <button
                 key={time}
                 onClick={() => !isPast && setEndTime(time)}
                 disabled={isPast}
@@ -154,12 +153,12 @@ const Step1DateTime = ({
                   isPast
                     ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
                     : endTime === time
-                      ? 'bg-orange-500 border-orange-500 ring-orange-500/30 text-white shadow-md ring-2'
-                      : 'hover:border-orange-500 border-gray-200 bg-white text-gray-700'
+                      ? 'border-orange-500 bg-orange-500 text-white shadow-md ring-2 ring-orange-500/30'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-500'
                 }`}
-            >
+              >
                 {time}
-            </button>
+              </button>
             )
           })}
         </div>

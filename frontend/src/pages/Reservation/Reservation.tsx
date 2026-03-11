@@ -1,13 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronRight, ArrowLeft, CheckCircle } from 'lucide-react'
+import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
-import { RESTAURANT_CONFIG, USER_INFO, type PreOrderCartItem, type Table } from '@/pages/Reservation/data'
+import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Step1DateTime'
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
 import reservationApi from '@/apis/reservation.api'
+import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
+import { useAuthStore } from '@/stores/useAuthStore'
+import Progress from '@/pages/Reservation/components/Progress'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
@@ -28,7 +31,7 @@ export default function Reservation() {
   useEffect(() => {
     const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
     const defaultEndTime = addMinutesToTime(startTime, 120) // 2 giờ mặc định
-    
+
     // Reset nếu endTime không hợp lệ (nhỏ hơn hoặc bằng startTime, hoặc vượt quá giờ đóng cửa)
     if (endTime <= startTime || endTime > closingTimeStr) {
       // Đảm bảo defaultEndTime không vượt quá giờ đóng cửa
@@ -40,10 +43,10 @@ export default function Reservation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startTime])
 
-  const [selectedTables, setSelectedTables] = useState<Table[]>([])
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null)
 
   const [cartItems, setCartItems] = useState<PreOrderCartItem[]>([])
-  
+
   // Reservation state
   const [reservationId, setReservationId] = useState<number | null>(null)
   const [expiratedAt, setExpiratedAt] = useState<string | null>(null) // Thời gian hết hạn reservation
@@ -51,6 +54,8 @@ export default function Reservation() {
   const [isPaid, setIsPaid] = useState(false) // Đánh dấu đã thanh toán
   const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
+
+  const authUser = useAuthStore((state) => state.user)
 
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
@@ -60,10 +65,10 @@ export default function Reservation() {
     if (isPaid) {
       return
     }
-    const exists = selectedTables.find((t) => t.id === table.id)
-    if (exists) {
+    const isSameTable = selectedTable?.id === table.id
+    if (isSameTable) {
       // Nếu bàn đã được chọn, bỏ chọn nó
-      setSelectedTables(selectedTables.filter((t) => t.id !== table.id))
+      setSelectedTable(null)
       // Cancel reservation cũ nếu đã có (vì đã bỏ chọn bàn)
       if (reservationId) {
         try {
@@ -77,9 +82,9 @@ export default function Reservation() {
       }
     } else {
       // Nếu chọn bàn mới, chỉ giữ lại bàn đó (thay thế bàn cũ nếu có)
-      const previousTableId = selectedTables[0]?.id
+      const previousTableId = selectedTable?.id
       const previousReservationId = reservationId
-      
+
       // Nếu đã có reservation và chọn bàn khác → update tableId thay vì tạo mới
       if (previousReservationId && previousTableId && previousTableId !== table.id) {
         try {
@@ -88,20 +93,20 @@ export default function Reservation() {
           await reservationApi.updateReservationTable(previousReservationId, {
             tableId: parseInt(table.id)
           })
-          
+
           // Cập nhật state với bàn mới
-          setSelectedTables([table])
+          setSelectedTable(table)
         } catch (error) {
           console.error('Failed to update reservation table:', error)
           alert('Không thể thay đổi bàn. Vui lòng thử lại.')
-          // Không thay đổi selectedTables để giữ nguyên bàn cũ
+          // Không thay đổi selectedTable để giữ nguyên bàn cũ
         } finally {
           setIsCreatingReservation(false)
         }
       } else {
         // Nếu chưa có reservation (lần đầu chọn bàn), tạo reservation mới
-        setSelectedTables([table])
-        
+        setSelectedTable(table)
+
         if (!reservationId) {
           try {
             setIsCreatingReservation(true)
@@ -113,7 +118,7 @@ export default function Reservation() {
               tableId: parseInt(table.id),
               note: '' // Temporary reservation để lock bàn
             })
-            
+
             if (response.data.data) {
               setReservationId(response.data.data.reservationId)
               setExpiratedAt(response.data.data.expiratedAt)
@@ -122,7 +127,7 @@ export default function Reservation() {
             console.error('Failed to create temporary reservation:', error)
             alert('Không thể giữ chỗ bàn. Vui lòng thử lại.')
             // Nếu không tạo được reservation, bỏ chọn bàn
-            setSelectedTables([])
+            setSelectedTable(null)
           } finally {
             setIsCreatingReservation(false)
           }
@@ -157,10 +162,12 @@ export default function Reservation() {
       }
 
       // Update local state
-    if (exist) {
-        setCartItems(cartItems.map((i) => (i.type === entry.type && i.id === entry.id ? { ...i, quantity: newQuantity } : i)))
-    } else {
-      setCartItems([...cartItems, { ...entry, quantity: 1 }])
+      if (exist) {
+        setCartItems(
+          cartItems.map((i) => (i.type === entry.type && i.id === entry.id ? { ...i, quantity: newQuantity } : i))
+        )
+      } else {
+        setCartItems([...cartItems, { ...entry, quantity: 1 }])
       }
     } catch (error) {
       console.error('Failed to add/update item:', error)
@@ -171,13 +178,6 @@ export default function Reservation() {
   const handleNext = async () => {
     const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
 
-    // So sánh string đơn giản (HH:mm). Lưu ý: Nếu nhà hàng mở qua đêm (VD: 02:00 sáng hôm sau) thì logic so sánh string này cần đổi.
-    // Giả định nhà hàng đóng trước 24h:
-    if (endTime > closingTimeStr && startTime < closingTimeStr) {
-      alert(`Nhà hàng đóng cửa lúc ${closingTimeStr}. Vui lòng giảm thời gian ngồi hoặc đến sớm hơn.`)
-      return
-    }
-    
     // Step 1: Validation và chuyển sang Step 2
     if (currentStep === 1) {
       // Kiểm tra đã chọn startTime
@@ -185,64 +185,67 @@ export default function Reservation() {
         alert('Vui lòng chọn giờ bắt đầu!')
         return
       }
-      
+
       // Kiểm tra đã chọn endTime
       if (!endTime) {
         alert('Vui lòng chọn thời gian kết thúc!')
         return
       }
-      
+
       // Kiểm tra startTime < endTime
       if (startTime >= endTime) {
         alert('Thời gian kết thúc phải sau thời gian bắt đầu!')
         return
       }
-      
+
       // Kiểm tra thời gian không trong quá khứ
       if (isDateTimeInPast(date, startTime)) {
         alert('Thời gian bắt đầu không được trong quá khứ!')
         return
       }
-      
+
       if (isDateTimeInPast(date, endTime)) {
         alert('Thời gian kết thúc không được trong quá khứ!')
         return
       }
-      
+
       // Kiểm tra endTime không vượt quá giờ đóng cửa
       if (endTime > closingTimeStr) {
         alert(`Thời gian kết thúc không được vượt quá giờ đóng cửa (${closingTimeStr})!`)
         return
       }
-      
+
       setCurrentStep(2)
       return
     }
-    
+
     // Step 2: Validation, tạo reservation và chuyển sang Step 3
     if (currentStep === 2) {
-      if (selectedTables.length === 0) {
+      if (!selectedTable) {
         alert('Vui lòng chọn 1 bàn!')
         return
       }
-      const selectedTable = selectedTables[0]
       if (selectedTable.capacity < guests) {
-        if (!window.confirm(`Sức chứa bàn đã chọn (${selectedTable.capacity}) nhỏ hơn số khách (${guests}). Bạn có chắc không?`))
+        if (
+          !window.confirm(
+            `Sức chứa bàn đã chọn (${selectedTable.capacity}) nhỏ hơn số khách (${guests}). Bạn có chắc không?`
+          )
+        )
           return
       }
-      
+
       // Nếu đã có reservationId, reservation đã được tạo khi chọn bàn
       // Chỉ cần chuyển sang Step 3 (reservation đã có thời gian giữ 10 phút từ khi tạo)
       if (reservationId) {
         setCurrentStep(3)
         return
       }
-      
+
       // Trường hợp này không nên xảy ra vì reservation đã được tạo khi chọn bàn
       // Nhưng để an toàn, vẫn tạo reservation nếu chưa có
       try {
         setIsCreatingReservation(true)
-        const firstTable = selectedTables[0]
+        const firstTable = selectedTable
         const response = await reservationApi.createReservation({
           date,
           startTime,
@@ -251,7 +254,7 @@ export default function Reservation() {
           tableId: parseInt(firstTable.id),
           note: ''
         })
-        
+
         if (response.data.data) {
           setReservationId(response.data.data.reservationId)
           setExpiratedAt(response.data.data.expiratedAt)
@@ -265,7 +268,7 @@ export default function Reservation() {
       }
       return
     }
-    
+
     // Step 3: Fetch order details và chuyển sang Step 4
     // Cho phép tiếp tục dù không có món (order có thể chưa có hoặc trống)
     if (currentStep === 3) {
@@ -289,7 +292,6 @@ export default function Reservation() {
       }
     }
   }
-  
 
   const handleRemoveFromCart = async (type: 'item' | 'combo', id: number) => {
     if (!reservationId) {
@@ -304,7 +306,7 @@ export default function Reservation() {
       })
 
       // Update local state
-    setCartItems(cartItems.filter((i) => !(i.type === type && i.id === id)))
+      setCartItems(cartItems.filter((i) => !(i.type === type && i.id === id)))
     } catch (error) {
       console.error('Failed to remove item:', error)
       alert('Không thể xóa món. Vui lòng thử lại.')
@@ -327,7 +329,7 @@ export default function Reservation() {
     if (!window.confirm('Bạn có chắc muốn hủy đặt bàn? Bàn sẽ được giải phóng ngay lập tức.')) {
       return
     }
-    
+
     // Cancel reservation nếu có
     if (reservationId) {
       try {
@@ -338,7 +340,7 @@ export default function Reservation() {
         // Vẫn reload trang dù có lỗi
       }
     }
-    
+
     // Reload trang để reset toàn bộ state
     window.location.reload()
   }
@@ -353,35 +355,7 @@ export default function Reservation() {
         </div>
 
         {/* Progress Steps */}
-        <div className='mb-10'>
-          <div className='relative flex items-center justify-between'>
-            {/* Line background */}
-            <div className='absolute top-1/2 left-0 -z-10 h-1 w-full -translate-y-1/2 transform bg-gray-200'></div>
-            <div
-              className={`bg-primary absolute top-1/2 left-0 -z-10 h-1 -translate-y-1/2 transform transition-all duration-300`}
-              style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
-            ></div>
-
-            {['Thời gian', 'Chọn bàn', 'Món ăn', 'Thanh toán'].map((step, idx) => {
-              const stepNum = idx + 1
-              const isActive = currentStep >= stepNum
-              const isCurrent = currentStep === stepNum
-
-              return (
-                <div key={step} className='bg-background flex flex-col items-center px-2'>
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all ${isActive ? 'bg-primary border-primary text-white' : 'border-gray-300 bg-white text-gray-400'}`}
-                  >
-                    {isActive && !isCurrent ? <CheckCircle size={20} /> : stepNum}
-                  </div>
-                  <span className={`mt-2 text-xs font-bold ${isActive ? 'text-primary' : 'text-gray-400'}`}>
-                    {step}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <Progress currentStep={currentStep} steps={['Thời gian', 'Chọn bàn', 'Món ăn', 'Thanh toán']} />
 
         {/* Main Content Area */}
         <div className='bg-card min-h-100'>
@@ -395,12 +369,13 @@ export default function Reservation() {
               setStartTime={setStartTime}
               endTime={endTime}
               setEndTime={setEndTime}
+              duration={duration}
               timeSlots={timeSlots}
             />
           )}
           {currentStep === 2 && (
             <Step2TableMap
-              selectedTables={selectedTables}
+              selectedTable={selectedTable}
               toggleTable={toggleTable}
               guests={guests}
               date={date}
@@ -410,18 +385,17 @@ export default function Reservation() {
             />
           )}
           {currentStep === 3 && reservationId && (
-            <Step3FoodMenu 
-              cartItems={cartItems} 
-              onAdd={handleAddToCart} 
+            <Step3FoodMenu
+              cartItems={cartItems}
+              onAdd={handleAddToCart}
               onRemove={handleRemoveFromCart}
-              reservationId={reservationId}
               expiratedAt={expiratedAt}
             />
           )}
           {currentStep === 4 && (
             <Step4Payment
-              userInfo={USER_INFO}
-              bookingData={{ date, startTime, endTime, duration, guests, selectedTables }}
+              user={authUser}
+              bookingData={{ date, startTime, endTime, duration, guests, selectedTable }}
               cartItems={cartItems}
               onPay={handlePayment}
               onCancel={handleCancel}
@@ -447,19 +421,19 @@ export default function Reservation() {
             <button
               onClick={handleNext}
               disabled={isCreatingReservation}
-              className='bg-foreground text-primary flex items-center gap-2 rounded-lg px-8 py-3 font-bold transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-wait'
+              className='bg-foreground text-primary flex items-center gap-2 rounded-lg px-8 py-3 font-bold transition-all hover:shadow-lg disabled:cursor-wait disabled:opacity-50'
             >
               {isCreatingReservation ? (
                 <>Đang tạo đặt bàn...</>
               ) : (
                 <>
-              {currentStep === 3 ? 'Xem lại & Thanh toán' : 'Tiếp tục'} <ChevronRight size={18} />
+                  {currentStep === 3 ? 'Xem lại & Thanh toán' : 'Tiếp tục'} <ChevronRight size={18} />
                 </>
               )}
             </button>
           </div>
         )}
-        
+
         {/* Footer Navigation for Step 4 */}
         {currentStep === 4 && (
           <div className='mt-8 flex justify-between border-t pt-6'>

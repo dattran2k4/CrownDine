@@ -1,3 +1,7 @@
+import type { Combo } from './combo.type'
+import type { Item } from './item.type'
+import type { Table as BaseTable } from './table.type'
+
 export interface ReservationCreateRequest {
   date: string // YYYY-MM-DD
   startTime: string // HH:mm
@@ -61,3 +65,27 @@ export interface OrderItemRemoveRequest {
 export interface ReservationUpdateTableRequest {
   tableId: number
 }
+
+export type ReservationTable = Omit<BaseTable, 'shape' | 'status'> & {
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'
+  type: 'STANDARD' | 'VIP' | 'WINDOW'
+}
+
+type MenuItemIdentity = Pick<Item, 'id' | 'name'>
+type ComboIdentity = Pick<Combo, 'id' | 'name'>
+
+export type PreOrderItem = MenuItemIdentity & {
+  type: 'item'
+  price: number
+  image: string
+}
+
+export type PreOrderCombo = ComboIdentity & {
+  type: 'combo'
+  price: number
+  image: string
+}
+
+export type PreOrderEntry = PreOrderItem | PreOrderCombo
+
+export type PreOrderCartItem = PreOrderEntry & { quantity: number }

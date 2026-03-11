@@ -1,8 +1,10 @@
-import { RESTAURANT_CONFIG, type Table } from '@/pages/Reservation/data'
+import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import { formatCurrency } from '@/utils/utils'
 import { CreditCard, XCircle, Utensils, Loader2, Info } from 'lucide-react'
 import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
+import type { UserSummary } from '@/types/profile.type'
 
 interface CartItem {
   id: number
@@ -12,14 +14,14 @@ interface CartItem {
 }
 
 interface Props {
-  userInfo: { name: string; phone: string; email: string; gender: string }
+  user: UserSummary | null
   bookingData: {
     date: string
     startTime: string
     endTime: string
     duration: number
     guests: number
-    selectedTables: Table[]
+    selectedTable: Table | null
   }
   cartItems: CartItem[]
   onPay: () => void
@@ -29,21 +31,36 @@ interface Props {
   isLoadingOrderDetails: boolean
   expiratedAt: string | null
 }
-const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isProcessing, orderDetails, isLoadingOrderDetails, expiratedAt }: Props) => {
+const Step4Payment = ({
+  user,
+  bookingData,
+  cartItems,
+  onPay,
+  onCancel,
+  isProcessing,
+  orderDetails,
+  isLoadingOrderDetails,
+  expiratedAt
+}: Props) => {
+  const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Khách'
+  const genderLabel =
+    user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : user?.gender === 'OTHER' ? 'Khác' : ''
+  const phone = user?.phone ?? ''
+  const email = user?.email ?? ''
   const foodTotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
-  
+
   // Sử dụng dữ liệu từ API nếu có, nếu không thì tính từ local state
   const itemsTotal = orderDetails?.itemsTotal ?? foodTotal
   const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
-  
+
   // Tính depositAmount: nếu có orderDetails thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
-  const depositAmount = orderDetails?.depositAmount ?? (itemsTotal * 0.2 + tableDeposit)
-  
+  const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+
   // Tính cọc 20% món ăn
   const foodDeposit = itemsTotal * 0.2
-  
+
   // Tính số tiền còn lại (80% món ăn)
-  const remainingAmount = orderDetails?.remainingAmount ?? (itemsTotal * 0.8)
+  const remainingAmount = orderDetails?.remainingAmount ?? itemsTotal * 0.8
 
   if (isLoadingOrderDetails) {
     return (
@@ -63,17 +80,17 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
         <div className='rounded-lg border border-yellow-300 bg-yellow-50 p-4'>
           <div className='flex flex-col items-center justify-between gap-4 md:flex-row'>
             <div className='flex items-center gap-3'>
-          <Info className='text-yellow-600' size={20} />
+              <Info className='text-yellow-600' size={20} />
               <span className='text-sm font-medium text-yellow-900'>Vui lòng hoàn tất trong thời gian giữ vé.</span>
-        </div>
-        <CountdownTimer
+            </div>
+            <CountdownTimer
               expiratedAt={expiratedAt}
-          onExpire={() => {
-            alert('Hết phiên giao dịch! Vui lòng đặt lại.')
-            window.location.reload()
-          }}
-        />
-      </div>
+              onExpire={() => {
+                alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                window.location.reload()
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -83,27 +100,23 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
             <CreditCard className='text-orange-500' size={20} />
             Xác nhận thông tin
           </h3>
-          <span className='rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600'>
-            Read Only
-          </span>
         </div>
 
         <div className='grid grid-cols-1 gap-8 p-6 md:grid-cols-2'>
           {/* Cột 1: Thông tin khách hàng */}
           <div className='space-y-4'>
-            <h4 className='border-b border-gray-200 pb-2 text-sm font-semibold text-gray-700 uppercase'>
-              Khách hàng
-            </h4>
+            <h4 className='border-b border-gray-200 pb-2 text-sm font-semibold text-gray-700 uppercase'>Khách hàng</h4>
             <div className='flex items-start gap-4'>
               <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500 text-lg font-bold text-white'>
-                {userInfo.name.charAt(0)}
+                {fullName.charAt(0)}
               </div>
               <div className='space-y-1'>
                 <p className='font-semibold text-gray-900'>
-                  {userInfo.name} <span className='text-xs font-normal text-gray-500'>({userInfo.gender})</span>
+                  {fullName}
+                  {genderLabel ? <span className='text-xs font-normal text-gray-500'> ({genderLabel})</span> : null}
                 </p>
-                <p className='text-sm text-gray-600'>{userInfo.phone}</p>
-                <p className='text-sm text-gray-600'>{userInfo.email}</p>
+                <p className='text-sm text-gray-600'>{phone}</p>
+                <p className='text-sm text-gray-600'>{email}</p>
               </div>
             </div>
           </div>
@@ -115,24 +128,22 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
             </h4>
             <div className='grid grid-cols-2 gap-3'>
               <div className='rounded-lg bg-gray-50 p-3'>
-                <span className='block text-xs text-gray-500 mb-1'>Ngày</span>
+                <span className='mb-1 block text-xs text-gray-500'>Ngày</span>
                 <span className='font-semibold text-gray-900'>{bookingData.date}</span>
               </div>
               <div className='rounded-lg bg-orange-50 p-3'>
-                <span className='block text-xs text-gray-600 mb-1'>Thời gian ({bookingData.duration}p)</span>
-                <span className='text-orange-600 font-semibold'>
+                <span className='mb-1 block text-xs text-gray-600'>Thời gian ({bookingData.duration}p)</span>
+                <span className='font-semibold text-orange-600'>
                   {bookingData.startTime} - {bookingData.endTime}
                 </span>
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>
-                <span className='block text-xs text-gray-500 mb-1'>Số khách</span>
+                <span className='mb-1 block text-xs text-gray-500'>Số khách</span>
                 <span className='font-semibold text-gray-900'>{bookingData.guests} Người</span>
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>
-                <span className='block text-xs text-gray-500 mb-1'>Vị trí bàn</span>
-                <span className='font-semibold text-gray-900'>
-                  {bookingData.selectedTables.map((t) => t.name).join(', ')}
-                </span>
+                <span className='mb-1 block text-xs text-gray-500'>Vị trí bàn</span>
+                <span className='font-semibold text-gray-900'>{bookingData.selectedTable?.name ?? '—'}</span>
               </div>
             </div>
           </div>
@@ -156,7 +167,7 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
                       {item.quantity}x
                     </span>
                     <div>
-                      <p className='font-medium text-gray-900 text-sm'>{item.name}</p>
+                      <p className='text-sm font-medium text-gray-900'>{item.name}</p>
                       <p className='text-xs text-gray-500'>{formatCurrency(item.price)} / phần</p>
                     </div>
                   </div>
@@ -164,7 +175,7 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
                 </div>
               ))}
             </div>
-            <div className='mt-4 flex justify-between rounded-lg bg-white p-4 border border-gray-200'>
+            <div className='mt-4 flex justify-between rounded-lg border border-gray-200 bg-white p-4'>
               <span className='text-sm font-semibold text-gray-700'>Tổng tiền món ăn:</span>
               <span className='text-lg font-bold text-gray-900'>{formatCurrency(foodTotal)}</span>
             </div>
@@ -175,18 +186,18 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
         <div className='space-y-3 border-t border-gray-200 bg-gray-50 p-6'>
           {itemsTotal > 0 && (
             <>
-              <div className='flex justify-between rounded-lg bg-white p-3 text-sm border border-gray-200'>
+              <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
                 <span className='text-gray-700'>Tổng tiền món ăn</span>
                 <span className='font-semibold text-gray-900'>{formatCurrency(itemsTotal)}</span>
               </div>
-              <div className='flex justify-between rounded-lg bg-amber-50 p-3 text-sm border border-amber-200'>
+              <div className='flex justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm'>
                 <span className='text-gray-700'>Cọc 20% món ăn</span>
                 <span className='font-semibold text-amber-700'>{formatCurrency(foodDeposit)}</span>
               </div>
             </>
           )}
-          
-          <div className='flex justify-between rounded-lg bg-white p-3 text-sm border border-gray-200'>
+
+          <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
             <span className='text-gray-700'>Cọc bàn</span>
             <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
           </div>
@@ -200,10 +211,10 @@ const Step4Payment = ({ userInfo, bookingData, cartItems, onPay, onCancel, isPro
 
           <div className='mt-4 flex items-center justify-between rounded-lg border-2 border-orange-200 bg-orange-50 p-5'>
             <div>
-              <span className='block text-lg font-bold text-gray-900 mb-1'>Tổng thanh toán ngay</span>
+              <span className='mb-1 block text-lg font-bold text-gray-900'>Tổng thanh toán ngay</span>
               <span className='text-xs text-gray-600'>Đã bao gồm VAT & Phí dịch vụ</span>
             </div>
-            <span className='text-orange-600 text-3xl font-bold'>{formatCurrency(depositAmount)}</span>
+            <span className='text-3xl font-bold text-orange-600'>{formatCurrency(depositAmount)}</span>
           </div>
         </div>
       </div>

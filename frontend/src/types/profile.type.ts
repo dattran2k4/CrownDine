@@ -9,12 +9,14 @@ export interface User {
   phone: string
   avatar?: string
   dateOfBirth?: string
-  gender?: 'male' | 'female' | 'other'
+  gender?: 'MALE' | 'FEMALE' | 'OTHER'
   role: UserRole
   totalSpent?: number // Total amount spent at restaurant
   createdAt: string
   updatedAt: string
 }
+
+export type UserSummary = Pick<User, 'firstName' | 'lastName' | 'phone' | 'email' | 'gender'>
 export type UpdateUserRequest = Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'dateOfBirth' | 'gender'>>
 export interface RestaurantTable {
   id: string

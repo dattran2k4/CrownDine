@@ -6,5 +6,9 @@ public enum EOrderStatus {
     IN_PROGRESS,
     SERVED,
     COMPLETED,
-    CANCELLED
+    CANCELLED;
+
+    public boolean isFinal() {
+        return this == COMPLETED || this == CANCELLED;
+    }
 }

@@ -5,6 +5,7 @@ import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.OrderRequest;
+import com.crowndine.dto.response.OrderApplyVoucherResponse;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.UpdateStatusOrderResponse;
@@ -36,4 +37,8 @@ public interface OrderService {
     void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
 
     Order getOrder(Long id);
+
+    OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username);
+
+    OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
 }

@@ -1,6 +1,7 @@
 package com.crowndine.controller;
 
 import com.crowndine.common.enums.EOrderStatus;
+import com.crowndine.dto.request.OrderApplyVoucherRequest;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.ApiResponse;
@@ -62,6 +63,26 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Added order details successfully")
+                .build();
+    }
+
+    @PostMapping("/{orderId}/voucher/apply")
+    public ApiResponse applyVoucherToOrder(@Min(1) @PathVariable Long orderId,
+                                           @Valid @RequestBody OrderApplyVoucherRequest request,
+                                           Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Applied voucher to order successfully")
+                .data(orderService.applyVoucherToOrder(orderId, request.getCode(), principal.getName()))
+                .build();
+    }
+
+    @DeleteMapping("/{orderId}/voucher")
+    public ApiResponse removeVoucherFromOrder(@Min(1) @PathVariable Long orderId, Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Removed voucher from order successfully")
+                .data(orderService.removeVoucherFromOrder(orderId, principal.getName()))
                 .build();
     }
 }

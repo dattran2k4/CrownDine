@@ -11,6 +11,7 @@ export interface ComboFormData {
   name: string
   description: string
   price: number
+  imageUrl: string
   items: { itemId: number; quantity: number }[]
 }
 
@@ -25,6 +26,7 @@ export const ComboForm = ({ initialData, onSubmit, onCancel }: ComboFormProps) =
     name: initialData?.name || '',
     description: initialData?.description || '',
     price: initialData?.price || 0,
+    imageUrl: initialData?.imageUrl || '',
     items: initialData?.items?.map(item => ({ itemId: item.itemId, quantity: item.quantity })) || []
   })
 
@@ -85,6 +87,15 @@ export const ComboForm = ({ initialData, onSubmit, onCancel }: ComboFormProps) =
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
               required
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='combo-image'>Link Ảnh (Tùy chọn)</Label>
+            <Input
+              id='combo-image'
+              placeholder='Nhập đường dẫn hình ảnh (URL)'
+              value={formData.imageUrl}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
             />
           </div>
           <div className='space-y-2'>

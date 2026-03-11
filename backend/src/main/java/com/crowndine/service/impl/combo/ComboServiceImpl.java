@@ -63,6 +63,7 @@ public class ComboServiceImpl implements ComboService {
         combo.setDescription(req.getDescription());
         combo.setPrice(req.getPrice());
         combo.setPriceAfterDiscount(req.getPriceAfterDiscount());
+        combo.setImageUrl(req.getImageUrl());
         combo.setStatus(req.getStatus() != null ? req.getStatus() : com.crowndine.common.enums.EComboStatus.AVAILABLE);
         combo.setSlug(toSlug(req.getName()));
         combo.setSoldCount(0L);
@@ -99,6 +100,7 @@ public class ComboServiceImpl implements ComboService {
         combo.setDescription(req.getDescription());
         combo.setPrice(req.getPrice());
         combo.setPriceAfterDiscount(req.getPriceAfterDiscount());
+        combo.setImageUrl(req.getImageUrl());
         if (req.getStatus() != null) {
             combo.setStatus(req.getStatus());
         }
@@ -153,6 +155,7 @@ public class ComboServiceImpl implements ComboService {
                 .price(combo.getPrice())
                 .priceAfterDiscount(combo.getPriceAfterDiscount())
                 .status(combo.getStatus())
+                .imageUrl(combo.getImageUrl())
                 .items(items)
                 .build();
     }

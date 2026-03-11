@@ -21,6 +21,7 @@ CREATE TABLE `combos` (
                           `sold_count` bigint DEFAULT NULL,
                           `updated_at` datetime(6) DEFAULT NULL,
                           `description` varchar(255) DEFAULT NULL,
+                          `image_url` varchar(255) DEFAULT NULL,
                           `name` varchar(255) DEFAULT NULL,
                           `slug` varchar(255) DEFAULT NULL,
                           `status` enum('AVAILABLE','UNAVAILABLE') DEFAULT NULL,

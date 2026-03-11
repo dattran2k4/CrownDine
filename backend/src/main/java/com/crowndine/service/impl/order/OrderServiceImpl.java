@@ -308,7 +308,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = getOrder(orderId);
 
-        if (order.getStatus().equals(EOrderStatus.COMPLETED) || order.getStatus().equals(EOrderStatus.CANCELLED)) {
+        if (order.getStatus().isFinal()) {
             throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
         }
 

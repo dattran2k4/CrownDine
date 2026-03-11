@@ -116,7 +116,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
             throw new InvalidDataException("Đơn hàng này không phải của user");
         }
 
-        if (order.getStatus() == EOrderStatus.COMPLETED || order.getStatus() == EOrderStatus.CANCELLED) {
+        if (order.getStatus().isFinal()) {
             throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
         }
 
@@ -162,7 +162,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     @Transactional(rollbackFor = Exception.class)
     public void releaseVoucher(String code, String username) {
         UserVoucher userVoucher = getUserVoucher(code, username);
-        
+
         int usageCount = userVoucher.getUsageCount();
         if (usageCount < 1) {
             return;

@@ -76,4 +76,13 @@ public class ApiOrderController {
                 .data(orderService.applyVoucherToOrder(orderId, request.getCode(), principal.getName()))
                 .build();
     }
+
+    @DeleteMapping("/{orderId}/voucher")
+    public ApiResponse removeVoucherFromOrder(@Min(1) @PathVariable Long orderId, Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Removed voucher from order successfully")
+                .data(orderService.removeVoucherFromOrder(orderId, principal.getName()))
+                .build();
+    }
 }

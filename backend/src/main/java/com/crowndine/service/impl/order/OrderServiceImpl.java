@@ -350,6 +350,48 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {
+        log.info("Removing voucher from order with id {}", orderId);
+
+        Order order = getOrder(orderId);
+
+        if (order.getStatus().isFinal()) {
+            throw new InvalidDataException("Không thể gỡ voucher cho đơn đã hoàn tất hoặc đã hủy");
+        }
+
+        if (order.getVoucher() == null) {
+            throw new InvalidDataException("Đơn hàng chưa áp voucher");
+        }
+
+        String voucherCode = order.getVoucher().getCode();
+        userVoucherService.releaseVoucher(voucherCode, username);
+
+        order.setVoucher(null);
+
+        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        BigDecimal discountPrice = BigDecimal.ZERO;
+        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+
+        order.setTotalPrice(totalPrice);
+        order.setDiscountPrice(discountPrice);
+        order.setFinalPrice(finalPrice);
+
+        Order updatedOrder = orderRepository.save(order);
+        log.info("Removed voucher {} from order {}", voucherCode, updatedOrder.getId());
+
+        return OrderApplyVoucherResponse.builder()
+                .orderId(updatedOrder.getId())
+                .orderCode(updatedOrder.getCode())
+                .voucherId(null)
+                .voucherCode(null)
+                .totalPrice(updatedOrder.getTotalPrice())
+                .discountPrice(updatedOrder.getDiscountPrice())
+                .finalPrice(updatedOrder.getFinalPrice())
+                .build();
+    }
+
     private OrderResponse toResponse(Order order) {
         OrderResponse response = new OrderResponse();
         BeanUtils.copyProperties(order, response);

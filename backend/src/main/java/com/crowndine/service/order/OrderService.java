@@ -39,4 +39,6 @@ public interface OrderService {
     Order getOrder(Long id);
 
     OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username);
+
+    OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
 }

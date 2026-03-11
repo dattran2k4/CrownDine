@@ -2,8 +2,7 @@
 ALTER TABLE attendances
     ADD COLUMN user_id BIGINT NULL AFTER work_schedule_id,
     ADD COLUMN status VARCHAR(50) NULL,
-    ADD COLUMN attendance_type VARCHAR(50) NULL,
-    ADD COLUMN method VARCHAR(50) NULL;
+    ADD COLUMN attendance_type VARCHAR(50) NULL;
 
 ALTER TABLE attendances
     ADD CONSTRAINT fk_attendances_user_id_users FOREIGN KEY (user_id) REFERENCES users (id);

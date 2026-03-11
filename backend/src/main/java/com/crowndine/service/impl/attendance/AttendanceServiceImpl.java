@@ -1,10 +1,9 @@
-package com.crowndine.service.impl.timekeeping;
+package com.crowndine.service.impl.attendance;
 
-import com.crowndine.common.enums.EAttendanceMethod;
 import com.crowndine.common.enums.EAttendanceStatus;
 import com.crowndine.common.enums.EAttendanceType;
 import com.crowndine.common.enums.EWorkScheduleStatus;
-import com.crowndine.dto.request.TimekeepingRecordRequest;
+import com.crowndine.dto.request.AttendanceRecordRequest;
 import com.crowndine.dto.response.*;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -16,7 +15,7 @@ import com.crowndine.repository.AttendanceRepository;
 import com.crowndine.repository.ShiftRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.repository.WorkScheduleRepository;
-import com.crowndine.service.timekeeping.TimekeepingService;
+import com.crowndine.service.attendance.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,8 +33,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j(topic = "TIMEKEEPING-SERVICE")
-public class TimekeepingServiceImpl implements TimekeepingService {
+@Slf4j(topic = "ATTENDANCE-SERVICE")
+public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final WorkScheduleRepository workScheduleRepository;
@@ -46,7 +45,7 @@ public class TimekeepingServiceImpl implements TimekeepingService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveRecord(TimekeepingRecordRequest request) {
+    public void saveRecord(AttendanceRecordRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
         Shift shift = shiftRepository.findById(request.getShiftId())
@@ -63,11 +62,10 @@ public class TimekeepingServiceImpl implements TimekeepingService {
         attendance.setUser(user);
         attendance.setNote(request.getNote());
         attendance.setAttendanceType(request.getAttendanceType());
-        attendance.setMethod(request.getMethod() != null ? request.getMethod() : EAttendanceMethod.MANUAL);
 
         if (EAttendanceType.WORKING.equals(request.getAttendanceType())) {
-            attendance.setCheckInAt(request.getHasPunchIn() != null && request.getHasPunchIn() ? request.getCheckInAt() : null);
-            attendance.setCheckOutAt(request.getHasPunchOut() != null && request.getHasPunchOut() ? request.getCheckOutAt() : null);
+            attendance.setCheckInAt(Boolean.TRUE.equals(request.getHasPunchIn()) ? request.getCheckInAt() : null);
+            attendance.setCheckOutAt(Boolean.TRUE.equals(request.getHasPunchOut()) ? request.getCheckOutAt() : null);
             attendance.setStatus(computeStatus(workSchedule.getShift(), request));
         } else {
             attendance.setCheckInAt(null);
@@ -76,12 +74,12 @@ public class TimekeepingServiceImpl implements TimekeepingService {
         }
 
         attendanceRepository.save(attendance);
-        log.info("Saved timekeeping for user {} date {} shift {}", user.getUsername(), request.getWorkDate(), shift.getName());
+        log.info("Saved attendance for user {} date {} shift {}", user.getUsername(), request.getWorkDate(), shift.getName());
     }
 
-    private EAttendanceStatus computeStatus(Shift shift, TimekeepingRecordRequest req) {
-        Boolean hasIn = Boolean.TRUE.equals(req.getHasPunchIn());
-        Boolean hasOut = Boolean.TRUE.equals(req.getHasPunchOut());
+    private EAttendanceStatus computeStatus(Shift shift, AttendanceRecordRequest req) {
+        boolean hasIn = Boolean.TRUE.equals(req.getHasPunchIn());
+        boolean hasOut = Boolean.TRUE.equals(req.getHasPunchOut());
         if (!hasIn && !hasOut) return EAttendanceStatus.NOT_PUNCHED;
         if (hasIn != hasOut) return EAttendanceStatus.MISSING_PUNCH;
 
@@ -98,29 +96,26 @@ public class TimekeepingServiceImpl implements TimekeepingService {
     }
 
     @Override
-    public Page<TimekeepingHistoryItemResponse> getHistory(Long userId, Pageable pageable) {
+    public Page<AttendanceHistoryItemResponse> getHistory(Long userId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("Nhân viên không tồn tại");
         }
         return attendanceRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
-                .map(a -> toHistoryItem(a));
+                .map(this::toHistoryItem);
     }
 
-    private TimekeepingHistoryItemResponse toHistoryItem(Attendance a) {
+    private AttendanceHistoryItemResponse toHistoryItem(Attendance a) {
         LocalDateTime time = a.getCheckInAt() != null ? a.getCheckInAt() : a.getCreatedAt();
-        return TimekeepingHistoryItemResponse.builder()
+        return AttendanceHistoryItemResponse.builder()
                 .id(a.getId())
                 .time(time)
                 .status(a.getStatus())
-                .statusLabel(statusLabelVi(a.getStatus()))
-                .method(a.getMethod() != null ? a.getMethod() : EAttendanceMethod.MANUAL)
-                .methodLabel(methodLabelVi(a.getMethod()))
                 .content(a.getNote())
                 .build();
     }
 
     @Override
-    public TimekeepingScheduleResponse getWeeklySchedule(LocalDate date, String searchName) {
+    public AttendanceScheduleResponse getWeeklySchedule(LocalDate date, String searchName) {
         LocalDate weekStart = date != null ? date.with(WeekFields.ISO.dayOfWeek(), 1) : LocalDate.now().with(WeekFields.ISO.dayOfWeek(), 1);
         LocalDate weekEnd = weekStart.plusDays(6);
         int weekNumber = weekStart.get(WeekFields.ISO.weekOfWeekBasedYear());
@@ -145,16 +140,16 @@ public class TimekeepingServiceImpl implements TimekeepingService {
                 .sorted(Comparator.comparing(ShiftResponse::getStartTime))
                 .toList();
 
-        List<TimekeepingScheduleResponse.TimekeepingScheduleCellResponse> cells = new ArrayList<>();
+        List<AttendanceScheduleResponse.AttendanceScheduleCellResponse> cells = new ArrayList<>();
         for (Shift shift : shiftRepository.findAll()) {
             for (LocalDate d = weekStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {
                 LocalDate workDate = d;
-                List<TimekeepingScheduleResponse.EmployeeWithStatusResponse> employees = schedules.stream()
+                List<AttendanceScheduleResponse.AttendanceScheduleEmployeeResponse> employees = schedules.stream()
                         .filter(ws -> ws.getShift().getId().equals(shift.getId()) && ws.getWorkDate().equals(workDate))
                         .map(ws -> {
                             Attendance att = attendanceByWorkScheduleId.get(ws.getId());
                             String status = att != null && att.getStatus() != null ? att.getStatus().name() : EAttendanceStatus.NOT_PUNCHED.name();
-                            return TimekeepingScheduleResponse.EmployeeWithStatusResponse.builder()
+                            return AttendanceScheduleResponse.AttendanceScheduleEmployeeResponse.builder()
                                     .userId(ws.getStaff().getId())
                                     .staffCode(ws.getStaff().getUsername())
                                     .fullName(ws.getStaff().getFullName())
@@ -166,7 +161,7 @@ public class TimekeepingServiceImpl implements TimekeepingService {
 
                 int dayIndex = (int) java.time.temporal.ChronoUnit.DAYS.between(weekStart, d);
                 String dayOfWeek = dayIndex < THU.size() ? THU.get(dayIndex) : d.getDayOfWeek().toString();
-                cells.add(TimekeepingScheduleResponse.TimekeepingScheduleCellResponse.builder()
+                cells.add(AttendanceScheduleResponse.AttendanceScheduleCellResponse.builder()
                         .shiftId(shift.getId())
                         .workDate(workDate)
                         .dayOfWeek(dayOfWeek)
@@ -176,7 +171,7 @@ public class TimekeepingServiceImpl implements TimekeepingService {
             }
         }
 
-        return TimekeepingScheduleResponse.builder()
+        return AttendanceScheduleResponse.builder()
                 .weekStart(weekStart)
                 .weekEnd(weekEnd)
                 .weekNumber(weekNumber)
@@ -184,11 +179,6 @@ public class TimekeepingServiceImpl implements TimekeepingService {
                 .shifts(shifts)
                 .cells(cells)
                 .build();
-    }
-
-    @Override
-    public List<TimekeepingStatusLegendResponse> getStatusLegend() {
-        return TimekeepingStatusLegendResponse.all();
     }
 
     @Override
@@ -276,7 +266,7 @@ public class TimekeepingServiceImpl implements TimekeepingService {
     }
 
     @Override
-    public EmployeeTimekeepingInfoResponse getEmployeeTimekeepingInfo(Long userId) {
+    public EmployeeAttendanceInfoResponse getEmployeeAttendanceInfo(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
         LocalDate today = LocalDate.now();
         List<Attendance> todayAttendances = attendanceRepository.findByUserIdAndWorkDateBetween(userId, today, today);
@@ -284,12 +274,11 @@ public class TimekeepingServiceImpl implements TimekeepingService {
         if (!todayAttendances.isEmpty()) {
             currentStatus = todayAttendances.get(0).getStatus() != null ? todayAttendances.get(0).getStatus() : EAttendanceStatus.NOT_PUNCHED;
         }
-        return EmployeeTimekeepingInfoResponse.builder()
+        return EmployeeAttendanceInfoResponse.builder()
                 .userId(user.getId())
                 .staffCode(user.getUsername())
                 .fullName(user.getFullName())
                 .currentStatus(currentStatus)
-                .currentStatusLabel(statusLabelVi(currentStatus))
                 .build();
     }
 
@@ -300,26 +289,6 @@ public class TimekeepingServiceImpl implements TimekeepingService {
                 .startTime(s.getStartTime())
                 .endTime(s.getEndTime())
                 .build();
-    }
-
-    private static String statusLabelVi(EAttendanceStatus s) {
-        if (s == null) return "";
-        return switch (s) {
-            case ON_TIME -> "Đúng giờ";
-            case LATE_EARLY -> "Đi muộn / Về sớm";
-            case MISSING_PUNCH -> "Chấm công thiếu";
-            case NOT_PUNCHED -> "Chưa chấm công";
-            case ABSENT_OFF -> "Nghỉ làm";
-        };
-    }
-
-    private static String methodLabelVi(EAttendanceMethod m) {
-        if (m == null) return "Thủ công";
-        return switch (m) {
-            case MANUAL -> "Thủ công";
-            case SYSTEM -> "Hệ thống";
-            case FINGERPRINT -> "Vân tay";
-        };
     }
 
     private static String formatHours(double minutes) {

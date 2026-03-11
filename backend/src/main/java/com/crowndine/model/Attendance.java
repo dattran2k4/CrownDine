@@ -1,6 +1,5 @@
 package com.crowndine.model;
 
-import com.crowndine.common.enums.EAttendanceMethod;
 import com.crowndine.common.enums.EAttendanceStatus;
 import com.crowndine.common.enums.EAttendanceType;
 import jakarta.persistence.*;
@@ -35,10 +34,6 @@ public class Attendance extends AbstractEntity<Long> {
     @Enumerated(EnumType.STRING)
     @Column(name = "attendance_type")
     private EAttendanceType attendanceType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "method")
-    private EAttendanceMethod method;
 
     @OneToOne
     @JoinColumn(name = "work_schedule_id")

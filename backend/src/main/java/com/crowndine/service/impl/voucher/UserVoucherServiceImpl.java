@@ -161,7 +161,8 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseVoucher(String code, String username) {
-        UserVoucher userVoucher = getValidUserVoucher(code, username);
+        UserVoucher userVoucher = getUserVoucher(code, username);
+        
         int usageCount = userVoucher.getUsageCount();
         if (usageCount < 1) {
             return;
@@ -175,13 +176,17 @@ public class UserVoucherServiceImpl implements UserVoucherService {
         return voucherRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));
     }
 
-    private UserVoucher getValidUserVoucher(String code, String username) {
+    private UserVoucher getUserVoucher(String code, String username) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
         Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("Mã voucher không hợp lệ"));
 
-        UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
+        return userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
+    }
+
+    private UserVoucher getValidUserVoucher(String code, String username) {
+        UserVoucher userVoucher = getUserVoucher(code, username);
 
         validateUserVoucherAvailability(userVoucher);
         return userVoucher;

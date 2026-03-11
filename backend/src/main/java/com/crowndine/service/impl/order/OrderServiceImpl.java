@@ -314,6 +314,7 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
             userVoucherService.releaseVoucher(order.getVoucher().getCode(), username);
+            order.setVoucher(null);
         }
 
         if (order.getOrderDetails().isEmpty()) {

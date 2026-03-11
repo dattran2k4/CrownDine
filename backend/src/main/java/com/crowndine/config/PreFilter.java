@@ -2,6 +2,7 @@ package com.crowndine.config;
 
 import com.crowndine.common.enums.ETokenType;
 import com.crowndine.exception.ErrorResponse;
+import com.crowndine.exception.JwtAuthenticationException;
 import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.JwtService;
 import com.crowndine.repository.TokenRepository;
@@ -41,8 +42,8 @@ public class PreFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         log.info("----------------------- Pre Filter -----------------------");
 
@@ -61,7 +62,7 @@ public class PreFilter extends OncePerRequestFilter {
             username = jwtService.extractUsername(token, ETokenType.ACCESS_TOKEN);
         }
         // Ném message trong extract ra response
-        catch (BadCredentialsException | JwtException e) {
+        catch (JwtAuthenticationException e) {
             log.error("JWT Authentication Error, message={}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -71,7 +72,7 @@ public class PreFilter extends OncePerRequestFilter {
             errorResponse.setTimestamp(new Date());
             errorResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             errorResponse.setPath(request.getRequestURI());
-            errorResponse.setError("UNAUTHORIZED");
+            errorResponse.setError(e.getErrorCode().name());
             errorResponse.setMessage(e.getMessage());
 
             ObjectMapper objectMapper = new ObjectMapper();

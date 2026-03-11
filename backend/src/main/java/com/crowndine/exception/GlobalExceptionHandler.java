@@ -187,7 +187,7 @@ public class GlobalExceptionHandler {
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
         errorResponse.setStatus(UNAUTHORIZED.value());
-        errorResponse.setError(UNAUTHORIZED.getReasonPhrase());
+        errorResponse.setError(UNAUTHORIZED.getReasonPhrase().toUpperCase());
         errorResponse.setMessage("Tài khoản hoặc mật khẩu sai");
         return errorResponse;
     }

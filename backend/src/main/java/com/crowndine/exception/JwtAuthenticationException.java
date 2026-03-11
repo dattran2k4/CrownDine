@@ -1,0 +1,21 @@
+package com.crowndine.exception;
+
+import com.crowndine.common.enums.ErrorCode;
+
+public class JwtAuthenticationException extends RuntimeException {
+    private final ErrorCode errorCode;
+
+    public JwtAuthenticationException(ErrorCode errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    public JwtAuthenticationException(ErrorCode errorCode, String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+    }
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
+    }
+}

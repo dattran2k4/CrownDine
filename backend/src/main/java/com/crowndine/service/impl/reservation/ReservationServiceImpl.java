@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -46,6 +47,80 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final CalculationService calculationService;
     private final OrderService orderService;
+
+    @Override
+    public PageResponse<ReservationResponse> getAllReservations(LocalDate fromDate, LocalDate toDate, EReservationStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("date"), Sort.Order.desc("startTime")));
+        Page<Reservation> reservationPage = reservationRepository.findReservations(fromDate, toDate, status, pageable);
+
+        List<ReservationResponse> data = reservationPage.getContent().stream().map(this::toReservationResponse).toList();
+
+        return PageResponse.<ReservationResponse>builder()
+                .page(reservationPage.getNumber() + 1)
+                .pageSize(reservationPage.getSize())
+                .totalPages(reservationPage.getTotalPages())
+                .totalItems(reservationPage.getTotalElements())
+                .data(data)
+                .build();
+    }
+
+    private ReservationResponse toReservationResponse(Reservation r) {
+        ReservationResponse resp = new ReservationResponse();
+        resp.setId(r.getId());
+        resp.setCode(r.getCode());
+        resp.setDate(r.getDate());
+        resp.setStartTime(r.getStartTime());
+        resp.setEndTime(r.getEndTime());
+        resp.setGuestNumber(r.getGuestNumber());
+        resp.setNote(r.getNote());
+        resp.setStatus(r.getStatus());
+        resp.setTableName(r.getTable() != null ? r.getTable().getName() : null);
+
+        if (r.getCustomer() != null) {
+            resp.setCustomerName(r.getCustomer().getFullName());
+            resp.setPhone(r.getCustomer().getPhone());
+            resp.setEmail(r.getCustomer().getEmail());
+        }
+
+        if (r.getOrder() != null) {
+            List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(r.getOrder().getId());
+            List<OrderDetailResponse> odResponses = orderDetails.stream().map(this::toOrderDetailResponse).toList();
+            resp.setOrderDetails(odResponses);
+        } else {
+            resp.setOrderDetails(List.of());
+        }
+
+        return resp;
+    }
+
+    private OrderDetailResponse toOrderDetailResponse(OrderDetail od) {
+        OrderDetailResponse r = new OrderDetailResponse();
+        r.setId(od.getId());
+        r.setQuantity(od.getQuantity());
+        r.setNote(od.getNote());
+        r.setStatus(od.getStatus());
+        r.setTotalPrice(od.getTotalPrice());
+        
+        if (od.getItem() != null) {
+            ItemResponse ir = ItemResponse.builder()
+                .id(od.getItem().getId())
+                .name(od.getItem().getName())
+                .price(od.getItem().getPrice())
+                .build();
+            r.setItem(ir);
+        }
+        
+        if (od.getCombo() != null) {
+            ComboResponse cr = ComboResponse.builder()
+                .id(od.getCombo().getId())
+                .name(od.getCombo().getName())
+                .price(od.getCombo().getPrice())
+                .build();
+            r.setCombo(cr);
+        }
+        
+        return r;
+    }
 
     @Override
     public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {

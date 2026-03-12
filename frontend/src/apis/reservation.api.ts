@@ -12,6 +12,10 @@ import http from '@/utils/http'
 const RESERVATION_URL = '/reservations'
 
 const reservationApi = {
+  getAllReservations(params: { fromDate?: string; toDate?: string; status?: string; page?: number; size?: number }) {
+    return http.get<ApiResponse<any>>(`${RESERVATION_URL}/all`, { params })
+  },
+
   createReservation(data: ReservationCreateRequest) {
     return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/create`, data)
   },

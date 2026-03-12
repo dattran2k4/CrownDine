@@ -21,4 +21,11 @@ public class WorkScheduleCreateRequest {
 
     @NotNull
     private List<Long> staffIds;
+
+    private Boolean repeatWeekly;
+    private List<Integer> daysOfWeek;
+
+    @JsonFormat(pattern = "dd-MM-yyyy")
+    @FutureOrPresent(message = "Ngày kết thúc phải là hôm nay hoặc tương lai")
+    private LocalDate endDate;
 }

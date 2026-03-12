@@ -1,6 +1,14 @@
 export type UserRole = 'customer' | 'staff' | 'admin'
 export type MembershipTier = 'bronze' | 'silver' | 'gold' | 'platinum'
-
+export enum EGender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER'
+}
+export enum EStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE'
+}
 export interface User {
   id: string
   firstName: string
@@ -9,11 +17,22 @@ export interface User {
   phone: string
   avatar?: string
   dateOfBirth?: string
-  gender?: 'male' | 'female' | 'other'
+  gender?: EGender
   role: UserRole
   totalSpent?: number // Total amount spent at restaurant
   createdAt: string
   updatedAt: string
+}
+export type Staff = {
+  id: string
+  firstName: string
+  status: EStatus
+  lastName: string
+  role: 'Staff'
+  email: string
+  phone: string
+  avatar: string
+  joinDate: string
 }
 export type UpdateUserRequest = Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'dateOfBirth' | 'gender'>>
 export interface RestaurantTable {

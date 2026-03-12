@@ -12,6 +12,7 @@ import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
 import { useLogin } from '@/hooks/useLogin'
 import { isAxiosUnauthorizedError } from '@/utils/utils'
+import { useAuthStore } from '@/stores/useAuthStore'
 import type { ErrorResponse } from '@/types/utils.type'
 import { toast } from 'sonner'
 
@@ -32,7 +33,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
     try {
       await loginMutation.mutateAsync(data)
       toast.success('Đăng nhập thành công!')
-      navigate(path.home)
+
+      const roles = useAuthStore.getState().roles
+      if (roles.includes('ADMIN')) {
+        navigate('/admin')
+      } else if (roles.includes('STAFF')) {
+        navigate('/staff')
+      } else {
+        navigate(path.home)
+        console.log('Logged in user has no role?')
+      }
     } catch (error) {
       console.error('Login Mutation Failed WITH ERROR:', error)
       if (isAxiosUnauthorizedError<ErrorResponse>(error)) {

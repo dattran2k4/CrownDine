@@ -13,7 +13,6 @@ import java.time.LocalDate;
 @Setter
 public class StaffCreateRequest {
 
-    @NotBlank
     private String username;
 
     @NotBlank
@@ -33,7 +32,6 @@ public class StaffCreateRequest {
 
     private EGender gender;
 
-    @NotNull
     private LocalDate dateOfBirth;
 }
 

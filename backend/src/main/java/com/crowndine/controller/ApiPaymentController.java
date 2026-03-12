@@ -32,25 +32,25 @@ public class ApiPaymentController {
     private final PayOS payOS;
     private final PayOSService payOSService;
 
-    @PostMapping("create")
-    public ApiResponse createPaymentLink(@Valid @RequestBody PaymentRequest request, Principal pricipal) {
+    @PostMapping("/create")
+    public ApiResponse createPaymentLink(@Valid @RequestBody PaymentRequest request, Principal principal) {
         log.info("Request to create payment link");
         PaymentStrategy<?> strategy = paymentFactory.get(request.getMethod());
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Successfully created payment link")
-                .data(strategy.createPaymentLink(request, pricipal.getName()))
+                .data(strategy.createPaymentLink(request, principal.getName()))
                 .build();
     }
 
     @PostMapping("/payos-ipn")
-    public ApiResponse handleWebhook(@RequestBody Map<String, Object> body) {
-        log.info("PayOS return received: {}", body);
-        WebhookData data = payOS.webhooks().verify(body);
-        payOSService.handleWebHook(data);
-        return ApiResponse.builder()
-                .status(HttpStatus.CREATED.value())
-                .message("PayOS returned")
-                .build();
+    public void handleWebhook(@RequestBody Map<String, Object> body) {
+        try {
+            log.info("PayOS return received: {}", body);
+            WebhookData data = payOS.webhooks().verify(body);
+            payOSService.handleWebHook(data);
+        } catch (Exception e) {
+            log.error("Exception occurred while handling payment request {}, message = {}", e, e.getMessage());
+        }
     }
 }

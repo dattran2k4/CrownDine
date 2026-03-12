@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -27,9 +28,23 @@ public class CalculationServiceImpl implements CalculationService {
     }
 
     @Override
+    public BigDecimal calculateTableDeposit(BigDecimal baseDeposit, LocalTime start, LocalTime end) {
+        if (start == null || end == null) {
+            return BigDecimal.ZERO;
+        }
+        baseDeposit = (baseDeposit != null) ? baseDeposit : BigDecimal.ZERO;
+        long minutes = java.time.Duration.between(start, end).toMinutes();
+        if (minutes <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        return baseDeposit.multiply(hours).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    @Override
     public BigDecimal calculateDepositPayment(BigDecimal itemsTotal, BigDecimal tableDeposit) {
-        if (itemsTotal == null) itemsTotal = BigDecimal.ZERO;
-        if (tableDeposit == null) tableDeposit = BigDecimal.ZERO;
+        itemsTotal = (itemsTotal != null) ? itemsTotal : BigDecimal.ZERO;
+        tableDeposit = (tableDeposit != null) ? tableDeposit : BigDecimal.ZERO;
 
         return itemsTotal.multiply(DEPOSIT_RATE)
                 .add(tableDeposit)
@@ -38,7 +53,7 @@ public class CalculationServiceImpl implements CalculationService {
 
     @Override
     public BigDecimal calculateVoucherDiscount(BigDecimal orderAmount, Voucher voucher) {
-        if (orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0 || voucher == null) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 

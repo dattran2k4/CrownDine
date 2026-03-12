@@ -1,26 +1,20 @@
 package com.crowndine.service.impl.payment;
 
-import com.crowndine.common.enums.*;
-import com.crowndine.common.utils.CodeUtils;
+import com.crowndine.common.enums.EPaymentMethod;
+import com.crowndine.common.enums.EPaymentStatus;
+import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.config.PayOSConfig;
-import com.crowndine.dto.request.PaymentRequest;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
-import com.crowndine.model.*;
+import com.crowndine.model.Payment;
+import com.crowndine.model.Reservation;
 import com.crowndine.repository.PaymentRepository;
-import com.crowndine.service.CalculationService;
-import com.crowndine.service.order.OrderService;
-import com.crowndine.service.payment.PaymentStrategy;
-import com.crowndine.service.reservation.ReservationService;
-import com.crowndine.service.user.UserService;
-import lombok.RequiredArgsConstructor;
+import com.crowndine.service.payment.AbstractPaymentStrategy;
+import com.crowndine.service.payment.PaymentPreparationService;
+import com.crowndine.service.payment.PreparedPayment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
@@ -28,110 +22,42 @@ import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
 import vn.payos.model.webhooks.WebhookData;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 @Service("payos")
-@RequiredArgsConstructor
 @Slf4j(topic = "PAYOS-SERVICE")
-public class PayOSService implements PaymentStrategy<WebhookData> {
+public class PayOSService extends AbstractPaymentStrategy<WebhookData> {
 
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
-    private final ReservationService reservationService;
-    private final OrderService orderService;
-    private final UserService userService;
-    private final CalculationService calculationService;
+
+    public PayOSService(PaymentPreparationService paymentPreparationService,
+                        PayOSConfig payOSConfig,
+                        PayOS payOS,
+                        PaymentRepository paymentRepository) {
+        super(paymentPreparationService);
+        this.payOSConfig = payOSConfig;
+        this.payOS = payOS;
+        this.paymentRepository = paymentRepository;
+    }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public String createPaymentLink(PaymentRequest request, String username) {
-        log.info("Processing create payment link for user {} ", username);
+    protected EPaymentMethod getMethod() {
+        return EPaymentMethod.PAYOS;
+    }
 
-        User user = userService.getUserByUserName(username);
+    @Override
+    protected EPaymentStatus getInitialStatus() {
+        return EPaymentStatus.PENDING;
+    }
 
-        Payment payment = new Payment();
-        payment.setStatus(EPaymentStatus.PENDING);
-        payment.setMethod(EPaymentMethod.PAYOS);
-        payment.setCreatedBy(user);
+    @Override
+    protected String doCreatePayment(PreparedPayment prepared) {
+        Payment payment = prepared.payment();
+        BigDecimal amountToPay = prepared.amount();
+        String description = prepared.description();
 
-        BigDecimal amountToPay;
-
-        Long code = CodeUtils.generatePaymentCode();
-        log.info("orderCode: {}", code);
-        payment.setCode(code);
-
-        String description;
-
-        if (StringUtils.hasText(request.getReservationCode())) {
-            Reservation reservation = reservationService.getReservationByCode(request.getReservationCode());
-            payment.setReservation(reservation);
-            payment.setTarget(EPaymentTarget.RESERVATION);
-            payment.setSource(EPaymentSource.CLIENT_APP);
-
-            BigDecimal totalOrder = BigDecimal.ZERO;
-
-            if (reservation.getOrder() != null) {
-                List<OrderDetail> orderDetails = reservation.getOrder().getOrderDetails();
-                totalOrder = calculationService.calculateTotalOrder(orderDetails);
-            }
-
-            // Tính tiền cọc bàn theo giờ
-            BigDecimal tableDeposit = BigDecimal.ZERO;
-            if (reservation.getTable() != null && reservation.getTable().getBaseDeposit() != null 
-                    && reservation.getStartTime() != null && reservation.getEndTime() != null) {
-                long minutes = java.time.Duration.between(reservation.getStartTime(), reservation.getEndTime()).toMinutes();
-                BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-                tableDeposit = reservation.getTable().getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
-            }
-
-            amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
-
-            log.info("Table deposit (per hour): {}", reservation.getTable() != null ? reservation.getTable().getBaseDeposit() : 0);
-            log.info("Hours: {}", reservation.getStartTime() != null && reservation.getEndTime() != null 
-                    ? java.time.Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours() : 0);
-            log.info("Table deposit (total): {}", tableDeposit);
-            log.info("Total amount to pay: {}", amountToPay);
-
-            payment.setAmount(amountToPay);
-            payment.setType(EPaymentType.DEPOSIT);
-            description = "Thanh toán đặt cọc bàn";
-        } else {
-            Order order = orderService.getOrderByCode(request.getOrderCode());
-            payment.setSource(EPaymentSource.POS_COUNTER);
-            payment.setOrder(order);
-            payment.setTarget(EPaymentTarget.ORDER);
-            payment.setType(EPaymentType.SETTLEMENT);
-            amountToPay = order.getFinalPrice();
-
-            //Kiểm tra có đặt bàn hay chưa để tính phần còn lại
-            if (order.getReservation() != null) {
-                List<Payment> depositPayments = paymentRepository.findByTargetAndReservationIdAndStatus(
-                        EPaymentTarget.RESERVATION,
-                        order.getReservation().getId(),
-                        EPaymentStatus.SUCCESS
-                );
-
-                // Cộng tổng số tiền đã cọc
-                BigDecimal totalDeposited = BigDecimal.ZERO;
-                for (Payment p : depositPayments) {
-                    totalDeposited = totalDeposited.add(p.getAmount());
-                }
-
-                // Trừ tiền: Tiền phải trả = Tổng bill - Tổng cọc
-                amountToPay = amountToPay.subtract(totalDeposited);
-                log.info("Order {} - Total: {}, Deposit: {}, Remaining: {}",
-                        order.getId(), order.getFinalPrice(), totalDeposited, amountToPay);
-            }
-
-            payment.setAmount(amountToPay);
-
-            description = "Thanh toán đơn hàng";
-        }
-
-        Payment savedPayment = paymentRepository.save(payment);
-        log.info("Payment id {} saved with status={}, target={}", savedPayment.getId(), savedPayment.getStatus(), savedPayment.getTarget());
+        log.info("Processing create payment link for code {} ", payment.getCode());
 
         PaymentLinkItem item = PaymentLinkItem.builder()
                 .name("CrownDine Restaurant")
@@ -140,7 +66,7 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
                 .build();
 
         CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest.builder()
-                .orderCode(code)
+                .orderCode(payment.getCode())
                 .amount(amountToPay.longValue())
                 .description(description)
                 .returnUrl(payOSConfig.getReturnPaymentSuccessUrl())
@@ -151,11 +77,10 @@ public class PayOSService implements PaymentStrategy<WebhookData> {
         try {
             CreatePaymentLinkResponse data = payOS.paymentRequests().create(paymentData);
             log.info("Created payment link successfully");
-
             return data.getCheckoutUrl();
         } catch (Exception ex) {
-            savedPayment.setStatus(EPaymentStatus.FAILED);
-            paymentRepository.save(savedPayment);
+            payment.setStatus(EPaymentStatus.FAILED);
+            paymentRepository.save(payment);
 
             log.error("Payment link could not be created, message={}", ex.getMessage(), ex);
             throw new InvalidDataException("Cannot create PayOS payment link", ex);

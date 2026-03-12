@@ -13,15 +13,15 @@ import java.util.Map;
 @Slf4j(topic = "PAYMENT-FACTORY")
 public class PaymentFactory {
 
-    private final Map<String, PaymentStrategy<?>> strategyMap;
+    private final Map<String, PaymentStrategy> strategyMap;
 
-    public PaymentStrategy<?> get(EPaymentMethod paymentMethod) {
+    public PaymentStrategy get(EPaymentMethod paymentMethod) {
         log.info("Getting payment strategy for {}", paymentMethod);
         // 1. Lấy tên bean từ Enum (VD: lấy ra chuỗi "PAYOS_SERVICE")
         String beanName = paymentMethod.getValue();
 
         // 2. Tìm trong Map của Spring
-        PaymentStrategy<?> strategy = strategyMap.get(beanName);
+        PaymentStrategy strategy = strategyMap.get(beanName);
 
         // 3. Validate
         if (strategy == null) {

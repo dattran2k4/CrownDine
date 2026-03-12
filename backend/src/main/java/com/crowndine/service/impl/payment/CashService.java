@@ -16,7 +16,7 @@ import java.util.Map;
 
 @Service("cash")
 @Slf4j(topic = "CASH-SERVICE")
-public class CashService extends AbstractPaymentStrategy<Object> {
+public class CashService extends AbstractPaymentStrategy {
 
     public CashService(PaymentPreparationService paymentPreparationService) {
         super(paymentPreparationService);

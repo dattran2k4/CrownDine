@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor
-public abstract class AbstractPaymentStrategy<T> implements PaymentStrategy<T> {
+public abstract class AbstractPaymentStrategy implements PaymentStrategy {
 
     protected final PaymentPreparationService paymentPreparationService;
 

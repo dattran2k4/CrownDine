@@ -38,7 +38,7 @@ public class ApiPaymentController {
     @PostMapping("/create")
     public ApiResponse createPaymentLink(@Valid @RequestBody PaymentRequest request, Principal principal) {
         log.info("Request to create payment link");
-        PaymentStrategy<?> strategy = paymentFactory.get(request.getMethod());
+        PaymentStrategy strategy = paymentFactory.get(request.getMethod());
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Successfully created payment link")

@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Service("payos")
 @Slf4j(topic = "PAYOS-SERVICE")
-public class PayOSService extends AbstractPaymentStrategy<WebhookData> {
+public class PayOSService extends AbstractPaymentStrategy {
 
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;

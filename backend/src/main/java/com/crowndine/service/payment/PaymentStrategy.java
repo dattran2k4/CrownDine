@@ -4,7 +4,7 @@ import com.crowndine.dto.request.PaymentRequest;
 
 import java.util.Map;
 
-public interface PaymentStrategy<T> {
+public interface PaymentStrategy {
     String createPaymentLink(PaymentRequest request, String username);
 
     void handleWebHook(Map<String, Object> webhookBody);

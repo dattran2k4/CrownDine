@@ -22,6 +22,7 @@ import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
 import vn.payos.model.webhooks.WebhookData;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Service("payos")
 @Slf4j(topic = "PAYOS-SERVICE")
@@ -89,7 +90,8 @@ public class PayOSService extends AbstractPaymentStrategy<WebhookData> {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void handleWebHook(WebhookData data) {
+    public void handleWebHook(Map<String, Object> body) {
+        WebhookData data = payOS.webhooks().verify(body);
         Long orderCode = data.getOrderCode();
         log.info("Processing PAYOS webhook for orderCode: {}", orderCode);
         try {

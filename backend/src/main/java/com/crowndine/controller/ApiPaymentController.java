@@ -1,5 +1,6 @@
 package com.crowndine.controller;
 
+import com.crowndine.common.enums.EPaymentMethod;
 import com.crowndine.dto.request.PaymentRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.service.impl.payment.PayOSService;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,6 +34,7 @@ public class ApiPaymentController {
     private final PayOS payOS;
     private final PayOSService payOSService;
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/create")
     public ApiResponse createPaymentLink(@Valid @RequestBody PaymentRequest request, Principal principal) {
         log.info("Request to create payment link");
@@ -47,8 +50,7 @@ public class ApiPaymentController {
     public void handleWebhook(@RequestBody Map<String, Object> body) {
         try {
             log.info("PayOS return received: {}", body);
-            WebhookData data = payOS.webhooks().verify(body);
-            payOSService.handleWebHook(data);
+            paymentFactory.get(EPaymentMethod.PAYOS).handleWebHook(body);
         } catch (Exception e) {
             log.error("Exception occurred while handling payment request {}, message = {}", e, e.getMessage());
         }

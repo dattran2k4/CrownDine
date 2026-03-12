@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Service("cash")
 @Slf4j(topic = "CASH-SERVICE")
@@ -47,7 +48,7 @@ public class CashService extends AbstractPaymentStrategy<Object> {
     }
 
     @Override
-    public void handleWebHook(Object webHookData) {
+    public void handleWebHook(Map<String, Object> body) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 }

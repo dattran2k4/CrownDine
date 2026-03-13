@@ -7,10 +7,12 @@ import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.crowndine.common.enums.EReservationStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
@@ -32,6 +34,21 @@ public class ApiReservationController {
                 .status(200)
                 .message("Get reservation history successfully")
                 .data(reservationService.getReservationHistory(principal.getName(), page, size))
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse getAllReservations(
+            @RequestParam(required = false) LocalDate fromDate,
+            @RequestParam(required = false) LocalDate toDate,
+            @RequestParam(required = false) EReservationStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get all reservations for staff/admin successfully")
+                .data(reservationService.getAllReservations(fromDate, toDate, status, page, size))
                 .build();
     }
 

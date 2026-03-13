@@ -1,7 +1,9 @@
 package com.crowndine.service.impl.auth;
 
 import com.crowndine.common.enums.ETokenType;
+import com.crowndine.common.enums.ErrorCode;
 import com.crowndine.exception.InvalidDataException;
+import com.crowndine.exception.JwtAuthenticationException;
 import com.crowndine.service.auth.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -51,16 +53,19 @@ public class JwtServiceImpl implements JwtService {
     private Claims extractAllClaims(String token, ETokenType tokenType) {
 
         if (StringUtils.isBlank(token)) {
-            throw new AccessDeniedException("Token không được cung cấp hoặc rỗng.");
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_MISSING, "Token không được cung cấp hoặc rỗng.");
         }
-
         try {
-            return Jwts.parserBuilder().setSigningKey(getSigningKey(tokenType)).build().parseClaimsJws(token)
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey(tokenType))
+                    .build()
+                    .parseClaimsJws(token)
                     .getBody();
+
         } catch (ExpiredJwtException e) {
-            throw new BadCredentialsException("Token đã hết hạn.", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_EXPIRED, "Token đã hết hạn", e);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new BadCredentialsException("Token không hợp lệ.", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_INVALID, "Token không hợp lệ", e);
         }
     }
 

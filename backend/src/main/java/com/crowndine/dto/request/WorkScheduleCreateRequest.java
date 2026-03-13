@@ -5,6 +5,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,9 +24,10 @@ public class WorkScheduleCreateRequest {
     private List<Long> staffIds;
 
     private Boolean repeatWeekly;
-    private List<Integer> daysOfWeek;
 
     @JsonFormat(pattern = "dd-MM-yyyy")
-    @FutureOrPresent(message = "Ngày kết thúc phải là hôm nay hoặc tương lai")
-    private LocalDate endDate;
+    @FutureOrPresent(message = "Thời gian kết thúc lặp phải là hôm nay hoặc tương lai")
+    private LocalDate repeatEndDate;
+
+    private List<DayOfWeek> repeatDaysOfWeek;
 }

@@ -27,27 +27,27 @@ VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
 
 INSERT INTO items (name, description, image_url, price, price_after_discount, status, category_id, created_at,
                    updated_at)
-VALUES ('Súp cua', 'Súp cua trứng', '/img/items/sup-cua.jpg', 35000.00, NULL, 'AVAILABLE', 1, NOW(), NOW()),
-       ('Salad cá ngừ', 'Salad rau + cá ngừ', '/img/items/salad.jpg', 45000.00, NULL, 'AVAILABLE', 2, NOW(), NOW()),
-       ('Gà chiên mắm', 'Gà chiên mắm tỏi', '/img/items/ga-mam.jpg', 89000.00, NULL, 'AVAILABLE', 3, NOW(), NOW()),
-       ('Bò bít tết', 'Bò sốt tiêu đen', '/img/items/steak.jpg', 189000.00, NULL, 'AVAILABLE', 4, NOW(), NOW()),
-       ( 'Heo quay', 'Heo quay giòn bì', '/img/items/heo-quay.jpg', 99000.00, NULL, 'AVAILABLE', 5, NOW(), NOW()),
-       ('Lẩu thái', 'Lẩu thái hải sản', '/img/items/lau-thai.jpg', 229000.00, NULL, 'AVAILABLE', 6, NOW(), NOW()),
-       ('Rau muống xào', 'Rau muống xào tỏi', '/img/items/rau-muong.jpg', 39000.00, NULL, 'AVAILABLE', 7, NOW(),
+VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 'AVAILABLE', 1, NOW(), NOW()),
+       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 'AVAILABLE', 2, NOW(), NOW()),
+       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 'AVAILABLE', 3, NOW(), NOW()),
+       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 'AVAILABLE', 4, NOW(), NOW()),
+       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 'AVAILABLE', 5, NOW(), NOW()),
+       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 'AVAILABLE', 6, NOW(), NOW()),
+       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 'AVAILABLE', 7, NOW(),
         NOW()),
-       ('Tôm hấp', 'Tôm hấp sả', '/img/items/tom-hap.jpg', 159000.00, NULL, 'AVAILABLE', 8, NOW(), NOW()),
-       ('Trà đào', 'Trà đào cam sả', '/img/items/peach-tea.jpg', 35000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Coca', 'Nước ngọt', '/img/items/coke.jpg', 19000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Bánh flan', 'Flan caramel', '/img/items/flan.jpg', 25000.00, NULL, 'AVAILABLE', 10, NOW(), NOW());
+       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 'AVAILABLE', 8, NOW(), NOW()),
+       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 'AVAILABLE', 10, NOW(), NOW());
 
 
-INSERT INTO combos (name, slug, description, price, price_after_discount, sold_count, status, created_at, updated_at)
+INSERT INTO combos (name, slug, description, image_url, price, price_after_discount, sold_count, status, created_at, updated_at)
 VALUES
-    ('Combo Lẩu Thái 2N', 'combo-lau-thai-2n', 'Lẩu Thái + Rau muống xào + 2 Coca', 306000.00, 289000.00, 20, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Gà Mắm Nhẹ Nhàng', 'combo-ga-mam-nhe-nhang', 'Gà chiên mắm + Salad cá ngừ + Trà đào', 169000.00, 159000.00, 35, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Beef Steak Set', 'combo-beef-steak-set', 'Bò bít tết + Súp cua + Coca', 243000.00, 229000.00, 12, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Hải Sản Healthy', 'combo-hai-san-healthy', 'Tôm hấp + Salad cá ngừ + Trà đào', 239000.00, 219000.00, 18, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Bánh flan + Trà đào', 60000.00, 55000.00, 50, 'AVAILABLE', NOW(), NOW());
+    ('Combo Lẩu Thái 2N', 'combo-lau-thai-2n', 'Lẩu Thái + Rau muống xào + 2 Coca', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 306000.00, 289000.00, 20, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Gà Mắm Nhẹ Nhàng', 'combo-ga-mam-nhe-nhang', 'Gà chiên mắm + Salad cá ngừ + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 169000.00, 159000.00, 35, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Beef Steak Set', 'combo-beef-steak-set', 'Bò bít tết + Súp cua + Coca', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 243000.00, 229000.00, 12, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Hải Sản Healthy', 'combo-hai-san-healthy', 'Tôm hấp + Salad cá ngừ + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 239000.00, 219000.00, 18, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Bánh flan + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 60000.00, 55000.00, 50, 'AVAILABLE', NOW(), NOW());
 
 
 INSERT INTO combo_items (combo_id, item_id, quantity, created_at, updated_at)
@@ -116,9 +116,9 @@ INSERT INTO orders
 (user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at)
 VALUES
 -- Order gắn với reservation 1
-(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'PENDING', NOW(), NOW()),
+(2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'CONFIRMED', NOW(), NOW()),
 -- Order walk-in (không reservation), gắn table 2
-(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'SERVED', NOW(), NOW());
+(3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'CONFIRMED', NOW(), NOW());
 
 -- DỮ LIỆU SEED CHO DASHBOARD: HÔM NAY, HÔM QUA, 7 NGÀY QUA, THÁNG NÀY, THÁNG TRƯỚC
 -- Lưu ý: Sử dụng CURDATE() và DATE_SUB() để dữ liệu luôn phản ánh đúng theo thời điểm hiện tại khi chạy script.
@@ -131,7 +131,7 @@ INSERT INTO orders (user_id, reservation_id, restaurant_table_id, voucher_id, to
 (2, NULL, 4, NULL, 320000.00, 0, 320000.00, 'COMPLETED', CONCAT(CURDATE(), ' 15:20:00'), CONCAT(CURDATE(), ' 15:20:00')),
 (3, NULL, 1, NULL, 850000.00, 0, 850000.00, 'COMPLETED', CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),
 (1, NULL, 2, NULL, 620000.00, 0, 620000.00, 'COMPLETED', CONCAT(CURDATE(), ' 21:10:00'), CONCAT(CURDATE(), ' 21:10:00')),
-(2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'SERVED',    CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
+(2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'COMPLETED',    CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
 
 -- 2. HÔM QUA (YESTERDAY): Các mốc thời gian từ 8g-22g
 INSERT INTO orders (user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at) VALUES

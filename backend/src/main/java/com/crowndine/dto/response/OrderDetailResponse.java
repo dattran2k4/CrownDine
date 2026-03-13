@@ -1,27 +1,19 @@
 package com.crowndine.dto.response;
 
-import com.crowndine.common.enums.EOrderStatus;
+import com.crowndine.common.enums.EOrderDetailStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
 public class OrderDetailResponse {
-    private Long orderId;
-    private String tableName;
-    private EOrderStatus status;
+    private Long id;
+    private ItemResponse item;
+    private ComboResponse combo;
+    private Integer quantity;
+    private String note;
+    private EOrderDetailStatus status;
     private BigDecimal totalPrice;
-    private BigDecimal discountPrice;
-    private BigDecimal finalPrice;
-    private BigDecimal itemsTotal;
-    private BigDecimal tableDeposit;
-    private BigDecimal depositAmount;
-    private BigDecimal remainingAmount;
-    private LocalDateTime createdAt;
-
-    private List<OrderLineResponse> items;
 }

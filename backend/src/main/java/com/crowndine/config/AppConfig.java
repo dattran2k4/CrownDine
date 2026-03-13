@@ -12,7 +12,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -42,7 +44,12 @@ public class AppConfig {
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/combos/**").permitAll()
                         .requestMatchers("/api/items/**").permitAll()
+                        .requestMatchers("/api/combos/**").permitAll()
+                        .requestMatchers("/img/**").permitAll()
+                        .requestMatchers("/ws-restaurant/**").permitAll()
+                        .requestMatchers("/api/feedbacks/items/**").permitAll()
                         .requestMatchers("/api/payments/payos-ipn").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
                         .anyRequest().authenticated())

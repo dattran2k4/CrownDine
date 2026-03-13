@@ -25,11 +25,9 @@ public class ComboRequest {
 
     private BigDecimal priceAfterDiscount;
 
-    @NotNull(message = "Trạng thái combo không được null")
     private EComboStatus status;
 
     private String imageUrl;
 
-    @NotNull(message = "Danh sách item không được null")
     private List<ComboItemRequest> items;
 }

@@ -6,7 +6,7 @@ const AREA_COLORS = [
   { fill: '#e8eaf6', stroke: '#7986cb', text: '#283593' }, // Indigo
   { fill: '#e0f2f1', stroke: '#4db6ac', text: '#00695c' }, // Teal
   { fill: '#fce4ec', stroke: '#f06292', text: '#ad1457' }, // Pink
-  { fill: '#f3e5f5', stroke: '#ba68c8', text: '#6a1b9a' }, // Purple
+  { fill: '#f3e5f5', stroke: '#ba68c8', text: '#6a1b9a' } // Purple
 ]
 
 // Minimal equivalent of TableShape but for Areas
@@ -44,14 +44,14 @@ function AreaShape({
         onPointerDown={onPointerDown}
         style={{ cursor: 'move' }}
       />
-      
+
       <text
         x={w / 2}
         y={h / 2}
-        textAnchor="middle"
-        dominantBaseline="middle"
+        textAnchor='middle'
+        dominantBaseline='middle'
         fontSize={fontSize}
-        fontWeight="bold"
+        fontWeight='bold'
         fill={color.text}
         style={{ userSelect: 'none', pointerEvents: 'none', opacity: 0.8 }}
       >
@@ -61,10 +61,38 @@ function AreaShape({
       {/* Resize handles */}
       {selected && (
         <>
-          <circle cx={0} cy={0} r={6} fill="#3b82f6" cursor="nwse-resize" onPointerDown={e => onResizeStart(e, 'nw')} />
-          <circle cx={w} cy={0} r={6} fill="#3b82f6" cursor="nesw-resize" onPointerDown={e => onResizeStart(e, 'ne')} />
-          <circle cx={0} cy={h} r={6} fill="#3b82f6" cursor="nesw-resize" onPointerDown={e => onResizeStart(e, 'sw')} />
-          <circle cx={w} cy={h} r={6} fill="#3b82f6" cursor="nwse-resize" onPointerDown={e => onResizeStart(e, 'se')} />
+          <circle
+            cx={0}
+            cy={0}
+            r={6}
+            fill='#3b82f6'
+            cursor='nwse-resize'
+            onPointerDown={(e) => onResizeStart(e, 'nw')}
+          />
+          <circle
+            cx={w}
+            cy={0}
+            r={6}
+            fill='#3b82f6'
+            cursor='nesw-resize'
+            onPointerDown={(e) => onResizeStart(e, 'ne')}
+          />
+          <circle
+            cx={0}
+            cy={h}
+            r={6}
+            fill='#3b82f6'
+            cursor='nesw-resize'
+            onPointerDown={(e) => onResizeStart(e, 'sw')}
+          />
+          <circle
+            cx={w}
+            cy={h}
+            r={6}
+            fill='#3b82f6'
+            cursor='nwse-resize'
+            onPointerDown={(e) => onResizeStart(e, 'se')}
+          />
         </>
       )}
     </g>
@@ -113,10 +141,13 @@ export default function AreaCanvas({
   const activeSelectedId = selectedAreaId !== undefined ? selectedAreaId : localSelectedId
 
   // Calculate absolute viewBox bounds for width/height
-  let minX = 0, minY = 0, maxX = 1200, maxY = 600
+  let minX = 0,
+    minY = 0,
+    maxX = 1200,
+    maxY = 600
 
   if (layout.areas && layout.areas.length > 0) {
-    layout.areas.forEach(a => {
+    layout.areas.forEach((a) => {
       const ax = a.x ?? 50
       const ay = a.y ?? 50
       const aw = a.width ?? 400
@@ -128,7 +159,7 @@ export default function AreaCanvas({
       if (ay + ah > maxY) maxY = ay + ah
 
       if (a.tables && a.tables.length > 0) {
-        a.tables.forEach(t => {
+        a.tables.forEach((t) => {
           const tx = ax + (t.x ?? 0)
           const ty = ay + (t.y ?? 0)
           const tw = t.width ?? 60
@@ -168,8 +199,7 @@ export default function AreaCanvas({
 
   const clone = () => structuredClone(layout)
 
-  const getArea = (l: FloorLayoutResponse, aId: number) =>
-    l.areas.find(x => x.areaId === aId)!
+  const getArea = (l: FloorLayoutResponse, aId: number) => l.areas.find((x) => x.areaId === aId)!
 
   const onMoveStart = (e: React.PointerEvent, area: AreaLayout) => {
     setLocalSelectedId(area.areaId)
@@ -185,7 +215,6 @@ export default function AreaCanvas({
       ox: area.x || 50,
       oy: area.y || 50
     }
-
     ;(e.target as Element).setPointerCapture(e.pointerId)
   }
 
@@ -227,8 +256,8 @@ export default function AreaCanvas({
   const innerSvg = (
     <svg
       ref={svgRef}
-      width="100%"
-      height="100%"
+      width='100%'
+      height='100%'
       viewBox={viewBoxStr}
       style={{
         background: '#ffffff',
@@ -238,8 +267,14 @@ export default function AreaCanvas({
         overflow: enableScroll ? 'visible' : 'hidden'
       }}
       onPointerMove={onMove}
-      onPointerUp={() => { dragRef.current = null; setFreezeViewBox(null); }}
-      onPointerLeave={() => { dragRef.current = null; setFreezeViewBox(null); }}
+      onPointerUp={() => {
+        dragRef.current = null
+        setFreezeViewBox(null)
+      }}
+      onPointerLeave={() => {
+        dragRef.current = null
+        setFreezeViewBox(null)
+      }}
     >
       {layout.areas.map((a, i) => (
         <AreaShape
@@ -247,7 +282,7 @@ export default function AreaCanvas({
           area={a}
           index={i}
           selected={a.areaId === activeSelectedId}
-          onPointerDown={e => onMoveStart(e, a)}
+          onPointerDown={(e) => onMoveStart(e, a)}
           onResizeStart={(e, dir) => onResizeStart(e, a, dir)}
         />
       ))}
@@ -258,7 +293,15 @@ export default function AreaCanvas({
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'auto', background: '#ffffff', textAlign: 'center' }}>
-      <div style={{ display: 'inline-block', width: physicalWidth, height: physicalHeight, position: 'relative', textAlign: 'left' }}>
+      <div
+        style={{
+          display: 'inline-block',
+          width: physicalWidth,
+          height: physicalHeight,
+          position: 'relative',
+          textAlign: 'left'
+        }}
+      >
         {innerSvg}
       </div>
     </div>

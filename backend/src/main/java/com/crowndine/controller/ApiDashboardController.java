@@ -27,4 +27,20 @@ public class ApiDashboardController {
                 .data(data)
                 .build();
     }
+
+    @GetMapping("/export-sales")
+    public org.springframework.http.ResponseEntity<byte[]> exportSalesReport(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "7 ngày qua") String timeRange) {
+        try {
+            byte[] data = dashboardService.exportSalesReport(timeRange);
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=bao_cao_doanh_thu.xlsx");
+            headers.setContentType(org.springframework.http.MediaType
+                    .parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            return new org.springframework.http.ResponseEntity<>(data, headers, org.springframework.http.HttpStatus.OK);
+        } catch (java.io.IOException e) {
+            return new org.springframework.http.ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

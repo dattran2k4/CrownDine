@@ -3,6 +3,7 @@ package com.crowndine.service.impl.layout;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.TableRequest;
+import com.crowndine.dto.response.RestaurantTableResponse;
 import com.crowndine.dto.response.TableLayoutResponse;
 import com.crowndine.dto.response.TableResponse;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -14,11 +15,14 @@ import com.crowndine.repository.RestaurantTableRepository;
 import com.crowndine.service.layout.RestaurantTableService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +30,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j(topic = "RESTAURANT-TABLE-SERVICE")
 public class RestaurantTableServiceImpl implements RestaurantTableService {
 
     private final RestaurantTableRepository tableRepository;
@@ -95,6 +100,32 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         return candidates.stream().filter(t -> !reservedSet.contains(t.getId())).map(this::map).toList();
     }
 
+    @Override
+    public List<RestaurantTableResponse> getAllTables() {
+        List<RestaurantTable> tables = tableRepository.findAll();
+
+        return tables.stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    public RestaurantTableResponse updateTableStatus(Long id, ETableStatus status) {
+        RestaurantTable table = tableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        table.setStatus(status);
+        tableRepository.save(table);
+        log.info("Table id {} updated successfully to status {}", id, status);
+
+        return toResponse(table);
+    }
+
+    private RestaurantTableResponse toResponse(RestaurantTable restaurantTable) {
+        RestaurantTableResponse response = new RestaurantTableResponse();
+        BeanUtils.copyProperties(restaurantTable, response);
+        response.setId(restaurantTable.getId());
+        return response;
+    }
+
     private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
     }
 
@@ -109,6 +140,7 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         dto.setWidth(table.getWidth());
         dto.setHeight(table.getHeight());
         dto.setRotation(table.getRotation());
+        dto.setCapacity(table.getCapacity());
         return dto;
     }
 }

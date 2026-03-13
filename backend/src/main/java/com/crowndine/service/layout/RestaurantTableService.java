@@ -1,6 +1,8 @@
 package com.crowndine.service.layout;
 
+import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.TableRequest;
+import com.crowndine.dto.response.RestaurantTableResponse;
 import com.crowndine.dto.response.TableLayoutResponse;
 import com.crowndine.dto.response.TableResponse;
 
@@ -17,6 +19,11 @@ public interface RestaurantTableService {
     void delete(Long id);
 
     List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber);
+
+    List<RestaurantTableResponse> getAllTables();
+
+    RestaurantTableResponse updateTableStatus(Long id, ETableStatus status);
+
 }
 
 

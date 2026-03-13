@@ -29,6 +29,41 @@ export const addMinutesToTime = (timeStr: string, minutesToAdd: number) => {
   return `${h}:${m}`
 }
 
+export const calculateDuration = (startTime: string, endTime: string): number => {
+  const [startHours, startMinutes] = startTime.split(':').map(Number)
+  const [endHours, endMinutes] = endTime.split(':').map(Number)
+
+  const startDate = new Date()
+  startDate.setHours(startHours, startMinutes, 0, 0)
+
+  const endDate = new Date()
+  endDate.setHours(endHours, endMinutes, 0, 0)
+
+  // Nếu endTime nhỏ hơn startTime, có thể là qua ngày mới
+  if (endDate < startDate) {
+    endDate.setDate(endDate.getDate() + 1)
+  }
+
+  const diffMs = endDate.getTime() - startDate.getTime()
+  return Math.round(diffMs / (1000 * 60)) // Trả về số phút
+}
+
+/**
+ * Kiểm tra xem một datetime (date + time) có trong quá khứ không
+ * @param dateString - Ngày dạng YYYY-MM-DD
+ * @param timeString - Giờ dạng HH:mm
+ * @returns true nếu datetime trong quá khứ, false nếu trong tương lai hoặc hiện tại
+ */
+export const isDateTimeInPast = (dateString: string, timeString: string): boolean => {
+  const now = new Date()
+  const [year, month, day] = dateString.split('-').map(Number)
+  const [hours, minutes] = timeString.split(':').map(Number)
+
+  const targetDate = new Date(year, month - 1, day, hours, minutes, 0, 0)
+
+  return targetDate < now
+}
+
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
@@ -59,5 +94,5 @@ export function isAxiosErrorNotFound<T>(error: unknown): error is AxiosError<T> 
 }
 
 export function isAxiosExpiredTokenError<UnauthorizedError>(error: unknown): error is AxiosError<UnauthorizedError> {
-  return isAxiosUnauthorizedError<ErrorResponse>(error) && error.response?.data.error === 'UNAUTHORIZED'
+  return isAxiosUnauthorizedError<ErrorResponse>(error) && error.response?.data.error === 'TOKEN_EXPIRED'
 }

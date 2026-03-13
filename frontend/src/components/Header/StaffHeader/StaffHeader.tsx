@@ -4,6 +4,7 @@ import { Menu, X, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+
 const StaffHeader = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()

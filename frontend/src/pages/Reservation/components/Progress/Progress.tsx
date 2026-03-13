@@ -5,10 +5,10 @@ interface Props {
   steps: string[]
 }
 
-const BookingProgress = ({ currentStep, steps }: Props) => {
+const Progress = ({ currentStep, steps }: Props) => {
   return (
     <div className='mb-10'>
-      <div className='relative flex items-center justify-between'>
+      <div className='relative z-1 flex items-center justify-between'>
         <div className='absolute top-1/2 left-0 -z-10 h-1 w-full -translate-y-1/2 transform bg-gray-200'></div>
         <div
           className='bg-primary absolute top-1/2 left-0 -z-10 h-1 -translate-y-1/2 transform transition-all duration-300'
@@ -36,4 +36,4 @@ const BookingProgress = ({ currentStep, steps }: Props) => {
   )
 }
 
-export default BookingProgress
+export default Progress

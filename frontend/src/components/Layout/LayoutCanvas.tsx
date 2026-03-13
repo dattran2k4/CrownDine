@@ -31,7 +31,10 @@ export default function LayoutCanvas({
   selectedTableIds,
   activeAreaId,
   zoomScale,
-  enableScroll
+  enableScroll,
+  guests,
+  availableTableIds,
+  isPaid
 }: {
   layout: FloorLayoutResponse
   editable: boolean
@@ -41,6 +44,9 @@ export default function LayoutCanvas({
   activeAreaId?: number | null // If set, only render this area's tables without background rectangles
   zoomScale?: number
   enableScroll?: boolean
+  guests?: number // Số khách để kiểm tra capacity
+  availableTableIds?: Set<number> // Danh sách ID các bàn available trong khung giờ
+  isPaid?: boolean // Nếu đã thanh toán, không cho chọn bàn mới
 }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -141,6 +147,24 @@ export default function LayoutCanvas({
     areaId: number,
     table: TableLayout
   ) => {
+    // Nếu đã thanh toán, không cho chọn bàn mới
+    if (isPaid) {
+      return
+    }
+
+    // Không cho chọn bàn đã được đặt trong khung giờ này (chỉ áp dụng cho bàn AVAILABLE)
+    if (table.status === 'AVAILABLE' && availableTableIds && !availableTableIds.has(table.id)) {
+      return
+    }
+    
+    // Chỉ kiểm tra capacity cho bàn AVAILABLE
+    if (guests !== undefined && table.status === 'AVAILABLE') {
+      const capacity = table.capacity || 2
+      if (capacity < guests) {
+        return // Không cho chọn bàn AVAILABLE nhưng capacity < guests
+      }
+    }
+    
     setSelectedId(table.id)
     onSelectTable?.(table)
 
@@ -275,6 +299,8 @@ export default function LayoutCanvas({
               onResizeStart={(e, dir) =>
                 onResizeStart(e, a.areaId, t, dir)
               }
+              guests={guests}
+              isAvailableInTimeSlot={availableTableIds ? availableTableIds.has(t.id) : true}
             />
           ))}
         </g>

@@ -5,6 +5,8 @@ import com.crowndine.common.enums.ETableStatus;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 public class TableLayoutResponse {
@@ -20,4 +22,6 @@ public class TableLayoutResponse {
     private Integer width;
     private Integer height;
     private Integer rotation;
+    private Integer capacity;
+    private BigDecimal deposit;
 }

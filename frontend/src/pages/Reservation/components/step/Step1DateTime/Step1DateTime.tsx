@@ -1,6 +1,7 @@
-import { DURATION_OPTIONS, RESTAURANT_CONFIG } from '@/pages/Reservation/data'
-import { addMinutesToTime } from '@/utils/utils'
+import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
+import { addMinutesToTime, isDateTimeInPast } from '@/utils/utils'
 import { AlertCircle, Calendar, Clock, Hourglass, Users } from 'lucide-react'
+import { useEffect, useMemo } from 'react'
 
 interface Props {
   guests: number
@@ -9,8 +10,9 @@ interface Props {
   setDate: (s: string) => void
   startTime: string
   setStartTime: (s: string) => void
+  endTime: string
+  setEndTime: (s: string) => void
   duration: number
-  setDuration: (n: number) => void
   timeSlots: string[]
 }
 const Step1DateTime = ({
@@ -20,12 +22,46 @@ const Step1DateTime = ({
   setDate,
   startTime,
   setStartTime,
+  endTime,
+  setEndTime,
   duration,
-  setDuration,
   timeSlots
 }: Props) => {
-  // Tính giờ kết thúc dự kiến để hiển thị
-  const endTime = addMinutesToTime(startTime, duration)
+  // Reset startTime và endTime nếu chúng trong quá khứ khi date thay đổi
+  useEffect(() => {
+    if (isDateTimeInPast(date, startTime)) {
+      // Tìm giờ hợp lệ đầu tiên trong tương lai từ timeSlots
+      const nextValidTime = timeSlots.find((slot) => !isDateTimeInPast(date, slot))
+
+      if (nextValidTime) {
+        setStartTime(nextValidTime)
+        const defaultEndTime = addMinutesToTime(nextValidTime, 120) // 2 giờ mặc định
+        const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
+        const validEndTime = defaultEndTime > closingTimeStr ? closingTimeStr : defaultEndTime
+        if (!isDateTimeInPast(date, validEndTime)) {
+          setEndTime(validEndTime)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, timeSlots])
+
+  // Tạo danh sách các giờ kết thúc có thể (30 phút một lần, từ startTime + 30 phút đến closeHour)
+  const endTimeOptions = useMemo(() => {
+    const options: string[] = []
+    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
+    let currentTime = addMinutesToTime(startTime, 30) // Bắt đầu từ 30 phút sau startTime
+
+    while (currentTime <= closingTimeStr) {
+      options.push(currentTime)
+      currentTime = addMinutesToTime(currentTime, 30)
+
+      // Giới hạn tối đa 6 giờ (12 options)
+      if (options.length >= 12) break
+    }
+
+    return options
+  }, [startTime])
 
   // Validate: Kiểm tra nếu giờ kết thúc vượt quá giờ đóng cửa
   const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
@@ -33,7 +69,7 @@ const Step1DateTime = ({
   // Note: Logic so sánh chuỗi thời gian đơn giản, thực tế nên dùng Date object nếu qua ngày mới
 
   return (
-    <div className='animate-fade-in space-y-8 m-4 p-4'>
+    <div className='animate-fade-in m-4 space-y-8 p-4'>
       {/* 1. Chọn Ngày & Số khách */}
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         <div className='space-y-2'>
@@ -78,33 +114,53 @@ const Step1DateTime = ({
           <Clock size={16} /> Giờ bắt đầu (Start Time)
         </label>
         <div className='custom-scrollbar grid max-h-40 grid-cols-4 gap-3 overflow-y-auto pr-2 md:grid-cols-6 lg:grid-cols-8'>
-          {timeSlots.map((slot) => (
-            <button
-              key={slot}
-              onClick={() => setStartTime(slot)}
-              className={`rounded border px-1 py-2 text-sm transition-all ${startTime === slot ? 'bg-primary border-primary ring-primary/30 text-white shadow-md ring-2' : 'hover:border-primary border-gray-200 bg-white text-gray-700'}`}
-            >
-              {slot}
-            </button>
-          ))}
+          {timeSlots.map((slot) => {
+            const isPast = isDateTimeInPast(date, slot)
+            return (
+              <button
+                key={slot}
+                onClick={() => !isPast && setStartTime(slot)}
+                disabled={isPast}
+                className={`rounded border px-1 py-2 text-sm transition-all ${
+                  isPast
+                    ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
+                    : startTime === slot
+                      ? 'bg-primary border-primary ring-primary/30 text-white shadow-md ring-2'
+                      : 'hover:border-primary border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                {slot}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* 3. Chọn Thời Lượng (Duration) */}
+      {/* 3. Chọn Thời gian kết thúc */}
       <div className='space-y-3'>
         <label className='flex items-center gap-2 text-sm font-bold'>
-          <Hourglass size={16} /> Thời gian sử dụng (Duration)
+          <Hourglass size={16} /> Thời gian kết thúc
         </label>
-        <div className='flex flex-wrap gap-3'>
-          {DURATION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setDuration(opt.value)}
-              className={`rounded-full border px-4 py-2 text-sm transition-all ${duration === opt.value ? 'border-black bg-black text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'}`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className='custom-scrollbar grid max-h-40 grid-cols-4 gap-3 overflow-y-auto pr-2 md:grid-cols-6 lg:grid-cols-8'>
+          {endTimeOptions.map((time) => {
+            const isPast = isDateTimeInPast(date, time)
+            return (
+              <button
+                key={time}
+                onClick={() => !isPast && setEndTime(time)}
+                disabled={isPast}
+                className={`rounded border px-1 py-2 text-sm transition-all ${
+                  isPast
+                    ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
+                    : endTime === time
+                      ? 'border-orange-500 bg-orange-500 text-white shadow-md ring-2 ring-orange-500/30'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-500'
+                }`}
+              >
+                {time}
+              </button>
+            )
+          })}
         </div>
       </div>
 

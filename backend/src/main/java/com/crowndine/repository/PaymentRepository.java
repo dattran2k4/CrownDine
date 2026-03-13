@@ -5,6 +5,7 @@ import com.crowndine.common.enums.EPaymentTarget;
 import com.crowndine.model.Payment;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpecificationExecutor<Payment> {
     Optional<Payment> findByCode(Long code);
 
     //Các giao dịch CỌC đã THÀNH CÔNG của bàn

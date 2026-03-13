@@ -1,23 +1,20 @@
 package com.crowndine.controller;
 
 import com.crowndine.common.enums.EPaymentMethod;
+import com.crowndine.dto.request.PaymentFilterRequest;
 import com.crowndine.dto.request.PaymentRequest;
 import com.crowndine.dto.response.ApiResponse;
-import com.crowndine.service.impl.payment.PayOSService;
 import com.crowndine.service.payment.PaymentFactory;
+import com.crowndine.service.payment.PaymentService;
 import com.crowndine.service.payment.PaymentStrategy;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import vn.payos.PayOS;
-import vn.payos.model.webhooks.WebhookData;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.Map;
@@ -31,8 +28,7 @@ import java.util.Map;
 public class ApiPaymentController {
 
     private final PaymentFactory paymentFactory;
-    private final PayOS payOS;
-    private final PayOSService payOSService;
+    private final PaymentService paymentService;
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/create")
@@ -54,5 +50,29 @@ public class ApiPaymentController {
         } catch (Exception e) {
             log.error("Exception occurred while handling payment request {}, message = {}", e, e.getMessage());
         }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping
+    public ApiResponse getPaymentList(PaymentFilterRequest request,
+                                      @Min(1) @RequestParam(required = false, defaultValue = "1") int page,
+                                      @Min(1) @RequestParam(required = false, defaultValue = "10") int size) {
+
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Successfully retrieved payment list")
+                .data(paymentService.getPayments(request, page, size))
+                .build();
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/{id}")
+    public ApiResponse getPaymentDetail(@Min(1) @PathVariable Long id) {
+
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Successfully retrieved payment detail")
+                .data(paymentService.getPaymentDetail(id))
+                .build();
     }
 }

@@ -87,7 +87,7 @@ public class ReservationServiceImpl implements ReservationService {
         if (order == null) {
             if (reservation.getCustomer() == null) {
                 throw new ResourceNotFoundException("Customer not found for reservation");
-        }
+            }
             order = orderService.createOrderForReservation(reservation, reservation.getCustomer());
             reservation.setOrder(order);
             reservationRepository.save(reservation);
@@ -184,7 +184,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Tính tiền cọc theo giờ
         BigDecimal tableDeposit = getTableDeposit(table, saved.getStartTime(), saved.getEndTime());
-        
+
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
         response.setDate(saved.getDate());
@@ -253,6 +253,7 @@ public class ReservationServiceImpl implements ReservationService {
             order = orderService.createOrderForReservation(reservation, user);
             reservation.setOrder(order);
         }
+        log.info("Adding order item for order id {}", order.getId());
 
         orderService.addOrUpdateItemToOrder(order.getId(), request);
     }
@@ -317,21 +318,21 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(rollbackFor = Exception.class)
     public void cancelReservation(Long reservationId, String username) {
         log.info("Cancelling reservation id {} for user {}", reservationId, username);
-        
+
         Reservation reservation = getReservationById(reservationId);
         User user = getUserByUserName(username);
-        
+
         validateReservationForUser(reservation, user);
-        
+
         // Chỉ cho phép cancel reservation ở trạng thái PENDING hoặc CONFIRMED
-        if (!reservation.getStatus().equals(EReservationStatus.PENDING) && 
-            !reservation.getStatus().equals(EReservationStatus.CONFIRMED)) {
+        if (!reservation.getStatus().equals(EReservationStatus.PENDING) &&
+                !reservation.getStatus().equals(EReservationStatus.CONFIRMED)) {
             throw new InvalidDataException("Không thể hủy đặt bàn ở trạng thái này");
         }
-        
+
         reservation.setStatus(EReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
-        
+
         log.info("Reservation id {} has been cancelled", reservationId);
     }
 
@@ -339,82 +340,83 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(rollbackFor = Exception.class)
     public void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username) {
         log.info("Updating table for reservation id {} to table id {} for user {}", reservationId, request.getTableId(), username);
-        
+
         Reservation reservation = getReservationById(reservationId);
         User user = getUserByUserName(username);
-        
+
         validateReservationForUser(reservation, user);
-        
+
         // Chỉ cho phép update table khi reservation ở trạng thái PENDING
         if (!reservation.getStatus().equals(EReservationStatus.PENDING)) {
             throw new InvalidDataException("Chỉ có thể thay đổi bàn khi đặt bàn ở trạng thái PENDING");
         }
-        
+
         RestaurantTable newTable = tableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
-        
+
         if (newTable.getStatus().equals(ETableStatus.UNAVAILABLE)) {
             throw new InvalidDataException("Bàn không khả dụng");
         }
-        
+
         if (newTable.getCapacity() != null && newTable.getCapacity() < reservation.getGuestNumber()) {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
-        
+
         // Kiểm tra xem bàn mới có bị đặt trong khung giờ này không
         // Loại trừ reservation hiện tại khỏi danh sách reserved
         List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
         LocalDateTime now = LocalDateTime.now();
         List<Long> reservedIds = reservationRepository.findReservedTableIds(
-                reservation.getDate(), 
-                reservation.getStartTime(), 
-                reservation.getEndTime(), 
-                blockingStatuses, 
+                reservation.getDate(),
+                reservation.getStartTime(),
+                reservation.getEndTime(),
+                blockingStatuses,
                 now
         );
-        
+
         // Loại trừ bàn hiện tại của reservation này (nếu có)
         if (reservation.getTable() != null) {
             reservedIds.remove(reservation.getTable().getId());
         }
-        
+
         if (reservedIds.contains(newTable.getId())) {
             throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
         }
-        
+
         // Cập nhật bàn cho reservation
         reservation.setTable(newTable);
-        
+
         // Cập nhật bàn cho order nếu có
         if (reservation.getOrder() != null) {
             reservation.getOrder().setRestaurantTable(newTable);
         }
-        
+
         reservationRepository.save(reservation);
-        
+
         log.info("Reservation id {} table updated to table id {}", reservationId, request.getTableId());
     }
 
     /**
      * Tính tiền cọc bàn theo giờ
-     * @param table Bàn
+     *
+     * @param table     Bàn
      * @param startTime Thời gian bắt đầu
-     * @param endTime Thời gian kết thúc
+     * @param endTime   Thời gian kết thúc
      * @return Tiền cọc = baseDeposit * số giờ
      */
     private BigDecimal getTableDeposit(RestaurantTable table, LocalTime startTime, LocalTime endTime) {
         if (table == null || table.getBaseDeposit() == null) {
             return BigDecimal.ZERO;
         }
-        
+
         if (startTime == null || endTime == null) {
             return table.getBaseDeposit();
         }
-        
+
         // Tính số giờ (có thể là số thập phân)
         long minutes = java.time.Duration.between(startTime, endTime).toMinutes();
         BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        
+
         // Tiền cọc = baseDeposit * số giờ
         return table.getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
     }

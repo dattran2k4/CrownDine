@@ -121,7 +121,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         int weekNumber = weekStart.get(WeekFields.ISO.weekOfWeekBasedYear());
         int year = weekStart.getYear();
 
-        List<WorkSchedule> schedules = workScheduleRepository.findSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
+        List<WorkSchedule> schedules = workScheduleRepository.findNormalSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
         if (searchName != null && !searchName.isBlank()) {
             String q = searchName.trim().toLowerCase();
             schedules = schedules.stream()
@@ -186,7 +186,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         LocalDate weekStart = date != null ? date.with(WeekFields.ISO.dayOfWeek(), 1) : LocalDate.now().with(WeekFields.ISO.dayOfWeek(), 1);
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        List<WorkSchedule> schedules = workScheduleRepository.findSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
+        List<WorkSchedule> schedules = workScheduleRepository.findNormalSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
         if (searchName != null && !searchName.isBlank()) {
             String q = searchName.trim().toLowerCase();
             schedules = schedules.stream()

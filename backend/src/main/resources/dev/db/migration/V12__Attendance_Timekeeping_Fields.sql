@@ -14,3 +14,10 @@ SET a.user_id = ws.staff_id;
 
 CREATE INDEX idx_attendances_user_id ON attendances (user_id);
 CREATE INDEX idx_attendances_work_schedule_id ON attendances (work_schedule_id);
+
+-- Thêm cột repeat_group_id vào bảng work_schedules
+ALTER TABLE work_schedules
+    ADD COLUMN repeat_group_id VARCHAR(36) NULL;
+
+-- Tạo index để sau này xóa/truy vấn theo nhóm nhanh hơn
+CREATE INDEX idx_repeat_group ON work_schedules(repeat_group_id);

@@ -24,13 +24,25 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       setAuth: (accessToken: string, refreshToken: string) => {
         try {
-          const decoded = jwtDecode<{ authorities?: string[] }>(accessToken)
+          const decoded = jwtDecode<{ authorities?: string[], role?: string[] }>(accessToken)
+          
+          let extractedRoles: string[] = []
+          if (decoded.authorities && Array.isArray(decoded.authorities)) {
+            extractedRoles = decoded.authorities;
+          } else if (decoded.role && Array.isArray(decoded.role) && decoded.role.length > 0) {
+            // Spring Security might serialize the role array into a single string element like:
+            // "[STAFF, FactorGrantedAuthority ...]"
+            const roleStr = String(decoded.role[0]);
+            if (roleStr.includes('ADMIN')) extractedRoles.push('ADMIN');
+            if (roleStr.includes('STAFF')) extractedRoles.push('STAFF');
+          }
+
           set((state) => ({
             ...state,
             accessToken,
             refreshToken,
             isAuthenticated: true,
-            roles: decoded.authorities || []
+            roles: extractedRoles
           }))
         } catch {
           set((state) => ({ ...state, accessToken, refreshToken, isAuthenticated: true, roles: [] }))

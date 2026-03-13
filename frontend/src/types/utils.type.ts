@@ -19,3 +19,6 @@ export interface ErrorResponse {
   error?: string
   message: string
 }
+export interface SimpleMessageResponse {
+  message: string
+}

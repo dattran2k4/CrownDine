@@ -1,5 +1,5 @@
 import StaffHeader from '@/components/Header/StaffHeader/StaffHeader'
-import React from 'react'
+
 import { Outlet } from 'react-router-dom'
 
 function StaffLayout() {

@@ -16,5 +16,7 @@ public interface StaffService {
 
     ProfileResponse getStaffById(Long userId);
 
+    java.util.List<ProfileResponse> getAllStaffs();
+
     Page<ProfileResponse> searchStaff(String name, Pageable pageable);
 }

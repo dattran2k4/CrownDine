@@ -68,7 +68,7 @@ export default function CategoryList() {
     mutationFn: (data: any) => itemApi.createItem(data),
     onSuccess: () => {
       if (selectedCategoryForItems) {
-          handleRowClick(selectedCategoryForItems) // Refresh item list
+        handleRowClick(selectedCategoryForItems) // Refresh item list
       }
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       toast.success('Item created successfully')
@@ -80,7 +80,7 @@ export default function CategoryList() {
     mutationFn: ({ id, data }: { id: number; data: any }) => itemApi.updateItem(id, data),
     onSuccess: () => {
       if (selectedCategoryForItems) {
-          handleRowClick(selectedCategoryForItems) // Refresh item list
+        handleRowClick(selectedCategoryForItems) // Refresh item list
       }
       toast.success('Item updated successfully')
       setIsItemFormOpen(false)
@@ -91,7 +91,7 @@ export default function CategoryList() {
     mutationFn: (id: number) => itemApi.deleteItem(id),
     onSuccess: () => {
       if (selectedCategoryForItems) {
-          handleRowClick(selectedCategoryForItems) // Refresh item list
+        handleRowClick(selectedCategoryForItems) // Refresh item list
       }
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       toast.success('Item deleted successfully')
@@ -174,17 +174,17 @@ export default function CategoryList() {
   }
 
   const handleDeleteCategory = (e: React.MouseEvent, category: any) => {
-      e.stopPropagation()
-      if (window.confirm(`Are you sure you want to delete category "${category.name}"?`)) {
-          deleteCategoryMutation.mutate(category.id)
-      }
+    e.stopPropagation()
+    if (window.confirm(`Are you sure you want to delete category "${category.name}"?`)) {
+      deleteCategoryMutation.mutate(category.id)
+    }
   }
 
   const handleSaveCategory = (data: { name: string; description: string }) => {
     if (editingCategory) {
-        updateCategoryMutation.mutate({ id: editingCategory.id, data })
+      updateCategoryMutation.mutate({ id: editingCategory.id, data })
     } else {
-        createCategoryMutation.mutate(data)
+      createCategoryMutation.mutate(data)
     }
   }
 
@@ -216,9 +216,9 @@ export default function CategoryList() {
   }
 
   const handleDeleteItem = (item: Item) => {
-      if (window.confirm(`Are you sure you want to delete item "${item.name}"?`)) {
-          deleteItemMutation.mutate(item.id)
-      }
+    if (window.confirm(`Are you sure you want to delete item "${item.name}"?`)) {
+      deleteItemMutation.mutate(item.id)
+    }
   }
 
   const handleComboRowClick = (combo: Combo) => {
@@ -258,15 +258,15 @@ export default function CategoryList() {
     if (!selectedCategoryForItems) return
 
     const payload = {
-        ...data,
-        imageUrl: data.image, // Map image field from form to imageUrl for API
-        categoryId: selectedCategoryForItems.id
+      ...data,
+      imageUrl: data.image, // Map image field from form to imageUrl for API
+      categoryId: selectedCategoryForItems.id
     }
 
     if (editingItem) {
-        updateItemMutation.mutate({ id: editingItem.id, data: payload })
+      updateItemMutation.mutate({ id: editingItem.id, data: payload })
     } else {
-        createItemMutation.mutate(payload)
+      createItemMutation.mutate(payload)
     }
   }
 
@@ -352,7 +352,7 @@ export default function CategoryList() {
       </Modal>
 
       {/* Items List Modal (Width Large) */}
-      <ItemsModal 
+      <ItemsModal
         isOpen={isItemsModalOpen}
         onClose={() => setIsItemsModalOpen(false)}
         categoryName={selectedCategoryForItems?.name}
@@ -372,11 +372,11 @@ export default function CategoryList() {
         <MenuItemForm
           key={editingItem ? editingItem.id : 'new-item'}
           initialData={editingItem ? {
-              name: editingItem.name,
-              description: editingItem.description,
-              image: editingItem.imageUrl,
-              price: editingItem.price,
-              status: editingItem.status
+            name: editingItem.name,
+            description: editingItem.description,
+            image: editingItem.imageUrl,
+            price: editingItem.price,
+            status: editingItem.status
           } : null}
           onSubmit={handleSaveItem}
           onCancel={() => setIsItemFormOpen(false)}

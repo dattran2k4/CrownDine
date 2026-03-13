@@ -1,6 +1,14 @@
 export type UserRole = 'customer' | 'staff' | 'admin'
 export type MembershipTier = 'bronze' | 'silver' | 'gold' | 'platinum'
-
+export enum EGender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER'
+}
+export enum EStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE'
+}
 export interface User {
   id: string
   firstName: string

@@ -1,4 +1,4 @@
-import type { User, Reservation, Order, RestaurantTable, OrderItem } from '@/types/profile.type'
+import { EGender, type User, type Reservation, type Order, type RestaurantTable, type OrderItem } from '@/types/profile.type'
 
 // Mock current user
 export const mockCurrentUser: User = {
@@ -9,7 +9,7 @@ export const mockCurrentUser: User = {
   phone: '+1 (555) 123-4567',
   avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
   dateOfBirth: '1990-05-15',
-  gender: 'male',
+  gender: EGender.MALE,
   role: 'customer',
   totalSpent: 389.05, // Sum of all orders: 174 + 112.7 + 102.35
   createdAt: '2023-01-15T10:00:00Z',

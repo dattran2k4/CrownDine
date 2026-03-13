@@ -13,7 +13,6 @@ import com.crowndine.model.WorkSchedule;
 import com.crowndine.repository.ShiftRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.repository.WorkScheduleRepository;
-import com.crowndine.service.user.UserService;
 import com.crowndine.service.workschedule.WorkScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,7 +34,6 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     private final WorkScheduleRepository workScheduleRepository;
     private final ShiftRepository shiftRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
 
     @Override
     public List<WorkScheduleResponse> getWorkSchedules(LocalDate fromDate, LocalDate toDate, LocalDate date,
@@ -131,62 +128,46 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long createWorkSchedule(WorkScheduleCreateRequest request) {
-        log.info("Processing to create work schedule in: {} ", request.getWorkDate());
+        validateWorkDate(request.getWorkDate());
         Shift shift = shiftRepository.findById(request.getShiftId()).orElseThrow(() -> new ResourceNotFoundException("Shift Not Found"));
         List<User> staffs = userRepository.findAllById(request.getStaffIds());
 
         // 3. Phân luồng xử lý chính
         if (shouldCreateTemplates(request)) {
-            return handleCreateTemplates(request, staffs, shift); //
+            return handleCreateTemplates(request, staffs, shift);
         }
-        return handleCreateSingleSchedules(request, staffs, shift); //
+        return handleCreateSingleSchedules(request, staffs, shift);
     }
 
     // --- Các phương thức hỗ trợ (Private Methods) ---
 
     private void validateWorkDate(LocalDate date) {
         if (date.isBefore(LocalDate.now())) {
-            throw new InvalidDataException("Không thể xếp lịch cho ngày trong quá khứ"); //
+            throw new InvalidDataException("Không thể xếp lịch cho ngày trong quá khứ");
         }
     }
 
-        List<WorkSchedule> workSchedules = new ArrayList<>();
+    private boolean shouldCreateTemplates(WorkScheduleCreateRequest request) {
+        return Boolean.TRUE.equals(request.getRepeatWeekly());
+    }
 
-        if (Boolean.TRUE.equals(request.getRepeatWeekly())) {
-            LocalDate repeatEndDate = request.getRepeatEndDate();
-            if (repeatEndDate == null) {
-                throw new InvalidDataException("Vui lòng chọn thời gian kết thúc lặp lại");
-            }
-            if (repeatEndDate.isBefore(request.getWorkDate())) {
-                throw new InvalidDataException("Thời gian kết thúc lặp phải sau hoặc bằng ngày bắt đầu");
-            }
-
-            List<DayOfWeek> repeatDays = request.getRepeatDaysOfWeek();
-            if (repeatDays == null || repeatDays.isEmpty()) {
-                throw new InvalidDataException("Vui lòng chọn ít nhất một ngày trong tuần để lặp lại");
-            }
-
-            // Giới hạn tối đa 12 tuần để tránh tạo quá nhiều bản ghi ngoài ý muốn
-            LocalDate maxAllowedEndDate = request.getWorkDate().plusWeeks(12);
-            if (repeatEndDate.isAfter(maxAllowedEndDate)) {
-                throw new InvalidDataException("Khoảng thời gian lặp lại tối đa là 12 tuần");
-            }
-
-            Set<DayOfWeek> repeatDaySet = new HashSet<>(repeatDays);
-
-            LocalDate current = request.getWorkDate();
-            while (!current.isAfter(repeatEndDate)) {
-                if (repeatDaySet.contains(current.getDayOfWeek())) {
-                    addSchedulesForDate(current, shift, staffs, workSchedules);
-                }
-                current = current.plusDays(1);
-            }
-        } else {
-            addSchedulesForDate(request.getWorkDate(), shift, staffs, workSchedules);
+    private long handleCreateTemplates(WorkScheduleCreateRequest request, List<User> staffs, Shift shift) {
+        LocalDate endDate = request.getRepeatEndDate();
+        if (endDate == null) {
+            throw new InvalidDataException("Vui lòng chọn thời gian kết thúc lặp lại");
+        }
+        if (endDate.isBefore(request.getWorkDate())) {
+            throw new InvalidDataException("Thời gian kết thúc lặp phải sau hoặc bằng ngày bắt đầu");
         }
 
-        String daysOfWeekStr = request.getDaysOfWeek().stream()
-                .map(String::valueOf).collect(Collectors.joining(",")); //
+        List<DayOfWeek> repeatDays = request.getRepeatDaysOfWeek();
+        if (repeatDays == null || repeatDays.isEmpty()) {
+            throw new InvalidDataException("Vui lòng chọn ít nhất một ngày trong tuần để lặp lại");
+        }
+
+        String daysOfWeekStr = repeatDays.stream()
+                .map(d -> String.valueOf(d.getValue()))
+                .collect(Collectors.joining(","));
 
         List<WorkSchedule> templates = staffs.stream().map(staff -> {
             WorkSchedule t = new WorkSchedule();
@@ -198,11 +179,10 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
             t.setStatus(EWorkScheduleStatus.APPROVED);
             t.setIsRepeated(true);
             return t;
-        }).toList(); //
+        }).toList();
 
         List<WorkSchedule> savedTemplates = workScheduleRepository.saveAll(templates);
-        // Sau khi lưu, gán repeatGroupId = ID của chính nó để việc quản lý group dễ
-        // dàng hơn.
+        // Sau khi lưu, gán repeatGroupId = ID của chính nó để việc quản lý group dễ dàng hơn.
         savedTemplates.forEach(t -> t.setRepeatGroupId("TEMPLATE-" + t.getId()));
         workScheduleRepository.saveAll(savedTemplates);
 
@@ -362,26 +342,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found"));
     }
 
-    private void addSchedulesForDate(LocalDate workDate, Shift shift, List<User> staffs, List<WorkSchedule> accumulator) {
-        List<WorkSchedule> existingSchedules = workScheduleRepository.findByStaffInAndShiftAndWorkDate(staffs, shift, workDate);
 
-        Set<Long> duplicateUserIds = existingSchedules.stream()
-                .map(ws -> ws.getStaff().getId())
-                .collect(Collectors.toSet());
-
-        for (User staff : staffs) {
-            if (!duplicateUserIds.contains(staff.getId())) {
-                WorkSchedule workSchedule = new WorkSchedule();
-                workSchedule.setWorkDate(workDate);
-                workSchedule.setShift(shift);
-                workSchedule.setStaff(staff);
-                workSchedule.setStatus(EWorkScheduleStatus.APPROVED);
-                accumulator.add(workSchedule);
-            } else {
-                log.info("Duplicate work schedules for staffId {} at date {}", staff.getId(), workDate);
-            }
-        }
-    }
 
     private ShiftResponse toShiftResponse(Shift shift) {
         return ShiftResponse.builder()

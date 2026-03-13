@@ -75,5 +75,5 @@ payos:
   client-id: 02745e9c-7c5a-4a1e-81d0-bb50281bec1f
   api-key: a189d0aa-4443-4b62-b1ff-ae64b057a0eb
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
-  return-url: ${app.base-url}/thanh-toan/payos/thanh-cong
-  cancel-url: ${app.base-url}/thanh-toan/payos/that-bai
+  return-url: http://localhost:5173/thanh-toan/thanh-cong
+  cancel-url: http://localhost:5173/thanh-toan/that-bai

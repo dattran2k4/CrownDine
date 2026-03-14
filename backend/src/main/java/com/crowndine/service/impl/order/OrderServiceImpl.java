@@ -394,7 +394,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void handlePaymentSuccess(Order order) {
+    public void markAsPaid(Order order) {
         order.setStatus(EOrderStatus.COMPLETED);
         orderRepository.save(order);
         log.info("Order id {} status changed to {}", order.getId(), order.getStatus());

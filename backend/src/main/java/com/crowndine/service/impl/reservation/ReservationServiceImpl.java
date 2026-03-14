@@ -449,7 +449,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void handlePaymentSuccess(Reservation reservation) {
+    public void confirmAfterDepositPaid(Reservation reservation) {
         reservation.setStatus(EReservationStatus.CONFIRMED);
         reservation.setExpiratedAt(null);
         reservationRepository.save(reservation);

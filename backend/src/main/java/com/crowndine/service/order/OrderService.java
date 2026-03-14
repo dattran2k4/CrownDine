@@ -42,5 +42,5 @@ public interface OrderService {
 
     OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
 
-    void handlePaymentSuccess(Order order);
+    void markAsPaid(Order order);
 }

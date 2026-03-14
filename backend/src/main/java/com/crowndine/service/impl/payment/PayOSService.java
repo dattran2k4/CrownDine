@@ -140,13 +140,13 @@ public class PayOSService extends AbstractPaymentStrategy {
         if (payment.getReservation() == null) {
             throw new InvalidDataException("Payment reservation not found");
         }
-        reservationService.handlePaymentSuccess(payment.getReservation());
+        reservationService.confirmAfterDepositPaid(payment.getReservation());
     }
 
     private void handleOrderPaymentSuccess(Payment payment) {
         if (payment.getOrder() == null) {
             throw new InvalidDataException("Payment order not found");
         }
-        orderService.handlePaymentSuccess(payment.getOrder());
+        orderService.markAsPaid(payment.getOrder());
     }
 }

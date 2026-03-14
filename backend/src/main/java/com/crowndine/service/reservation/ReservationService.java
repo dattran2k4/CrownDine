@@ -37,5 +37,5 @@ public interface ReservationService {
 
     void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
 
-    void handlePaymentSuccess(Reservation reservation);
+    void confirmAfterDepositPaid(Reservation reservation);
 }

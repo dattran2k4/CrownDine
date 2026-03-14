@@ -107,6 +107,7 @@ public class PayOSService extends AbstractPaymentStrategy {
             Reservation reservation = payment.getReservation();
             reservation.setStatus(EReservationStatus.CONFIRMED);
             reservation.setExpiratedAt(null);
+            log.info("Reservation id {} status change to {}", reservation.getId(), reservation.getStatus());
 
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {

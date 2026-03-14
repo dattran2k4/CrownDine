@@ -45,7 +45,7 @@ public class ApiPaymentController {
     @PostMapping("/payos-ipn")
     public void handleWebhook(@RequestBody Map<String, Object> body) {
         try {
-            log.info("PayOS return received: {}", body);
+            log.info("Webhook called: PayOS return received: {}", body);
             paymentFactory.get(EPaymentMethod.PAYOS).handleWebHook(body);
         } catch (Exception e) {
             log.error("Exception occurred while handling payment request {}, message = {}", e, e.getMessage());

@@ -392,6 +392,14 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void handlePaymentSuccess(Order order) {
+        order.setStatus(EOrderStatus.COMPLETED);
+        orderRepository.save(order);
+        log.info("Order id {} status changed to {}", order.getId(), order.getStatus());
+    }
+
     private OrderResponse toResponse(Order order) {
         OrderResponse response = new OrderResponse();
         BeanUtils.copyProperties(order, response);

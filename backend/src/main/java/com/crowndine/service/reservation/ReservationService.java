@@ -6,10 +6,10 @@ import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.ReservationCreateResponse;
 import com.crowndine.dto.response.ReservationHistoryResponse;
 import com.crowndine.dto.response.ReservationResponse;
-import com.crowndine.dto.response.ReservationHistoryResponse;
 import com.crowndine.model.Reservation;
 
 import com.crowndine.common.enums.EReservationStatus;
+
 import java.time.LocalDate;
 
 public interface ReservationService {
@@ -36,4 +36,6 @@ public interface ReservationService {
     void cancelReservation(Long reservationId, String username);
 
     void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
+
+    void handlePaymentSuccess(Reservation reservation);
 }

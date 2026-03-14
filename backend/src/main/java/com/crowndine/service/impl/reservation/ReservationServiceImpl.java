@@ -100,25 +100,25 @@ public class ReservationServiceImpl implements ReservationService {
         r.setNote(od.getNote());
         r.setStatus(od.getStatus());
         r.setTotalPrice(od.getTotalPrice());
-        
+
         if (od.getItem() != null) {
             ItemResponse ir = ItemResponse.builder()
-                .id(od.getItem().getId())
-                .name(od.getItem().getName())
-                .price(od.getItem().getPrice())
-                .build();
+                    .id(od.getItem().getId())
+                    .name(od.getItem().getName())
+                    .price(od.getItem().getPrice())
+                    .build();
             r.setItem(ir);
         }
-        
+
         if (od.getCombo() != null) {
             ComboResponse cr = ComboResponse.builder()
-                .id(od.getCombo().getId())
-                .name(od.getCombo().getName())
-                .price(od.getCombo().getPrice())
-                .build();
+                    .id(od.getCombo().getId())
+                    .name(od.getCombo().getName())
+                    .price(od.getCombo().getPrice())
+                    .build();
             r.setCombo(cr);
         }
-        
+
         return r;
     }
 
@@ -188,30 +188,6 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         return r;
-    }
-
-    private AvailableTableResponse toAvailableTableResponse(RestaurantTable table) {
-        AvailableTableResponse resp = new AvailableTableResponse();
-        resp.setId(table.getId());
-        resp.setName(table.getName());
-        resp.setCapacity(table.getCapacity());
-        resp.setShape(table.getShape());
-        resp.setX(table.getPositionX());
-        resp.setY(table.getPositionY());
-        resp.setWidth(table.getWidth());
-        resp.setHeight(table.getHeight());
-        resp.setRotation(table.getRotation());
-        resp.setBaseDeposit(table.getBaseDeposit());
-        if (table.getArea() != null) {
-            resp.setAreaId(table.getArea().getId());
-            resp.setAreaName(table.getArea().getName());
-            if (table.getArea().getFloor() != null) {
-                resp.setFloorId(table.getArea().getFloor().getId());
-                resp.setFloorName(table.getArea().getFloor().getName());
-                resp.setFloorNumber(table.getArea().getFloor().getFloorNumber());
-            }
-        }
-        return resp;
     }
 
     @Override
@@ -469,6 +445,15 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         log.info("Reservation id {} table updated to table id {}", reservationId, request.getTableId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void handlePaymentSuccess(Reservation reservation) {
+        reservation.setStatus(EReservationStatus.CONFIRMED);
+        reservation.setExpiratedAt(null);
+        reservationRepository.save(reservation);
+        log.info("Reservation id {} status changed to {}", reservation.getId(), reservation.getStatus());
     }
 
     /**

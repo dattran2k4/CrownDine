@@ -66,6 +66,7 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
     }
 
     private PreparedPayment prepareReservationPayment(PaymentRequest request, Payment payment) {
+        log.info("Preparing reservation payment for reservation code {}", request.getReservationCode());
         Reservation reservation = reservationService.getReservationByCode(request.getReservationCode());
         validateReservationForPayment(reservation);
 
@@ -90,6 +91,7 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
     }
 
     private PreparedPayment prepareOrderPayment(PaymentRequest request, Payment payment) {
+        log.info("Preparing order payment for order code {}", request.getOrderCode());
         Order order = orderService.getOrderByCode(request.getOrderCode());
         validateOrderForPayment(order);
 
@@ -99,6 +101,8 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.SETTLEMENT);
 
         BigDecimal amountToPay = order.getFinalPrice();
+
+        //Check order has reservation
         if (order.getReservation() != null) {
             BigDecimal totalDeposited = paymentRepository.sumAmountByTargetAndReservationIdAndStatus(EPaymentTarget.RESERVATION, order.getReservation().getId(), EPaymentStatus.SUCCESS);
 

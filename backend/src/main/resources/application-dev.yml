@@ -41,6 +41,15 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  ai:
+    google:
+      genai:
+        api-key: AIzaSyAeZkz3yQ3bdjJLO80uUfPQDg8lLwNE_U4
+        chat:
+          options:
+            model: gemini-2.5-flash
+            temperature: 0.7
+
 
 springdoc:
   api-docs:

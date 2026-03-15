@@ -1,5 +1,7 @@
-package com.crowndine.service;
+package com.crowndine.ai.service;
 
+import com.crowndine.ai.tool.AIToolNames;
+import com.crowndine.ai.tool.method.AdminTableMethodTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -12,7 +14,9 @@ public class AIAdminChatService {
 
     private final ChatClient chatClient;
 
-    public AIAdminChatService(ChatClient.Builder builder, ChatMemory chatMemory) {
+    public AIAdminChatService(ChatClient.Builder builder,
+                              ChatMemory chatMemory,
+                              AdminTableMethodTools adminTableMethodTools) {
 
         this.chatClient = builder
                 .defaultSystem("""
@@ -24,8 +28,8 @@ public class AIAdminChatService {
                 .defaultAdvisors(
                         PromptChatMemoryAdvisor.builder(chatMemory).build(),
                         new SimpleLoggerAdvisor())
-                // Đăng ký các Bean Function đã tạo ở RestaurantTools
-                .defaultToolNames("getRevenueReport", "getEmptyTables")
+                .defaultToolNames(AIToolNames.REVENUE_REPORT_TOOL)
+                .defaultTools(adminTableMethodTools)
                 .build();
     }
 

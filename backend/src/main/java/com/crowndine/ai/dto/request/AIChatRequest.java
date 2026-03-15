@@ -1,4 +1,4 @@
-package com.crowndine.dto.request;
+package com.crowndine.ai.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

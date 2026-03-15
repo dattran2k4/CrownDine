@@ -1,7 +1,7 @@
-package com.crowndine.controller;
+package com.crowndine.ai.controller;
 
-import com.crowndine.dto.request.AIChatRequest;
-import com.crowndine.service.AIAdminChatService;
+import com.crowndine.ai.dto.request.AIChatRequest;
+import com.crowndine.ai.service.AIAdminChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

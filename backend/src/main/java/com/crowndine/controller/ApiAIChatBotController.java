@@ -1,13 +1,15 @@
 package com.crowndine.controller;
 
+import com.crowndine.dto.request.AIChatRequest;
 import com.crowndine.service.AIAdminChatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -20,8 +22,8 @@ public class ApiAIChatBotController {
 
     private final AIAdminChatService aiAdminChatService;
 
-    @GetMapping(value = "/chat", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Flux<String> chat(@RequestParam String chatId, @RequestParam String query) {
-        return aiAdminChatService.chatStream(chatId, query);
+    @PostMapping(value = "/chat", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Flux<String> chat(@Valid @RequestBody AIChatRequest request) {
+        return aiAdminChatService.chatStream(request.getChatId(), request.getQuery());
     }
 }

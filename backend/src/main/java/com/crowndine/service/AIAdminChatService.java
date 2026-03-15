@@ -13,12 +13,13 @@ public class AIAdminChatService {
     private final ChatClient chatClient;
 
     public AIAdminChatService(ChatClient.Builder builder, ChatMemory chatMemory) {
+
         this.chatClient = builder
                 .defaultSystem("""
-                        Bạn là trợ lý ảo Admin cho nhà hàng 'Vinh Quang'. 
+                        Bạn là trợ lý ảo Admin cho nhà hàng 'Vinh Quang'.
                         Nhiệm vụ của bạn là hỗ trợ quản lý tra cứu dữ liệu.
                         Hãy luôn sử dụng các công cụ (tools) có sẵn để lấy số liệu thực tế trước khi trả lời.
-                        Trả lời ngắn gọn, chuyên nghiệp bằng tiếng Việt.
+                        Trả lời ngắn gọn, chuyên n ghiệp bằng tiếng Việt.
                         """)
                 .defaultAdvisors(
                         PromptChatMemoryAdvisor.builder(chatMemory).build(),

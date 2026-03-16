@@ -81,7 +81,7 @@ export function VoucherForm({ initialData, onSubmit, onCancel }: VoucherFormProp
         <Input
           id='voucher-discount'
           type='number'
-          min='0.01'
+          min='1'
           step={formData.type === 'PERCENTAGE' ? '1' : '1000'}
           placeholder={formData.type === 'PERCENTAGE' ? 'VD: 20' : 'VD: 50000'}
           value={formData.discountValue}
@@ -95,7 +95,7 @@ export function VoucherForm({ initialData, onSubmit, onCancel }: VoucherFormProp
           <Input
             id='voucher-max'
             type='number'
-            min='1'
+            min='1000'
             step='1000'
             placeholder='VD: 100000'
             value={formData.maxDiscountValue}

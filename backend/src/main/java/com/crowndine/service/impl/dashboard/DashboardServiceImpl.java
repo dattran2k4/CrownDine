@@ -6,6 +6,7 @@ import com.crowndine.repository.OrderRepository;
 import com.crowndine.service.dashboard.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {
 
         private final OrderRepository orderRepository;

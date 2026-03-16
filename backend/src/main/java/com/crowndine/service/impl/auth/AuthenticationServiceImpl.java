@@ -91,6 +91,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public TokenResponse refreshToken(HttpServletRequest request) {
+        log.info("Get new access token called");
         final String refreshToken = request.getHeader("X-Refresh-Token");
 
         if (!StringUtils.hasText(refreshToken)) {

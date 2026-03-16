@@ -64,7 +64,7 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
   }
 
   return (
-    <div className='border-t border-gray-200 bg-white p-6'>
+    <div className='rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-5'>
       <div className='mb-4 flex items-center gap-2'>
         <TicketPercent className='text-orange-500' size={20} />
         <div>

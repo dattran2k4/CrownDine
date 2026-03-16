@@ -156,8 +156,6 @@ const Step4Payment = ({
           </div>
         </div>
 
-        <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={setVoucherPreview} />
-
         {/* Phần Món ăn đã chọn */}
         {cartItems.length > 0 && (
           <div className='border-t border-gray-200 bg-orange-50/30 p-6'>
@@ -193,26 +191,12 @@ const Step4Payment = ({
 
         {/* Phần Payment Breakdown */}
         <div className='space-y-3 border-t border-gray-200 bg-gray-50 p-6'>
-          {previewOrderAmount > 0 && (
+          {itemsTotal > 0 && (
             <>
               <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
-                <span className='text-gray-700'>Tổng tiền món ăn</span>
-                <span className={`font-semibold ${voucherPreview ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                  {formatCurrency(previewOrderAmount)}
-                </span>
+                <span className='text-gray-700'>Tổng tiền món ăn tạm tính</span>
+                <span className='font-semibold text-gray-900'>{formatCurrency(itemsTotal)}</span>
               </div>
-              {voucherPreview && (
-                <>
-                  <div className='flex justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm'>
-                    <span className='text-emerald-800'>Giảm giá từ voucher</span>
-                    <span className='font-semibold text-emerald-700'>-{formatCurrency(previewDiscountAmount)}</span>
-                  </div>
-                  <div className='flex justify-between rounded-lg border border-neutral-200 bg-white p-3 text-sm'>
-                    <span className='text-gray-700'>Tổng tiền món sau ưu đãi</span>
-                    <span className='text-lg font-bold text-gray-900'>{formatCurrency(previewFinalAmount)}</span>
-                  </div>
-                </>
-              )}
               <div className='flex justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm'>
                 <span className='text-gray-700'>Cọc 20% món ăn</span>
                 <span className='font-semibold text-amber-700'>{formatCurrency(foodDeposit)}</span>
@@ -220,17 +204,17 @@ const Step4Payment = ({
             </>
           )}
 
-          <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
-            <span className='text-gray-700'>Cọc bàn</span>
-            <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
-          </div>
-
           {itemsTotal > 0 && (
             <div className='flex justify-between rounded-lg bg-gray-100 p-3 text-sm'>
               <span className='text-gray-600'>Món ăn còn lại (Thanh toán sau)</span>
               <span className='font-semibold text-gray-700'>{formatCurrency(remainingAmount)}</span>
             </div>
           )}
+
+          <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
+            <span className='text-gray-700'>Cọc bàn</span>
+            <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
+          </div>
 
           <div className='mt-4 flex items-center justify-between rounded-lg border-2 border-orange-200 bg-orange-50 p-5'>
             <div>
@@ -241,6 +225,31 @@ const Step4Payment = ({
             </div>
             <span className='text-4xl font-black text-orange-600'>{formatCurrency(depositAmount)}</span>
           </div>
+
+          <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={setVoucherPreview} />
+
+          {voucherPreview && (
+            <div className='space-y-3 rounded-2xl border border-emerald-200 bg-white p-4'>
+              <div>
+                <p className='text-sm font-semibold text-emerald-800 uppercase'>Chi tiết ưu đãi</p>
+                <p className='mt-1 text-xs text-gray-500'>
+                  Mã voucher đang giúp bạn xem trước mức giảm cho phần món ăn.
+                </p>
+              </div>
+              <div className='flex justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm'>
+                <span className='text-gray-700'>Tổng tiền món ăn trước ưu đãi</span>
+                <span className='font-semibold text-gray-400 line-through'>{formatCurrency(previewOrderAmount)}</span>
+              </div>
+              <div className='flex justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm'>
+                <span className='text-emerald-800'>Số tiền được giảm</span>
+                <span className='font-semibold text-emerald-700'>-{formatCurrency(previewDiscountAmount)}</span>
+              </div>
+              <div className='flex justify-between rounded-lg border border-neutral-200 bg-white p-3 text-sm'>
+                <span className='text-gray-700'>Tổng tiền món sau ưu đãi</span>
+                <span className='text-lg font-bold text-gray-900'>{formatCurrency(previewFinalAmount)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

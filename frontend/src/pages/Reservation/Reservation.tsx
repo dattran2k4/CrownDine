@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
@@ -11,6 +11,9 @@ import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reserv
 import type { OrderDetailResponse } from '@/types/reservation.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
+import { useSearchParams } from 'react-router-dom'
+import layoutApi from '@/apis/layout.api'
+import type { TableLayout } from '@/types/layout'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
@@ -54,11 +57,141 @@ export default function Reservation() {
   const [isPaid, setIsPaid] = useState(false) // Đánh dấu đã thanh toán
   const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
+  const [isProcessingChatbotParams, setIsProcessingChatbotParams] = useState(false)
 
   const authUser = useAuthStore((state) => state.user)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const processedParamsRef = useRef<string>('')
 
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
+  
+  // Handle query parameters from chatbot
+  useEffect(() => {
+    const targetStep = searchParams.get('step')
+    const tableName = searchParams.get('tableName')
+    const targetDate = searchParams.get('date')
+    const targetStartTime = searchParams.get('startTime')
+    const targetEndTime = searchParams.get('endTime')
+    const targetGuests = searchParams.get('guests')
+
+    // Create a unique key for these params
+    const paramsKey = `${targetStep}-${tableName}-${targetDate}-${targetStartTime}-${targetEndTime}-${targetGuests}`
+
+    // If we have chatbot parameters and haven't processed them yet, auto-fill form and navigate
+    if (targetStep && (targetStep === '3' || targetStep === '4') && tableName && targetDate && targetStartTime && targetEndTime && targetGuests && processedParamsRef.current !== paramsKey) {
+      processedParamsRef.current = paramsKey
+      setIsProcessingChatbotParams(true)
+      
+      // Set form values first
+      setDate(targetDate)
+      setStartTime(targetStartTime)
+      setEndTime(targetEndTime)
+      setGuests(parseInt(targetGuests))
+
+      // Find and select table by name
+      const findAndSelectTable = async () => {
+        try {
+          // Get available tables for the time slot
+          const res = await layoutApi.getAvailableTables({
+            date: targetDate,
+            startTime: targetStartTime,
+            endTime: targetEndTime,
+            guestNumber: parseInt(targetGuests)
+          })
+
+          // Find table by name - improved matching
+          const normalizedTableName = tableName.toLowerCase().trim()
+          const foundTable = res.data.data.find((t: TableLayout) => {
+            const normalizedTName = t.name.toLowerCase().trim()
+            // Exact match or contains match
+            return normalizedTName === normalizedTableName || 
+                   normalizedTName.includes(normalizedTableName) || 
+                   normalizedTableName.includes(normalizedTName) ||
+                   // Match "Bàn 01" with "01" or "Bàn01"
+                   normalizedTName.replace(/\s+/g, '') === normalizedTableName.replace(/\s+/g, '')
+          })
+
+          if (foundTable) {
+            // Convert TableLayout to ReservationTable
+            // Map status: UNAVAILABLE -> AVAILABLE (since we're creating reservation, table should be available)
+            const mappedStatus = foundTable.status === 'UNAVAILABLE' ? 'AVAILABLE' : foundTable.status as 'AVAILABLE' | 'RESERVED' | 'OCCUPIED'
+            const reservationTable: Table = {
+              id: foundTable.id.toString(),
+              name: foundTable.name,
+              capacity: foundTable.capacity || 2,
+              status: mappedStatus,
+              type: 'STANDARD' // Default type
+            }
+
+            // Create reservation
+            setIsCreatingReservation(true)
+            try {
+              const reservationRes = await reservationApi.createReservation({
+                date: targetDate,
+                startTime: targetStartTime,
+                endTime: targetEndTime,
+                guestNumber: parseInt(targetGuests),
+                tableId: foundTable.id,
+                note: ''
+              })
+
+              if (reservationRes.data.data) {
+                setReservationId(reservationRes.data.data.reservationId)
+                setExpiratedAt(reservationRes.data.data.expiratedAt)
+                setSelectedTable(reservationTable)
+
+                // Navigate to target step
+                if (targetStep === '3') {
+                  setCurrentStep(3)
+                } else if (targetStep === '4') {
+                  // For step 4, need to fetch order details first
+                  setIsLoadingOrderDetails(true)
+                  try {
+                    const orderRes = await reservationApi.getReservationOrderDetails(reservationRes.data.data.reservationId)
+                    setOrderDetails(orderRes.data.data)
+                    setCurrentStep(4)
+                  } catch (error) {
+                    console.error('Failed to load order details:', error)
+                    setCurrentStep(4) // Still go to step 4, it has fallback logic
+                  } finally {
+                    setIsLoadingOrderDetails(false)
+                  }
+                }
+
+                // Clear query params
+                setSearchParams({})
+                setIsProcessingChatbotParams(false)
+              }
+            } catch (error) {
+              console.error('Failed to create reservation:', error)
+              alert('Không thể tạo đặt bàn. Vui lòng thử lại.')
+              setIsProcessingChatbotParams(false)
+            } finally {
+              setIsCreatingReservation(false)
+            }
+          } else {
+            alert(`Không tìm thấy bàn "${tableName}". Vui lòng chọn bàn khác.`)
+            // Clear query params
+            setSearchParams({})
+            setIsProcessingChatbotParams(false)
+          }
+        } catch (error) {
+          console.error('Failed to find table:', error)
+          alert('Không thể tải danh sách bàn. Vui lòng thử lại.')
+          // Clear query params
+          setSearchParams({})
+          setIsProcessingChatbotParams(false)
+        }
+      }
+
+      findAndSelectTable()
+    } else {
+      setIsProcessingChatbotParams(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   // --- HANDLERS ---
   const toggleTable = async (table: Table) => {
     // Nếu đã thanh toán, không cho phép thay đổi bàn
@@ -359,7 +492,16 @@ export default function Reservation() {
 
         {/* Main Content Area */}
         <div className='bg-card min-h-100'>
-          {currentStep === 1 && (
+          {/* Show loading when processing chatbot params */}
+          {isProcessingChatbotParams && (
+            <div className='flex min-h-[400px] items-center justify-center p-6'>
+              <div className='flex flex-col items-center gap-4 text-gray-600'>
+                <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent' />
+                <p className='text-sm'>Đang tìm bàn và tạo đặt bàn...</p>
+              </div>
+            </div>
+          )}
+          {!isProcessingChatbotParams && currentStep === 1 && (
             <Step1DateTime
               guests={guests}
               setGuests={setGuests}

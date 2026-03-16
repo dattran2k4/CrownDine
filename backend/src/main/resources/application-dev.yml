@@ -77,3 +77,15 @@ payos:
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
+
+#Gemini AI
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS:AIzaSyDZbpDq_MbrcN-86vF-gegaQQk5F30ZNac,AIzaSyB2AnUNXmyHgT3zixc7RkQr5gAt91HZRHY,AIzaSyCCnxFPYrBgxnz2CjXBXzRKTS8vIiEUbiY,AIzaSyC8rAPhLNiD0osyO5Tg3X1vSG8J7nlnurc}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
+  model: models/gemini-2.0-flash-001
+
+#OpenRouter
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY: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}

@@ -24,6 +24,7 @@ import OrderManagement from './pages/Staffs/OrderManagement'
 import KitchenDisplay from './pages/Staffs/KitchenDisplay'
 import WorkSchedule from './pages/Staffs/WorkSchedule'
 import StaffChat from './pages/Staffs/StaffChat'
+import AttendanceBoard from './pages/Staffs/Attendance'
 
 const router = createBrowserRouter([
   {
@@ -90,6 +91,10 @@ const router = createBrowserRouter([
           {
             path: 'layout',
             element: <LayoutPage />
+          },
+          {
+            path: 'attendance',
+            element: <AttendanceBoard />
           }
         ]
       }

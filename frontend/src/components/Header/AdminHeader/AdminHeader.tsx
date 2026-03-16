@@ -18,7 +18,8 @@ export default function AdminHeader() {
       label: 'Hàng hoá',
       children: [
         { label: 'Thực đơn', href: '/admin/categories' },
-        { label: 'Thiết lập giá', href: '/admin/price-settings' }
+        { label: 'Thiết lập giá', href: '/admin/price-settings' },
+        { label: 'Voucher', href: '/admin/vouchers' }
       ]
     },
     {

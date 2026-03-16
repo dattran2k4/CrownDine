@@ -3,6 +3,7 @@ package com.crowndine.service.impl.combo;
 import com.crowndine.dto.request.ComboRequest;
 import com.crowndine.dto.response.ComboItemResponse;
 import com.crowndine.dto.response.ComboResponse;
+import com.crowndine.dto.response.TopSellingComboResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Combo;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -34,6 +36,18 @@ public class ComboServiceImpl implements ComboService {
     public List<ComboResponse> getAllCombos() {
         return comboRepository.findAll()
                 .stream().map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    public List<TopSellingComboResponse> getTopSellingCombos(int limit) {
+        int normalizedLimit = normalizeTopSellingLimit(limit);
+
+        return comboRepository.findAll().stream()
+                .filter(combo -> combo.getSoldCount() != null && combo.getSoldCount() > 0)
+                .sorted(Comparator.comparing(Combo::getSoldCount).reversed())
+                .limit(normalizedLimit)
+                .map(this::mapToTopSellingResponse)
                 .toList();
     }
 
@@ -166,6 +180,22 @@ public class ComboServiceImpl implements ComboService {
                 .itemName(ci.getItem().getName())
                 .quantity(ci.getQuantity())
                 .build();
+    }
+
+    private TopSellingComboResponse mapToTopSellingResponse(Combo combo) {
+        return TopSellingComboResponse.builder()
+                .id(combo.getId())
+                .name(combo.getName())
+                .soldCount(combo.getSoldCount())
+                .sellingPrice(combo.getPriceAfterDiscount() != null ? combo.getPriceAfterDiscount() : combo.getPrice())
+                .build();
+    }
+
+    private int normalizeTopSellingLimit(int limit) {
+        if (limit <= 0) {
+            return 5;
+        }
+        return Math.min(limit, 10);
     }
 
     // Simple Slug generation

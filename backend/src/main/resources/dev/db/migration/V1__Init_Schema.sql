@@ -159,8 +159,10 @@ CREATE TABLE `tokens` (
                           `id` bigint NOT NULL AUTO_INCREMENT,
                           `updated_at` datetime(6) DEFAULT NULL,
                           `username` varchar(255) NOT NULL,
+                          `token` text,
                           `device` VARCHAR(100),
                           `ip_address` VARCHAR(45),
+                          `is_revoked` bit(1) DEFAULT NULL,
                           `refresh_token` varchar(1000) DEFAULT NULL,
                           PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -202,12 +204,15 @@ CREATE TABLE `user_vouchers` (
 
 CREATE TABLE `work_schedules` (
                                   `created_at` datetime(6) DEFAULT NULL,
+                                  `end_date` date DEFAULT NULL,
+                                  `is_repeated` bit(1) DEFAULT NULL,
                                   `id` bigint NOT NULL AUTO_INCREMENT,
                                   `shift_id` bigint DEFAULT NULL,
                                   `staff_id` bigint DEFAULT NULL,
                                   `note` varchar(200) DEFAULT NULL,
                                   `work_date` date NOT NULL,
                                   `updated_at` datetime(6) DEFAULT NULL,
+                                  `days_of_week` varchar(255) DEFAULT NULL,
                                   `status` enum('APPROVED','CANCELLED','PENDING','REJECTED') DEFAULT NULL,
                                   PRIMARY KEY (`id`),
                                   CONSTRAINT `uk_work_schedules_staff_shift_date` UNIQUE (`staff_id`,`shift_id`,`work_date`),

@@ -15,7 +15,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import LayoutPage from '@/pages/Layout'
 import Profile from '@/pages/Profile'
 import VerifyRegister from '@/pages/VerifyRegister/VerifyRegister'
-import { ProtectedRoute, RejectedRoute } from '@/routes/RouteGuard'
+import { ProtectedRoute, RejectedRoute, AdminRoute, StaffRoute } from '@/routes/RouteGuard'
 import StaffLayout from './layouts/StaffLayout/StaffLayout'
 import FloorPlan from './pages/Staffs/FloorPlan'
 import ReservationList from './pages/Staffs/ReservationList'
@@ -55,71 +55,85 @@ const router = createBrowserRouter([
 
   // Nhóm 3: Admin
   {
-    path: '/admin',
-    element: <AdminLayout />,
+    element: <AdminRoute />,
     children: [
       {
-        index: true,
-        element: <Dashboard />
-      },
-      {
-        path: path.dashboard,
-        element: <Dashboard />
-      },
-      {
-        path: 'categories',
-        element: <CategoryList />
-      },
-      {
-        path: 'staff',
-        element: <StaffList />
-      },
-      {
-        path: 'price-settings',
-        element: <PriceSettings />
-      },
-      {
-        path: 'layout',
-        element: <LayoutPage />
-      },
-      {
-        path: 'attendance',
-        element: <AttendanceBoard />
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: <Dashboard />
+          },
+          {
+            path: path.dashboard,
+            element: <Dashboard />
+          },
+          {
+            path: 'categories',
+            element: <CategoryList />
+          },
+          {
+            path: 'staff',
+            element: <StaffList />
+          },
+          {
+            path: 'price-settings',
+            element: <PriceSettings />
+          },
+          {
+            path: 'schedule',
+            element: <WorkSchedule />
+          },
+          {
+            path: 'layout',
+            element: <LayoutPage />
+          },
+          {
+            path: 'attendance',
+            element: <AttendanceBoard />
+          }
+        ]
       }
     ]
   },
   // Nhóm 4: Staff
   {
-    path: 'staff',
-    element: <StaffLayout />,
+    element: <StaffRoute />,
     children: [
       {
-        index: true,
-        element: <Navigate to='floor-plan' replace />
-      },
-      {
-        path: 'floor-plan',
-        element: <FloorPlan />
-      },
-      {
-        path: 'reservation-list',
-        element: <ReservationList />
-      },
-      {
-        path: 'order-management',
-        element: <OrderManagement />
-      },
-      {
-        path: 'kitchen-display',
-        element: <KitchenDisplay />
-      },
-      {
-        path: 'work-schedule',
-        element: <WorkSchedule />
-      },
-      {
-        path: 'chat',
-        element: <StaffChat />
+        path: 'staff',
+        element: <StaffLayout />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to='floor-plan' replace />
+          },
+          {
+            path: 'floor-plan',
+            element: <FloorPlan />
+          },
+          {
+            path: 'reservation-list',
+            element: <ReservationList />
+          },
+          {
+            path: 'order-management',
+            element: <OrderManagement />
+          },
+          {
+            path: 'kitchen-display',
+            element: <KitchenDisplay />
+          },
+          {
+            path: 'work-schedule',
+            element: <WorkSchedule />
+          },
+          {
+            path: 'chat',
+            element: <StaffChat />
+          }
+        ]
       }
     ]
   }

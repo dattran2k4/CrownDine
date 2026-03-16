@@ -11,7 +11,8 @@ import java.util.List;
 
 public interface WorkScheduleService {
 
-    List<WorkScheduleResponse> getWorkSchedules(LocalDate fromDate, LocalDate toDate, LocalDate date, EWorkScheduleStatus status, Long userId, Long shiftId);
+    List<WorkScheduleResponse> getWorkSchedules(LocalDate fromDate, LocalDate toDate, LocalDate date,
+            EWorkScheduleStatus status, Long userId, Long shiftId);
 
     void changeWorkScheduleStatus(Long id, EWorkScheduleStatus status);
 
@@ -19,7 +20,7 @@ public interface WorkScheduleService {
 
     void reassignWorkSchedules(WorkScheduleUpdateRequest request, Long id);
 
-    void deleteWorkSchedule(Long id);
+    void deleteWorkSchedule(Long id, Boolean deletePattern, LocalDate workDate);
 
     WorkSchedule getWorkSchedule(Long id);
 }

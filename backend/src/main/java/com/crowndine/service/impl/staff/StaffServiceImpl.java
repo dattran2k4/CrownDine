@@ -49,12 +49,10 @@ public class StaffServiceImpl implements StaffService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setFirstName(request.getFirstName().trim().toUpperCase()); // ✅
-        user.setLastName(request.getLastName().trim().toUpperCase());   // ✅
+        user.setLastName(request.getLastName().trim().toUpperCase()); // ✅
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setGender(request.getGender());                             // ✅
-        user.setDateOfBirth(request.getDateOfBirth());                  // ✅
         user.setStatus(EUserStatus.ACTIVE);
 
         user.getRoles().add(staffRole);
@@ -125,10 +123,22 @@ public class StaffServiceImpl implements StaffService {
                 .map(this::buildProfileResponse);
     }
 
+    // ================= GET ALL STAFF =================
+    @Override
+    public java.util.List<ProfileResponse> getAllStaffs() {
+        log.info("Processing get all staffs");
+
+        return userRepository.findAllStaffs()
+                .stream()
+                .map(this::buildProfileResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // ================= MAP RESPONSE =================
     private ProfileResponse buildProfileResponse(User user) {
 
         return ProfileResponse.builder()
+                .id(user.getId())
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
@@ -137,6 +147,7 @@ public class StaffServiceImpl implements StaffService {
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
                 .status(user.getStatus())
+                .avatarUrl(user.getAvatarUrl())
                 .build();
     }
 }

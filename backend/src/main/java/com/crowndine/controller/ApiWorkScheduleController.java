@@ -41,13 +41,13 @@ public class ApiWorkScheduleController {
     private final ShiftRepository shiftRepository;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ApiResponse getWorkSchedules(@RequestParam(required = false) LocalDate fromDate,
-                                        @RequestParam(required = false) LocalDate toDate,
-                                        @RequestParam(required = false) LocalDate date,
-                                        @RequestParam(required = false) EWorkScheduleStatus status,
-                                        @RequestParam(required = false) Long userId,
-                                        @RequestParam(required = false) Long shiftId) {
+            @RequestParam(required = false) LocalDate toDate,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) EWorkScheduleStatus status,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long shiftId) {
 
         return ApiResponse.builder()
                 .status(200)
@@ -114,10 +114,13 @@ public class ApiWorkScheduleController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ApiResponse deleteWorkSchedule(@PathVariable("id") Long id) {
-        log.info("Request to delete work schedules with id {}", id);
+    public ApiResponse deleteWorkSchedule(@PathVariable("id") Long id,
+            @RequestParam(required = false) Boolean deletePattern,
+            @RequestParam(required = false) LocalDate workDate) {
+        log.info("Request to delete work schedules with id {}, deletePattern {}, workDate {}", id, deletePattern,
+                workDate);
 
-        workScheduleRepository.delete(workScheduleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Work Schedule Not Found")));
+        workScheduleService.deleteWorkSchedule(id, deletePattern != null ? deletePattern : false, workDate);
 
         return ApiResponse.builder()
                 .status(HttpStatus.ACCEPTED.value())

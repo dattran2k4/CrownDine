@@ -46,9 +46,11 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailService orderDetailService;
     private final UserVoucherService userVoucherService;
 
+    private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
+
     @Override
     public Order getOrderByCode(String code) {
-        return orderRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        return orderRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
     }
 
     @Override
@@ -133,7 +135,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void addOrUpdateItemToOrder(Long orderId, OrderItemRequest request) {
         log.info("Processing add item {} for order {}", request.getItemId(), orderId);
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
 
         List<OrderDetail> orderDetails = order.getOrderDetails();
 
@@ -171,7 +173,6 @@ public class OrderServiceImpl implements OrderService {
 
         order.setTotalPrice(totalPrice);
 
-        //TODO CALCULATE FINAL PRICE
         order.setFinalPrice(totalPrice);
 
         Order result = orderRepository.save(order);
@@ -198,7 +199,6 @@ public class OrderServiceImpl implements OrderService {
 
         order.setTotalPrice(calculationService.calculateTotalOrder(orderDetails));
 
-        //TODO CALCULATE FINAL PRICE
         order.setFinalPrice(calculationService.calculateTotalOrder(orderDetails));
 
         orderRepository.save(order);
@@ -298,7 +298,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order getOrder(Long id) {
-        return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
     }
 
     @Override
@@ -390,6 +390,14 @@ public class OrderServiceImpl implements OrderService {
                 .discountPrice(updatedOrder.getDiscountPrice())
                 .finalPrice(updatedOrder.getFinalPrice())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markAsPaid(Order order) {
+        order.setStatus(EOrderStatus.COMPLETED);
+        orderRepository.save(order);
+        log.info("Order id {} status changed to {}", order.getId(), order.getStatus());
     }
 
     private OrderResponse toResponse(Order order) {

@@ -16,6 +16,7 @@ public class WorkScheduleResponse {
     private LocalDate workDate;
     private EWorkScheduleStatus status;
     private String note;
+    private String repeatGroupId;
     private ShiftResponse shift;
     private UserInfo user;
 

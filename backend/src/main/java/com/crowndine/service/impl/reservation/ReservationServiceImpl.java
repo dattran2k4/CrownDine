@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -46,6 +47,80 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final CalculationService calculationService;
     private final OrderService orderService;
+
+    @Override
+    public PageResponse<ReservationResponse> getAllReservations(LocalDate fromDate, LocalDate toDate, EReservationStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("date"), Sort.Order.desc("startTime")));
+        Page<Reservation> reservationPage = reservationRepository.findReservations(fromDate, toDate, status, pageable);
+
+        List<ReservationResponse> data = reservationPage.getContent().stream().map(this::toReservationResponse).toList();
+
+        return PageResponse.<ReservationResponse>builder()
+                .page(reservationPage.getNumber() + 1)
+                .pageSize(reservationPage.getSize())
+                .totalPages(reservationPage.getTotalPages())
+                .totalItems(reservationPage.getTotalElements())
+                .data(data)
+                .build();
+    }
+
+    private ReservationResponse toReservationResponse(Reservation r) {
+        ReservationResponse resp = new ReservationResponse();
+        resp.setId(r.getId());
+        resp.setCode(r.getCode());
+        resp.setDate(r.getDate());
+        resp.setStartTime(r.getStartTime());
+        resp.setEndTime(r.getEndTime());
+        resp.setGuestNumber(r.getGuestNumber());
+        resp.setNote(r.getNote());
+        resp.setStatus(r.getStatus());
+        resp.setTableName(r.getTable() != null ? r.getTable().getName() : null);
+
+        if (r.getCustomer() != null) {
+            resp.setCustomerName(r.getCustomer().getFullName());
+            resp.setPhone(r.getCustomer().getPhone());
+            resp.setEmail(r.getCustomer().getEmail());
+        }
+
+        if (r.getOrder() != null) {
+            List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(r.getOrder().getId());
+            List<OrderDetailResponse> odResponses = orderDetails.stream().map(this::toOrderDetailResponse).toList();
+            resp.setOrderDetails(odResponses);
+        } else {
+            resp.setOrderDetails(List.of());
+        }
+
+        return resp;
+    }
+
+    private OrderDetailResponse toOrderDetailResponse(OrderDetail od) {
+        OrderDetailResponse r = new OrderDetailResponse();
+        r.setId(od.getId());
+        r.setQuantity(od.getQuantity());
+        r.setNote(od.getNote());
+        r.setStatus(od.getStatus());
+        r.setTotalPrice(od.getTotalPrice());
+
+        if (od.getItem() != null) {
+            ItemResponse ir = ItemResponse.builder()
+                    .id(od.getItem().getId())
+                    .name(od.getItem().getName())
+                    .price(od.getItem().getPrice())
+                    .build();
+            r.setItem(ir);
+        }
+
+        if (od.getCombo() != null) {
+            ComboResponse cr = ComboResponse.builder()
+                    .id(od.getCombo().getId())
+                    .name(od.getCombo().getName())
+                    .price(od.getCombo().getPrice())
+                    .build();
+            r.setCombo(cr);
+        }
+
+        return r;
+    }
 
     @Override
     public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {
@@ -87,7 +162,7 @@ public class ReservationServiceImpl implements ReservationService {
         if (order == null) {
             if (reservation.getCustomer() == null) {
                 throw new ResourceNotFoundException("Customer not found for reservation");
-        }
+            }
             order = orderService.createOrderForReservation(reservation, reservation.getCustomer());
             reservation.setOrder(order);
             reservationRepository.save(reservation);
@@ -113,30 +188,6 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         return r;
-    }
-
-    private AvailableTableResponse toAvailableTableResponse(RestaurantTable table) {
-        AvailableTableResponse resp = new AvailableTableResponse();
-        resp.setId(table.getId());
-        resp.setName(table.getName());
-        resp.setCapacity(table.getCapacity());
-        resp.setShape(table.getShape());
-        resp.setX(table.getPositionX());
-        resp.setY(table.getPositionY());
-        resp.setWidth(table.getWidth());
-        resp.setHeight(table.getHeight());
-        resp.setRotation(table.getRotation());
-        resp.setBaseDeposit(table.getBaseDeposit());
-        if (table.getArea() != null) {
-            resp.setAreaId(table.getArea().getId());
-            resp.setAreaName(table.getArea().getName());
-            if (table.getArea().getFloor() != null) {
-                resp.setFloorId(table.getArea().getFloor().getId());
-                resp.setFloorName(table.getArea().getFloor().getName());
-                resp.setFloorNumber(table.getArea().getFloor().getFloorNumber());
-            }
-        }
-        return resp;
     }
 
     @Override
@@ -184,7 +235,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Tính tiền cọc theo giờ
         BigDecimal tableDeposit = getTableDeposit(table, saved.getStartTime(), saved.getEndTime());
-        
+
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
         response.setDate(saved.getDate());
@@ -253,6 +304,7 @@ public class ReservationServiceImpl implements ReservationService {
             order = orderService.createOrderForReservation(reservation, user);
             reservation.setOrder(order);
         }
+        log.info("Adding order item for order id {}", order.getId());
 
         orderService.addOrUpdateItemToOrder(order.getId(), request);
     }
@@ -317,21 +369,21 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(rollbackFor = Exception.class)
     public void cancelReservation(Long reservationId, String username) {
         log.info("Cancelling reservation id {} for user {}", reservationId, username);
-        
+
         Reservation reservation = getReservationById(reservationId);
         User user = getUserByUserName(username);
-        
+
         validateReservationForUser(reservation, user);
-        
+
         // Chỉ cho phép cancel reservation ở trạng thái PENDING hoặc CONFIRMED
-        if (!reservation.getStatus().equals(EReservationStatus.PENDING) && 
-            !reservation.getStatus().equals(EReservationStatus.CONFIRMED)) {
+        if (!reservation.getStatus().equals(EReservationStatus.PENDING) &&
+                !reservation.getStatus().equals(EReservationStatus.CONFIRMED)) {
             throw new InvalidDataException("Không thể hủy đặt bàn ở trạng thái này");
         }
-        
+
         reservation.setStatus(EReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
-        
+
         log.info("Reservation id {} has been cancelled", reservationId);
     }
 
@@ -339,82 +391,92 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(rollbackFor = Exception.class)
     public void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username) {
         log.info("Updating table for reservation id {} to table id {} for user {}", reservationId, request.getTableId(), username);
-        
+
         Reservation reservation = getReservationById(reservationId);
         User user = getUserByUserName(username);
-        
+
         validateReservationForUser(reservation, user);
-        
+
         // Chỉ cho phép update table khi reservation ở trạng thái PENDING
         if (!reservation.getStatus().equals(EReservationStatus.PENDING)) {
             throw new InvalidDataException("Chỉ có thể thay đổi bàn khi đặt bàn ở trạng thái PENDING");
         }
-        
+
         RestaurantTable newTable = tableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
-        
+
         if (newTable.getStatus().equals(ETableStatus.UNAVAILABLE)) {
             throw new InvalidDataException("Bàn không khả dụng");
         }
-        
+
         if (newTable.getCapacity() != null && newTable.getCapacity() < reservation.getGuestNumber()) {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
-        
+
         // Kiểm tra xem bàn mới có bị đặt trong khung giờ này không
         // Loại trừ reservation hiện tại khỏi danh sách reserved
         List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
         LocalDateTime now = LocalDateTime.now();
         List<Long> reservedIds = reservationRepository.findReservedTableIds(
-                reservation.getDate(), 
-                reservation.getStartTime(), 
-                reservation.getEndTime(), 
-                blockingStatuses, 
+                reservation.getDate(),
+                reservation.getStartTime(),
+                reservation.getEndTime(),
+                blockingStatuses,
                 now
         );
-        
+
         // Loại trừ bàn hiện tại của reservation này (nếu có)
         if (reservation.getTable() != null) {
             reservedIds.remove(reservation.getTable().getId());
         }
-        
+
         if (reservedIds.contains(newTable.getId())) {
             throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
         }
-        
+
         // Cập nhật bàn cho reservation
         reservation.setTable(newTable);
-        
+
         // Cập nhật bàn cho order nếu có
         if (reservation.getOrder() != null) {
             reservation.getOrder().setRestaurantTable(newTable);
         }
-        
+
         reservationRepository.save(reservation);
-        
+
         log.info("Reservation id {} table updated to table id {}", reservationId, request.getTableId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirmAfterDepositPaid(Reservation reservation) {
+        reservation.setStatus(EReservationStatus.CONFIRMED);
+        reservation.setExpiratedAt(null);
+        reservationRepository.save(reservation);
+        log.info("Reservation id {} status changed to {}", reservation.getId(), reservation.getStatus());
     }
 
     /**
      * Tính tiền cọc bàn theo giờ
-     * @param table Bàn
+     *
+     * @param table     Bàn
      * @param startTime Thời gian bắt đầu
-     * @param endTime Thời gian kết thúc
+     * @param endTime   Thời gian kết thúc
      * @return Tiền cọc = baseDeposit * số giờ
      */
     private BigDecimal getTableDeposit(RestaurantTable table, LocalTime startTime, LocalTime endTime) {
         if (table == null || table.getBaseDeposit() == null) {
             return BigDecimal.ZERO;
         }
-        
+
         if (startTime == null || endTime == null) {
             return table.getBaseDeposit();
         }
-        
+
         // Tính số giờ (có thể là số thập phân)
         long minutes = java.time.Duration.between(startTime, endTime).toMinutes();
         BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        
+
         // Tiền cọc = baseDeposit * số giờ
         return table.getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
     }

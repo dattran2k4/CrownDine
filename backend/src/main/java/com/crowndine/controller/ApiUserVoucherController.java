@@ -22,7 +22,7 @@ public class ApiUserVoucherController {
 
     private final UserVoucherService userVoucherService;
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    
     @GetMapping("/my")
     public ApiResponse getMyAvailableVouchers(Principal principal) {
         return ApiResponse.builder()

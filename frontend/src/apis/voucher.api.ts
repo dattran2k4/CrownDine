@@ -1,5 +1,11 @@
 import type { ApiResponse, PageResponse } from '@/types/utils.type'
-import type { Voucher, VoucherAssignmentResponse, VoucherAssignUsersPayload } from '@/types/voucher.type'
+import type {
+  Voucher,
+  VoucherAssignmentResponse,
+  VoucherAssignUsersPayload,
+  VoucherValidateRequest,
+  VoucherValidateResponse
+} from '@/types/voucher.type'
 import http from '@/utils/http'
 
 const VOUCHER_URL = '/vouchers'
@@ -51,6 +57,10 @@ const voucherApi = {
 
   getAssignments(voucherId: number) {
     return http.get<ApiResponse<VoucherAssignmentResponse[]>>(`${VOUCHER_URL}/${voucherId}/assignments`)
+  },
+
+  validateVoucher(data: VoucherValidateRequest) {
+    return http.post<ApiResponse<VoucherValidateResponse>>(`${VOUCHER_URL}/validate`, data)
   }
 }
 

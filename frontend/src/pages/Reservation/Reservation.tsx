@@ -7,6 +7,7 @@ import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Ste
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
 import reservationApi from '@/apis/reservation.api'
+import paymentApi from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -14,6 +15,7 @@ import Progress from '@/pages/Reservation/components/Progress'
 import { useSearchParams } from 'react-router-dom'
 import layoutApi from '@/apis/layout.api'
 import type { TableLayout } from '@/types/layout'
+import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
@@ -52,9 +54,10 @@ export default function Reservation() {
 
   // Reservation state
   const [reservationId, setReservationId] = useState<number | null>(null)
+  const [reservationCode, setReservationCode] = useState<string | null>(null)
   const [expiratedAt, setExpiratedAt] = useState<string | null>(null) // Thời gian hết hạn reservation
   const [isCreatingReservation, setIsCreatingReservation] = useState(false)
-  const [isPaid, setIsPaid] = useState(false) // Đánh dấu đã thanh toán
+  const [isPaid] = useState(false) // Đánh dấu đã thanh toán
   const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
   const [isProcessingChatbotParams, setIsProcessingChatbotParams] = useState(false)
@@ -207,10 +210,14 @@ export default function Reservation() {
         try {
           await reservationApi.cancelReservation(reservationId)
           setReservationId(null)
+          setReservationCode(null)
+          setExpiratedAt(null)
         } catch (error) {
           console.error('Failed to cancel reservation:', error)
           // Vẫn xóa reservationId để tránh lỗi UI, nhưng log lỗi
           setReservationId(null)
+          setReservationCode(null)
+          setExpiratedAt(null)
         }
       }
     } else {
@@ -254,6 +261,7 @@ export default function Reservation() {
 
             if (response.data.data) {
               setReservationId(response.data.data.reservationId)
+              setReservationCode(response.data.data.code)
               setExpiratedAt(response.data.data.expiratedAt)
             }
           } catch (error) {
@@ -390,6 +398,7 @@ export default function Reservation() {
 
         if (response.data.data) {
           setReservationId(response.data.data.reservationId)
+          setReservationCode(response.data.data.code)
           setExpiratedAt(response.data.data.expiratedAt)
           setCurrentStep(3)
         }
@@ -446,16 +455,42 @@ export default function Reservation() {
     }
   }
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!window.confirm('Xác nhận thanh toán tiền cọc?')) return
-    setIsProcessing(true)
-    // Giả lập call API Payment
-    setTimeout(() => {
+
+    if (!reservationCode) {
+      alert('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
+      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+
+      setPaymentResultToSession({
+        reservationCode,
+        amount: depositAmount,
+        paidAt: new Date().toISOString()
+      })
+
+      const response = await paymentApi.createPayment({
+        reservationCode,
+        method: 'PAYOS'
+      })
+
+      const checkoutUrl = response.data.data
+      if (!checkoutUrl) {
+        throw new Error('Không nhận được liên kết thanh toán')
+      }
+
+      window.location.href = checkoutUrl
+    } catch (error) {
+      console.error('Failed to create payment link:', error)
+    } finally {
       setIsProcessing(false)
-      setIsPaid(true) // Đánh dấu đã thanh toán
-      alert('Thanh toán thành công! Mã đặt bàn của bạn là #BK-2024888')
-      window.location.href = '/' // Quay về trang chủ
-    }, 2000)
+    }
   }
 
   const handleCancel = async () => {

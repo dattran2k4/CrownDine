@@ -41,4 +41,6 @@ public interface OrderService {
     OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username);
 
     OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
+
+    void markAsPaid(Order order);
 }

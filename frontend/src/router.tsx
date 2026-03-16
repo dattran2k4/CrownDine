@@ -7,6 +7,7 @@ import MenuDetail from '@/pages/MenuDetail'
 import Register from '@/pages/Register'
 import Reservation from '@/pages/Reservation'
 import Chat from '@/pages/Chat/Chat'
+import PaymentResult from '@/pages/PaymentResult'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
@@ -35,6 +36,8 @@ const router = createBrowserRouter([
       { path: '/menu', element: <Menu /> },
       { path: '/menu/item/:id', element: <MenuDetail /> },
       { path: '/menu/combo/:id', element: <MenuDetail /> },
+      { path: path.paymentSuccess, element: <PaymentResult /> },
+      { path: path.paymentFailure, element: <PaymentResult /> },
       {
         element: <ProtectedRoute />,
         children: [

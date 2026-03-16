@@ -52,6 +52,7 @@ public class AppConfig {
                         .requestMatchers("/api/feedbacks/items/**").permitAll()
                         .requestMatchers("/api/payments/payos-ipn").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider())

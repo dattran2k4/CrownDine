@@ -93,6 +93,29 @@ VALUES
 -- Gán cứng ID = 3
 (3, 'johncena', '$2a$10$llGgE5VlZzM0.pCzbOLGWev.cqdovrjSsq0lGM87wo0FVgATXsh12', '/img/avatars/cena.png', 'johncena@gmail.com', 'John', 'Cena', '1998-05-14', 'MALE', 'ACTIVE', '0913324344', NOW(), NOW());
 
+INSERT INTO users (id, username, password, avatar_url, email, first_name, last_name, date_of_birth, gender, status, phone, verification_code, verification_expiration, created_at, updated_at)
+VALUES
+(4, 'minhanh', '$2a$10$f8K0p/rAvE9SrsZcahthQuKA79pIAqGt9APO14f3.czxnCPp9q6Iu', NULL, 'minhanh@crowndine.local', 'Minh', 'Anh', '2001-03-12', 'FEMALE', 'ACTIVE', '0901100001', NULL, NULL, NOW(), NOW()),
+(5, 'thutrang', '$2a$10$OEYH9he8BWJRnCytYVcmB.W4lk6WlwAHnAgVf9aQHZch5gJ.HUiAu', NULL, 'thutrang@crowndine.local', 'Thu', 'Trang', '2000-07-24', 'FEMALE', 'ACTIVE', '0901100002', NULL, NULL, NOW(), NOW()),
+(6, 'quochuy', '$2a$10$2XGuYngpcuowaqhZbvTLGuhlNg5n3sn9GdbzQGyWcMvKm3G/FOZbS', NULL, 'quochuy@crowndine.local', 'Quoc', 'Huy', '1999-11-08', 'MALE', 'ACTIVE', '0901100003', NULL, NULL, NOW(), NOW()),
+(7, 'ngocmai', '$2a$10$gYToj5teNH/bDuMaboswr.RCWyw3mnhxVw7fXYTRDVoeh/qy5eVdm', NULL, 'ngocmai@crowndine.local', 'Ngoc', 'Mai', '2002-01-19', 'FEMALE', 'ACTIVE', '0901100004', NULL, NULL, NOW(), NOW()),
+(8, 'thanhtung', '$2a$10$XDav3qdVlNkr58OGZZVm7uGdQs4D9kAeqw555rq0lo6q6NG7EB87C', NULL, 'thanhtung@crowndine.local', 'Thanh', 'Tung', '1998-09-03', 'MALE', 'ACTIVE', '0901100005', NULL, NULL, NOW(), NOW()),
+(9, 'baovy', '$2a$10$2/BYSYBiyru0TusrcILpHejPJXShhDUbLe4AhvAvX2Loy28hZuZzq', NULL, 'baovy@crowndine.local', 'Bao', 'Vy', '2003-06-15', 'FEMALE', 'ACTIVE', '0901100006', NULL, NULL, NOW(), NOW()),
+(10, 'hoangyen', '$2a$10$k0Pe70Q6Ng7btefKDxPI9.g6dS5L/078.eb9ykojULQHrhj6QrEaG', NULL, 'hoangyen@crowndine.local', 'Hoang', 'Yen', '2001-12-02', 'FEMALE', 'ACTIVE', '0901100007', NULL, NULL, NOW(), NOW()),
+(11, 'ductri', '$2a$10$RQhy/.FDwnIHKS7vUx6gBeFviqoEEfPe8dAQowIlwhBwUoanbtKJ.', NULL, 'ductri@crowndine.local', 'Duc', 'Tri', '1997-04-27', 'MALE', 'ACTIVE', '0901100008', NULL, NULL, NOW(), NOW()),
+(12, 'kimngan', '$2a$10$/lnvxAHZOhbb0wjfK40LYeEyd.crr3ikTYemydilZW6JlTyDdOp9e', NULL, 'kimngan@crowndine.local', 'Kim', 'Ngan', '2004-08-14', 'FEMALE', 'ACTIVE', '0901100009', NULL, NULL, NOW(), NOW()),
+(13, 'annhi', '$2a$10$V53.Yc2EmYI0byjNWMYgoOAHUCRSQrQ0D5gbwu8Kau.E8j9ajjBGG', NULL, 'annhi@crowndine.local', 'An', 'Nhi', '2002-10-09', 'FEMALE', 'INACTIVE', '0901100010', NULL, NULL, NOW(), NOW()),
+(14, 'nguyenkhoa', '$2a$10$n8Pl2zirf/Gca5l8aTKQbuEGfol/MzgtbtXXInKkINtYbn37OX0v6', NULL, 'nguyenkhoa.staff@crowndine.local', 'Nguyen', 'Khoa', '1995-05-17', 'MALE', 'ACTIVE', '0902200001', NULL, NULL, NOW(), NOW()),
+(15, 'thuyduong', '$2a$10$qPuhubmfya.dzZPjN7n8C.e7XkwhZEIs2NWc9duaRhJehMeJxbyT2', NULL, 'thuyduong.staff@crowndine.local', 'Thuy', 'Duong', '1996-02-11', 'FEMALE', 'ACTIVE', '0902200002', NULL, NULL, NOW(), NOW()),
+(16, 'hoanglong', '$2a$10$xU6pg09xUTnIaiUY3EAGAO7DArkh0gGi7VXFIH7jomraEsOo4fp5q', NULL, 'hoanglong.staff@crowndine.local', 'Hoang', 'Long', '1997-09-22', 'MALE', 'ACTIVE', '0902200003', NULL, NULL, NOW(), NOW()),
+(17, 'mylinh', '$2a$10$ER.uoSiYqEtSX.QmliHXHOMBFrCIGwYp6cgUxcgdAq7kSVgfZPohW', NULL, 'mylinh.staff@crowndine.local', 'My', 'Linh', '1998-01-30', 'FEMALE', 'ACTIVE', '0902200004', NULL, NULL, NOW(), NOW()),
+(18, 'quanghuy', '$2a$10$sCOOYR47CI8tKPz0hGRceusjfeNYVcxnRnTcKsWikFPmLPy0rYWXG', NULL, 'quanghuy.staff@crowndine.local', 'Quang', 'Huy', '1999-07-06', 'MALE', 'ACTIVE', '0902200005', NULL, NULL, NOW(), NOW()),
+(19, 'diemmy', '$2a$10$ymkp.wkR2qE8V9nlgYNKQe6xfFEpvlNhO3hwhryYnsqii0pqAaMpC', NULL, 'diemmy.staff@crowndine.local', 'Diem', 'My', '2000-03-28', 'FEMALE', 'ACTIVE', '0902200006', NULL, NULL, NOW(), NOW()),
+(20, 'phuocan', '$2a$10$DFYEE5OIHU3QWgGaiWXt7OTV6zRtY.GDeq4zTnx3HtZdAeCK0KsCe', NULL, 'phuocan.staff@crowndine.local', 'Phuoc', 'An', '2001-11-13', 'MALE', 'ACTIVE', '0902200007', NULL, NULL, NOW(), NOW()),
+(21, 'tramlam', '$2a$10$YAuhlJBlUbowaD.GhtuG3u962klwTxWWcKLthL5Xk868LXyHPepty', NULL, 'tramlam.staff@crowndine.local', 'Tram', 'Lam', '2003-04-16', 'FEMALE', 'ACTIVE', '0902200008', NULL, NULL, NOW(), NOW()),
+(22, 'anhkiet', '$2a$10$1g8VX1G3WNLT.iei7k2.IeWfAQcajgeWqfL95.4Y4KO8AXMONbzW2', NULL, 'anhkiet.staff@crowndine.local', 'Anh', 'Kiet', '2005-08-21', 'MALE', 'ACTIVE', '0902200009', NULL, NULL, NOW(), NOW()),
+(23, 'thanhha', '$2a$10$dZr/DYrilsusmew//sI45OQp0/CS.M10j82gkgVa8TdHMFTGhoKqq', NULL, 'thanhha.staff@crowndine.local', 'Thanh', 'Ha', '2006-12-05', 'FEMALE', 'INACTIVE', '0902200010', NULL, NULL, NOW(), NOW());
+
 INSERT INTO user_roles (user_id, role_id)
 VALUES (1, 1),
        (1, 2),
@@ -100,6 +123,28 @@ VALUES (1, 1),
        (2, 2),
        (2, 3),
        (3, 3);
+
+INSERT INTO user_roles (user_id, role_id)
+VALUES (4, 3),
+       (5, 3),
+       (6, 3),
+       (7, 3),
+       (8, 3),
+       (9, 3),
+       (10, 3),
+       (11, 3),
+       (12, 3),
+       (13, 3),
+       (14, 2),
+       (15, 2),
+       (16, 2),
+       (17, 2),
+       (18, 2),
+       (19, 2),
+       (20, 2),
+       (21, 2),
+       (22, 2),
+       (23, 2);
 
 INSERT INTO user_vouchers (customer_id, voucher_id, created_at, updated_at)
 VALUES (2, 1, NOW(), NOW()),

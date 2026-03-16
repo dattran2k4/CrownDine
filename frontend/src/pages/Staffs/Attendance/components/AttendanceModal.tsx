@@ -7,12 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import attendanceApi from '@/apis/attendance.api'
-import {
-  ATTENDANCE_STATUS_LABELS,
-  ATTENDANCE_STATUS_COLORS,
-  ATTENDANCE_TYPE_LABELS,
-  type EAttendanceType
-} from '@/types/attendance.type'
+import { ATTENDANCE_STATUS_LABELS, ATTENDANCE_TYPE_LABELS, type EAttendanceType } from '@/types/attendance.type'
 import type { ShiftResponse } from '@/types/attendance.type'
 import { toast } from 'sonner'
 
@@ -82,9 +77,15 @@ export function AttendanceModal({
     if (defaultShiftId && !shiftId) setShiftId(defaultShiftId)
   }, [defaultShiftId, shiftId])
 
-  const currentStatus = employeeInfo?.currentStatus
-  const statusLabel = currentStatus ? ATTENDANCE_STATUS_LABELS[currentStatus] : ''
-  const statusColor = currentStatus ? ATTENDANCE_STATUS_COLORS[currentStatus] : ''
+  // Khi đổi ca làm việc → cập nhật giờ Vào/Ra theo ca đó
+  useEffect(() => {
+    if (!shiftId || !shifts.length) return
+    const shift = shifts.find((s: ShiftResponse) => s.id === shiftId)
+    if (shift?.startTime != null && shift?.endTime != null) {
+      setCheckInAt(shift.startTime.slice(0, 5))
+      setCheckOutAt(shift.endTime.slice(0, 5))
+    }
+  }, [shiftId, shifts])
 
   const handleSave = () => {
     const [d, m, y] = workDate.split('/').map(Number)
@@ -147,16 +148,6 @@ export function AttendanceModal({
               <CalendarDays className='h-4 w-4' />
               Mã NV: {employeeInfo.staffCode}
             </span>
-            {currentStatus && (
-              <span
-                className={cn(
-                  'rounded-full px-3 py-0.5 text-xs font-medium text-white',
-                  statusColor
-                )}
-              >
-                {statusLabel}
-              </span>
-            )}
           </div>
         )}
 

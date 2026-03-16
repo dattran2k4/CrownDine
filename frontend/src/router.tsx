@@ -83,7 +83,7 @@ const router = createBrowserRouter([
           },
           {
             path: 'schedule',
-            element: <WorkSchedule />
+            element: <WorkSchedule isAdmin={true} />
           },
           {
             path: 'layout',

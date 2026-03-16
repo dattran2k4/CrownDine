@@ -1,7 +1,7 @@
 package com.crowndine.ai.tool.method;
 
-import com.crowndine.ai.schema.request.TopSellingProductsRequest;
-import com.crowndine.ai.schema.response.TopSellingProductsResponse;
+import com.crowndine.ai.schema.request.TopSellingCombosRequest;
+import com.crowndine.ai.schema.response.TopSellingCombosResponse;
 import com.crowndine.ai.tool.AIToolNames;
 import com.crowndine.service.combo.ComboService;
 import org.springframework.ai.tool.annotation.Tool;
@@ -18,12 +18,12 @@ public class AdminProductMethodTools {
         this.comboService = comboService;
     }
 
-    @Tool(name = AIToolNames.TOP_SELLING_PRODUCTS_TOOL,
-            description = "Lấy danh sách combo bán chạy nhất của CrownDine dựa trên soldCount. Có thể truyền limit để giới hạn số lượng kết quả")
-    public TopSellingProductsResponse getTopSellingProducts(TopSellingProductsRequest request) {
-        List<TopSellingProductsResponse.TopSellingProduct> combos = comboService.getTopSellingCombos(request.limit())
+    @Tool(name = AIToolNames.TOP_SELLING_COMBOS_TOOL,
+            description = "Lấy danh sach combo ban chay nhat cua CrownDine dua tren soldCount. Tool nay chi tra ve combo, khong tra ve item le. Co the truyen limit de gioi han so luong ket qua.")
+    public TopSellingCombosResponse getTopSellingCombos(TopSellingCombosRequest request) {
+        List<TopSellingCombosResponse.TopSellingCombo> combos = comboService.getTopSellingCombos(request.limit())
                 .stream()
-                .map(combo -> new TopSellingProductsResponse.TopSellingProduct(
+                .map(combo -> new TopSellingCombosResponse.TopSellingCombo(
                         combo.getId(),
                         combo.getName(),
                         combo.getSoldCount(),
@@ -31,6 +31,6 @@ public class AdminProductMethodTools {
                 ))
                 .toList();
 
-        return new TopSellingProductsResponse("combo", combos);
+        return new TopSellingCombosResponse(combos);
     }
 }

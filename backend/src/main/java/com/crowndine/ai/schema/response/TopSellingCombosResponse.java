@@ -3,11 +3,10 @@ package com.crowndine.ai.schema.response;
 import java.math.BigDecimal;
 import java.util.List;
 
-public record TopSellingProductsResponse(
-        String productType,
-        List<TopSellingProduct> products
+public record TopSellingCombosResponse(
+        List<TopSellingCombo> combos
 ) {
-    public record TopSellingProduct(
+    public record TopSellingCombo(
             Long id,
             String name,
             Long soldCount,

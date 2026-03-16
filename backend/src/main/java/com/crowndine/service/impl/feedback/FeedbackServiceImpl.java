@@ -121,6 +121,13 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .stream().map(this::mapToResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<FeedbackResponse> getAllFeedbacks() {
+        return feedbackRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream().map(this::mapToResponse).toList();
+    }
+
     private void validateTarget(OrderDetail detail, FeedbackCreateRequest request) {
         boolean hasItem = request.getItemId() != null;
         boolean hasCombo = request.getComboId() != null;
@@ -170,6 +177,11 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .comboId(feedback.getCombo() != null ? feedback.getCombo().getId() : null)
                 .orderDetailId(feedback.getOrderDetail() != null ? feedback.getOrderDetail().getId() : null)
                 .userId(feedback.getUser() != null ? feedback.getUser().getId() : null)
+                .fullName(feedback.getUser() != null ? feedback.getUser().getFullName() : (feedback.getGuestName() != null ? feedback.getGuestName() : "Người dùng ẩn danh"))
+                .avatarUrl(feedback.getUser() != null ? feedback.getUser().getAvatarUrl() : null)
+                .guestName(feedback.getGuestName())
+                .isFeatured(feedback.getIsFeatured())
+                .status(feedback.getStatus())
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();

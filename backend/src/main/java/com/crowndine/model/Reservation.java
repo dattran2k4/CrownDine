@@ -45,7 +45,7 @@ public class Reservation extends AbstractEntity<Long> {
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    private User customer;
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "restaurant_table_id")

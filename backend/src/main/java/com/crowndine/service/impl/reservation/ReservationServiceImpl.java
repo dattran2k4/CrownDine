@@ -76,10 +76,10 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setStatus(r.getStatus());
         resp.setTableName(r.getTable() != null ? r.getTable().getName() : null);
 
-        if (r.getCustomer() != null) {
-            resp.setCustomerName(r.getCustomer().getFullName());
-            resp.setPhone(r.getCustomer().getPhone());
-            resp.setEmail(r.getCustomer().getEmail());
+        if (r.getUser() != null) {
+            resp.setCustomerName(r.getUser().getFullName());
+            resp.setPhone(r.getUser().getPhone());
+            resp.setEmail(r.getUser().getEmail());
         }
 
         if (r.getOrder() != null) {
@@ -127,7 +127,7 @@ public class ReservationServiceImpl implements ReservationService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("date"), Sort.Order.desc("startTime"), Sort.Order.desc("createdAt")));
         User user = getUserByUserName(username);
 
-        Page<Reservation> reservationPage = reservationRepository.findByCustomer_Id(user.getId(), pageable);
+        Page<Reservation> reservationPage = reservationRepository.findByUser_Id(user.getId(), pageable);
 
         List<ReservationHistoryResponse> data = reservationPage.getContent().stream().map(this::toHistoryResponse).toList();
 
@@ -160,10 +160,10 @@ public class ReservationServiceImpl implements ReservationService {
         Order order = reservation.getOrder();
         // Tự động tạo order trống nếu chưa có (khi khách không chọn món)
         if (order == null) {
-            if (reservation.getCustomer() == null) {
+            if (reservation.getUser() == null) {
                 throw new ResourceNotFoundException("Customer not found for reservation");
             }
-            order = orderService.createOrderForReservation(reservation, reservation.getCustomer());
+            order = orderService.createOrderForReservation(reservation, reservation.getUser());
             reservation.setOrder(order);
             reservationRepository.save(reservation);
         }
@@ -226,7 +226,7 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
         reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
-        reservation.setCustomer(user);
+        reservation.setUser(user);
         reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);
 
@@ -345,7 +345,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
-        if (!reservation.getCustomer().getId().equals(user.getId())) {
+        if (!reservation.getUser().getId().equals(user.getId())) {
             throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
         }
     }

@@ -1,5 +1,5 @@
 import voucherApi from '@/apis/voucher.api'
-import type { VoucherValidateResponse } from '@/types/voucher.type'
+import type { VoucherValidateRequest, VoucherValidateResponse } from '@/types/voucher.type'
 import { useMutation } from '@tanstack/react-query'
 import { Loader2, TicketPercent } from 'lucide-react'
 import { useState } from 'react'
@@ -14,26 +14,15 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
 
-  const validateVoucherMutation = useMutation({
-    mutationFn: async (code: string) => {
-      if (!orderId) {
-        throw new Error('Đơn hàng chưa sẵn sàng để kiểm tra voucher.')
-      }
-
-      const response = await voucherApi.validateVoucher({
-        code,
-        orderId
-      })
-
-      return response.data.data
-    },
-    onSuccess: (data) => {
+  const { mutate: validateVoucher, isPending: isValidatingVoucher } = useMutation({
+    mutationFn: (body: VoucherValidateRequest) => voucherApi.validateVoucher(body),
+    onSuccess: (response) => {
+      const data = response.data.data
       setVoucherPreview(data)
       setVoucherCode(data.code)
       onPreviewChange(data)
     },
-    onError: (error) => {
-      console.error('Failed to validate voucher:', error)
+    onError: () => {
       setVoucherPreview(null)
       onPreviewChange(null)
     }
@@ -52,7 +41,10 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
       return
     }
 
-    validateVoucherMutation.mutate(normalizedCode)
+    validateVoucher({
+      code: normalizedCode,
+      orderId
+    })
   }
 
   const handleVoucherCodeChange = (value: string) => {
@@ -83,10 +75,10 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
         <button
           type='button'
           onClick={handleValidateVoucher}
-          disabled={validateVoucherMutation.isPending || disabled}
+          disabled={isValidatingVoucher || disabled}
           className='inline-flex items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70'
         >
-          {validateVoucherMutation.isPending ? (
+          {isValidatingVoucher ? (
             <span className='flex items-center gap-2'>
               <Loader2 className='h-4 w-4 animate-spin' /> Đang kiểm tra...
             </span>

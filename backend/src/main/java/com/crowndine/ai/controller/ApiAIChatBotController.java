@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import java.security.Principal;
+
 @RestController
 @Validated
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class ApiAIChatBotController {
     private final AIAdminChatService aiAdminChatService;
 
     @PostMapping(value = "/chat", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Flux<String> chat(@Valid @RequestBody AIChatRequest request) {
-        return aiAdminChatService.chatStream(request.getChatId(), request.getQuery());
+    public Flux<String> chat(@Valid @RequestBody AIChatRequest request, Principal principal) {
+        return aiAdminChatService.chatStream(principal.getName(), request.getMessage());
     }
 }

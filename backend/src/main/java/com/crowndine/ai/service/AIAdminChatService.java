@@ -3,7 +3,7 @@ package com.crowndine.ai.service;
 import com.crowndine.ai.tool.AIToolNames;
 import com.crowndine.ai.tool.method.AdminTableMethodTools;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
@@ -23,19 +23,20 @@ public class AIAdminChatService {
                         Bạn là trợ lý ảo Admin cho nhà hàng 'Vinh Quang'.
                         Nhiệm vụ của bạn là hỗ trợ quản lý tra cứu dữ liệu.
                         Hãy luôn sử dụng các công cụ (tools) có sẵn để lấy số liệu thực tế trước khi trả lời.
-                        Trả lời ngắn gọn, chuyên n ghiệp bằng tiếng Việt.
+                        Trả lời ngắn gọn, chuyên nghiệp bằng tiếng Việt.
                         """)
                 .defaultAdvisors(
-                        PromptChatMemoryAdvisor.builder(chatMemory).build(),
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         new SimpleLoggerAdvisor())
                 .defaultToolNames(AIToolNames.REVENUE_REPORT_TOOL)
                 .defaultTools(adminTableMethodTools)
                 .build();
     }
 
-    public Flux<String> chatStream(String chatId, String message) {
+    public Flux<String> chatStream(String username, String message) {
         return this.chatClient.prompt()
                 .user(message)
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, username))
                 .stream()
                 .content();
     }

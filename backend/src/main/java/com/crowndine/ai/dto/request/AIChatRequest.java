@@ -8,9 +8,6 @@ import lombok.Setter;
 @Setter
 public class AIChatRequest {
 
-    @NotBlank(message = "chatId không được để trống")
-    private String chatId;
-
-    @NotBlank(message = "query không được để trống")
-    private String query;
+    @NotBlank(message = "message không được để trống")
+    private String message;
 }

@@ -23,7 +23,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @RequestMapping("/api/attendances")
 @Slf4j(topic = "API-ATTENDANCE-CONTROLLER")
-@PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+@PreAuthorize("hasAnyAuthority('ADMIN')")
 public class ApiAttendanceController {
 
     private final AttendanceService attendanceService;

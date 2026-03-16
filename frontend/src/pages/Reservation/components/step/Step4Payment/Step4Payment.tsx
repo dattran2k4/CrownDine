@@ -5,6 +5,9 @@ import type { OrderDetailResponse } from '@/types/reservation.type'
 import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 import type { UserSummary } from '@/types/profile.type'
+import type { VoucherValidateResponse } from '@/types/voucher.type'
+import { useState } from 'react'
+import VoucherInput from '@/pages/Reservation/components/VoucherInput'
 
 interface CartItem {
   id: number
@@ -42,6 +45,7 @@ const Step4Payment = ({
   isLoadingOrderDetails,
   expiratedAt
 }: Props) => {
+  const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Khách'
   const genderLabel =
     user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : user?.gender === 'OTHER' ? 'Khác' : ''
@@ -52,6 +56,9 @@ const Step4Payment = ({
   // Sử dụng dữ liệu từ API nếu có, nếu không thì tính từ local state
   const itemsTotal = orderDetails?.itemsTotal ?? foodTotal
   const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+  const previewOrderAmount = voucherPreview?.orderAmount ?? itemsTotal
+  const previewDiscountAmount = voucherPreview?.discountAmount ?? 0
+  const previewFinalAmount = voucherPreview?.finalAmount ?? itemsTotal
 
   // Tính depositAmount: nếu có orderDetails thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
   const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
@@ -64,7 +71,7 @@ const Step4Payment = ({
 
   if (isLoadingOrderDetails) {
     return (
-      <div className='flex min-h-[400px] items-center justify-center'>
+      <div className='min-100 flex items-center justify-center'>
         <div className='flex flex-col items-center gap-4 text-gray-400'>
           <Loader2 className='h-8 w-8 animate-spin' />
           <p>Đang tải thông tin thanh toán...</p>
@@ -187,7 +194,7 @@ const Step4Payment = ({
           {itemsTotal > 0 && (
             <>
               <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
-                <span className='text-gray-700'>Tổng tiền món ăn</span>
+                <span className='text-gray-700'>Tổng tiền món ăn tạm tính</span>
                 <span className='font-semibold text-gray-900'>{formatCurrency(itemsTotal)}</span>
               </div>
               <div className='flex justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm'>
@@ -197,11 +204,6 @@ const Step4Payment = ({
             </>
           )}
 
-          <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
-            <span className='text-gray-700'>Cọc bàn</span>
-            <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
-          </div>
-
           {itemsTotal > 0 && (
             <div className='flex justify-between rounded-lg bg-gray-100 p-3 text-sm'>
               <span className='text-gray-600'>Món ăn còn lại (Thanh toán sau)</span>
@@ -209,13 +211,45 @@ const Step4Payment = ({
             </div>
           )}
 
+          <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
+            <span className='text-gray-700'>Cọc bàn</span>
+            <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
+          </div>
+
           <div className='mt-4 flex items-center justify-between rounded-lg border-2 border-orange-200 bg-orange-50 p-5'>
             <div>
-              <span className='mb-1 block text-lg font-bold text-gray-900'>Tổng thanh toán ngay</span>
-              <span className='text-xs text-gray-600'>Đã bao gồm VAT & Phí dịch vụ</span>
+              <span className='mb-1 block text-xl font-extrabold text-gray-900'>Tổng thanh toán ngay</span>
+              <span className='text-xs text-gray-600'>
+                Mức thanh toán hiện tại trước khi xác nhận áp dụng voucher chính thức
+              </span>
             </div>
-            <span className='text-3xl font-bold text-orange-600'>{formatCurrency(depositAmount)}</span>
+            <span className='text-4xl font-black text-orange-600'>{formatCurrency(depositAmount)}</span>
           </div>
+
+          <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={setVoucherPreview} />
+
+          {voucherPreview && (
+            <div className='space-y-3 rounded-2xl border border-emerald-200 bg-white p-4'>
+              <div>
+                <p className='text-sm font-semibold text-emerald-800 uppercase'>Chi tiết ưu đãi</p>
+                <p className='mt-1 text-xs text-gray-500'>
+                  Mã voucher đang giúp bạn xem trước mức giảm cho phần món ăn.
+                </p>
+              </div>
+              <div className='flex justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm'>
+                <span className='text-gray-700'>Tổng tiền món ăn trước ưu đãi</span>
+                <span className='font-semibold text-gray-400 line-through'>{formatCurrency(previewOrderAmount)}</span>
+              </div>
+              <div className='flex justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm'>
+                <span className='text-emerald-800'>Số tiền được giảm</span>
+                <span className='font-semibold text-emerald-700'>-{formatCurrency(previewDiscountAmount)}</span>
+              </div>
+              <div className='flex justify-between rounded-lg border border-neutral-200 bg-white p-3 text-sm'>
+                <span className='text-gray-700'>Tổng tiền món sau ưu đãi</span>
+                <span className='text-lg font-bold text-gray-900'>{formatCurrency(previewFinalAmount)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -231,7 +265,7 @@ const Step4Payment = ({
         <button
           onClick={onPay}
           disabled={isProcessing}
-          className='flex flex-[2] items-center justify-center gap-2 rounded-lg bg-orange-500 px-8 py-3 font-bold text-white transition-colors hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70'
+          className='flex flex-2 items-center justify-center gap-2 rounded-lg bg-orange-500 px-8 py-3 font-bold text-white transition-colors hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70'
         >
           {isProcessing ? (
             <span className='flex items-center gap-2'>

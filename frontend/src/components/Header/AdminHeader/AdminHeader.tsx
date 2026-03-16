@@ -27,7 +27,7 @@ export default function AdminHeader() {
       children: [
         { label: 'Danh sách nhân viên', href: '/admin/staff' },
         { label: 'Lịch làm việc', href: '/admin/schedule' },
-        { label: 'Chấm Công', href: '/admin/timekeeping' }
+        { label: 'Bảng chấm công', href: '/admin/attendance' }
       ]
     },
     { label: 'Quản lý phòng bàn', href: '/admin/layout' },

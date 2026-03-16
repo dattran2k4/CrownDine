@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
@@ -8,6 +9,7 @@ import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
 import reservationApi from '@/apis/reservation.api'
 import paymentApi from '@/apis/payment.api'
+import type { CreatePaymentRequest } from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -17,7 +19,6 @@ import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [isProcessing, setIsProcessing] = useState(false) // Loading state for payment
 
   // Data State
   const [guests, setGuests] = useState(2)
@@ -59,6 +60,34 @@ export default function Reservation() {
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
 
   const authUser = useAuthStore((state) => state.user)
+  const paymentMutation = useMutation({
+    mutationFn: (body: CreatePaymentRequest) => paymentApi.createPayment(body),
+    onSuccess: (response) => {
+      const checkoutUrl = response.data.data
+      const currentReservationCode = reservationCode
+
+      if (!currentReservationCode) {
+        throw new Error('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
+      }
+
+      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
+      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+
+      if (!checkoutUrl) {
+        throw new Error('Không nhận được liên kết thanh toán')
+      }
+
+      setPaymentResultToSession({
+        reservationCode: currentReservationCode,
+        amount: depositAmount,
+        paidAt: new Date().toISOString()
+      })
+
+      window.location.href = checkoutUrl
+    },
+  })
+  const isProcessing = paymentMutation.isPending
 
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
@@ -322,7 +351,7 @@ export default function Reservation() {
     }
   }
 
-  const handlePayment = async () => {
+  const handlePayment = () => {
     if (!window.confirm('Xác nhận thanh toán tiền cọc?')) return
 
     if (!reservationCode) {
@@ -330,34 +359,10 @@ export default function Reservation() {
       return
     }
 
-    try {
-      setIsProcessing(true)
-      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
-      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
-      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
-
-      setPaymentResultToSession({
-        reservationCode,
-        amount: depositAmount,
-        paidAt: new Date().toISOString()
-      })
-
-      const response = await paymentApi.createPayment({
-        reservationCode,
-        method: 'PAYOS'
-      })
-
-      const checkoutUrl = response.data.data
-      if (!checkoutUrl) {
-        throw new Error('Không nhận được liên kết thanh toán')
-      }
-
-      window.location.href = checkoutUrl
-    } catch (error) {
-      console.error('Failed to create payment link:', error)
-    } finally {
-      setIsProcessing(false)
-    }
+    paymentMutation.mutate({
+      reservationCode,
+      method: 'PAYOS'
+    })
   }
 
   const handleCancel = async () => {

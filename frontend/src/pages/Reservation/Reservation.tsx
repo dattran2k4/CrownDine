@@ -7,11 +7,13 @@ import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Ste
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
+import orderApi from '@/apis/order.api'
 import reservationApi from '@/apis/reservation.api'
 import paymentApi from '@/apis/payment.api'
 import type { CreatePaymentRequest } from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
@@ -58,12 +60,38 @@ export default function Reservation() {
   const [isPaid] = useState(false) // Đánh dấu đã thanh toán
   const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
+  const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    setVoucherPreview(null)
+    setAppliedVoucherCode(null)
+  }, [reservationId])
 
   const authUser = useAuthStore((state) => state.user)
   const paymentMutation = useMutation({
-    mutationFn: (body: CreatePaymentRequest) => paymentApi.createPayment(body),
-    onSuccess: (response) => {
-      const checkoutUrl = response.data.data
+    mutationFn: async ({
+      paymentRequest,
+      voucherCode,
+      orderId
+    }: {
+      paymentRequest: CreatePaymentRequest
+      voucherCode?: string
+      orderId?: number
+    }) => {
+      if (voucherCode && orderId && voucherCode !== appliedVoucherCode) {
+        await orderApi.applyVoucherToOrder(orderId, { code: voucherCode })
+        setAppliedVoucherCode(voucherCode)
+      }
+
+      const paymentResponse = await paymentApi.createPayment(paymentRequest)
+
+      return {
+        paymentResponse
+      }
+    },
+    onSuccess: ({ paymentResponse }) => {
+      const checkoutUrl = paymentResponse.data.data
       const currentReservationCode = reservationCode
 
       if (!currentReservationCode) {
@@ -91,6 +119,7 @@ export default function Reservation() {
 
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
+
   // --- HANDLERS ---
   const toggleTable = async (table: Table) => {
     // Nếu đã thanh toán, không cho phép thay đổi bàn
@@ -360,8 +389,12 @@ export default function Reservation() {
     }
 
     paymentMutation.mutate({
-      reservationCode,
-      method: 'PAYOS'
+      paymentRequest: {
+        reservationCode,
+        method: 'PAYOS'
+      },
+      voucherCode: voucherPreview?.code,
+      orderId: orderDetails?.orderId
     })
   }
 
@@ -443,6 +476,8 @@ export default function Reservation() {
               orderDetails={orderDetails}
               isLoadingOrderDetails={isLoadingOrderDetails}
               expiratedAt={expiratedAt}
+              voucherPreview={voucherPreview}
+              onVoucherPreviewChange={setVoucherPreview}
             />
           )}
         </div>

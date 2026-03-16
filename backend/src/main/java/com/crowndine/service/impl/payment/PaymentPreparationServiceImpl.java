@@ -77,16 +77,19 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
 
         Order order = reservation.getOrder();
         BigDecimal totalOrder = calculateReservationOrderTotal(order);
+        log.info("Total order amount {} for order id {}", totalOrder, order.getId());
         BigDecimal tableDeposit = calculateTableDeposit(reservation);
+        log.info("Table id {} deposit: {}", reservation.getTable().getId(), tableDeposit);
         BigDecimal amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
+        log.info("Total amount to pay: {}", amountToPay);
 
-        if (order != null && order.getVoucher() != null) {
-            BigDecimal discount = calculationService.calculateVoucherDiscount(amountToPay, order.getVoucher());
+        if (order.getVoucher() != null) {
+            BigDecimal discount = calculationService.calculateVoucherDiscount(totalOrder, order.getVoucher());
+            log.info("discount: {}", discount);
             amountToPay = amountToPay.subtract(discount);
+            log.info("Total amount to pay after discount: {}", amountToPay);
         }
 
-        log.info("Table deposit (total): {}", tableDeposit);
-        log.info("Total amount to pay: {}", amountToPay);
         return new PreparedPayment(payment, amountToPay, "Thanh toán đặt cọc bàn");
     }
 

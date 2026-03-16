@@ -221,7 +221,7 @@ CREATE TABLE `tokens` (
                           `updated_at` datetime(6) DEFAULT NULL,
                           `username` varchar(255) NOT NULL,
                           `token` text,
-                          `device` VARCHAR(100),
+                          `device` VARCHAR(1000),
                           `ip_address` VARCHAR(45),
                           `is_revoked` bit(1) DEFAULT NULL,
                           `refresh_token` varchar(1000) DEFAULT NULL,

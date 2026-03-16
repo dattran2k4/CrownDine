@@ -26,7 +26,7 @@ public class Token extends AbstractEntity<Long> {
     @Column(name = "refresh_token", length = 1000)
     private String refreshToken;
 
-    @Column(name = "device")
+    @Column(name = "device", length = 1000)
     private String device;
 
     @Column(name = "ip_address")

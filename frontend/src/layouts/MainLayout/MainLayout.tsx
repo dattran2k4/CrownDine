@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 
 import Footer from '@/components/Footer'
 import Header from '@/components/Header/HomeHeader'
+import ChatWidget from '@/components/Chat/ChatWidget'
 
 const MainLayout = () => {
   const location = useLocation()
@@ -40,6 +41,7 @@ const MainLayout = () => {
         <Outlet />
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   )
 }

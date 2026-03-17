@@ -24,6 +24,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.crowndine.security.CustomUserDetailsService;
 
+// Jackson for JSON (including Java Time support)
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -97,5 +102,29 @@ public class AppConfig {
                         .maxAge(3600);
             }
         };
+    }
+
+    @Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        // Support java.time.* types like LocalDate, LocalDateTime
+        mapper.registerModule(new JavaTimeModule());
+        // Serialize dates as ISO-8601 strings instead of timestamps
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return mapper;
+    }
+
+    @Bean
+    public org.springframework.transaction.support.TransactionTemplate transactionTemplate(
+            jakarta.persistence.EntityManagerFactory entityManagerFactory) {
+        org.springframework.orm.jpa.JpaTransactionManager transactionManager = 
+            new org.springframework.orm.jpa.JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+        return new org.springframework.transaction.support.TransactionTemplate(transactionManager);
     }
 }

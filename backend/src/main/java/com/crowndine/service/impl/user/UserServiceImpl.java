@@ -1,11 +1,18 @@
 package com.crowndine.service.impl.user;
 
 import com.crowndine.dto.request.ChangePasswordRequest;
+import com.crowndine.dto.request.UpdateProfileRequest;
+import com.crowndine.dto.response.ProfileResponse;
+import com.crowndine.exception.ResourceNotFoundException;
+import com.crowndine.model.User;
 import com.crowndine.repository.UserRepository;
+import com.crowndine.service.cloudinary.CloudinaryService;
 import com.crowndine.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -13,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public void changePassword(ChangePasswordRequest request) {

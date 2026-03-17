@@ -65,7 +65,7 @@ public class ApiAuthController {
     }
 
     @PostMapping("verify-register")
-    public ResponseEntity<?> verifyRegister(@RequestParam String verifyCode) {
+    public ApiResponse verifyRegister(@RequestParam String verifyCode) {
         log.info("Verify register request for user, verify code: {}", verifyCode);
 
         boolean isSuccess = authenticationService.confirmRegister(verifyCode);

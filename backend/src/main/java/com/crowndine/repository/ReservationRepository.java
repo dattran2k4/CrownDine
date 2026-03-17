@@ -41,9 +41,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Optional<Reservation> findByCode(String code);
 
     @Query("SELECT r FROM Reservation r WHERE " +
-            "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
-            "(:toDate IS NULL OR r.date <= :toDate) AND " +
-            "(:status IS NULL OR r.status = :status)")
+           "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
+           "(:toDate IS NULL OR r.date <= :toDate) AND " +
+           "(:status IS NULL OR r.status = :status)")
     Page<Reservation> findReservations(
             @org.springframework.data.repository.query.Param("fromDate") LocalDate fromDate,
             @org.springframework.data.repository.query.Param("toDate") LocalDate toDate,

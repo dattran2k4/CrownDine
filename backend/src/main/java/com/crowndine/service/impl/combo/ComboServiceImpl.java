@@ -12,6 +12,7 @@ import com.crowndine.model.Item;
 import com.crowndine.repository.ComboItemRepository;
 import com.crowndine.repository.ComboRepository;
 import com.crowndine.repository.ItemRepository;
+import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.service.combo.ComboService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class ComboServiceImpl implements ComboService {
     private final ComboRepository comboRepository;
     private final ComboItemRepository comboItemRepository;
     private final ItemRepository itemRepository;
+    private final FeedbackRepository feedbackRepository;
 
     @Override
     public List<ComboResponse> getAllCombos() {
@@ -170,6 +172,8 @@ public class ComboServiceImpl implements ComboService {
                 .priceAfterDiscount(combo.getPriceAfterDiscount())
                 .status(combo.getStatus())
                 .imageUrl(combo.getImageUrl())
+                .averageRating(feedbackRepository.getAverageRatingByComboId(combo.getId()))
+                .feedbackCount((int) feedbackRepository.countByCombo_Id(combo.getId()))
                 .items(items)
                 .build();
     }

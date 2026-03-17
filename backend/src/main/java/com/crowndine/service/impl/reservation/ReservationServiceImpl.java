@@ -1,5 +1,6 @@
 package com.crowndine.service.impl.reservation;
 
+import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.*;
@@ -26,7 +27,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 import static com.crowndine.service.impl.CalculationServiceImpl.DEPOSIT_RATE;
@@ -44,6 +46,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final OrderDetailRepository orderDetailRepository;
     private final RestaurantTableRepository tableRepository;
     private final PaymentRepository paymentRepository;
+    private final OrderRepository orderRepository;
 
     private final CalculationService calculationService;
     private final OrderService orderService;
@@ -76,10 +79,10 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setStatus(r.getStatus());
         resp.setTableName(r.getTable() != null ? r.getTable().getName() : null);
 
-        if (r.getCustomer() != null) {
-            resp.setCustomerName(r.getCustomer().getFullName());
-            resp.setPhone(r.getCustomer().getPhone());
-            resp.setEmail(r.getCustomer().getEmail());
+        if (r.getUser() != null) {
+            resp.setCustomerName(r.getUser().getFullName());
+            resp.setPhone(r.getUser().getPhone());
+            resp.setEmail(r.getUser().getEmail());
         }
 
         if (r.getOrder() != null) {
@@ -124,14 +127,51 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public PageResponse<ReservationHistoryResponse> getReservationHistory(String username, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("date"), Sort.Order.desc("startTime"), Sort.Order.desc("createdAt")));
         User user = getUserByUserName(username);
 
-        Page<Reservation> reservationPage = reservationRepository.findByCustomer_Id(user.getId(), pageable);
+        // Fetch all reservations
+        List<Reservation> reservations = reservationRepository.findAllByUser_Id(user.getId());
+        List<ReservationHistoryResponse> resHistory = reservations.stream()
+                .map(this::toHistoryResponse)
+                .collect(Collectors.toList());
 
-        List<ReservationHistoryResponse> data = reservationPage.getContent().stream().map(this::toHistoryResponse).toList();
+        // Fetch all standalone orders (orders not linked to a reservation)
+        List<Order> standaloneOrders = orderRepository.findAllByUser_IdAndReservationIsNull(user.getId());
+        List<ReservationHistoryResponse> orderHistory = standaloneOrders.stream()
+                .map(this::fromStandaloneOrderToHistoryResponse)
+                .collect(Collectors.toList());
 
-        return PageResponse.<ReservationHistoryResponse>builder().page(reservationPage.getNumber() + 1).pageSize(reservationPage.getSize()).totalPages(reservationPage.getTotalPages()).totalItems(reservationPage.getTotalElements()).data(data).build();
+        // Merge both lists
+        List<ReservationHistoryResponse> allHistory = new ArrayList<>(resHistory);
+        allHistory.addAll(orderHistory);
+
+        // Sort by date (descending) and then startTime (descending)
+        allHistory.sort((a, b) -> {
+            int dateComp = b.getDate().compareTo(a.getDate());
+            if (dateComp != 0) return dateComp;
+
+            LocalTime timeA = a.getStartTime() != null ? a.getStartTime() : LocalTime.MIN;
+            LocalTime timeB = b.getStartTime() != null ? b.getStartTime() : LocalTime.MIN;
+            return timeB.compareTo(timeA);
+        });
+
+        // Manual pagination
+        int totalItems = allHistory.size();
+        int totalPages = (int) Math.ceil((double) totalItems / size);
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, totalItems);
+
+        List<ReservationHistoryResponse> pagedData = (fromIndex < totalItems)
+                ? allHistory.subList(fromIndex, toIndex)
+                : Collections.emptyList();
+
+        return PageResponse.<ReservationHistoryResponse>builder()
+                .page(page + 1)
+                .pageSize(size)
+                .totalPages(totalPages)
+                .totalItems((long) totalItems)
+                .data(pagedData)
+                .build();
     }
 
     private ReservationHistoryResponse toHistoryResponse(Reservation r) {
@@ -149,8 +189,38 @@ public class ReservationServiceImpl implements ReservationService {
             resp.setOrderId(order.getId());
             resp.setOrderStatus(order.getStatus());
             resp.setFinalPrice(order.getFinalPrice());
+            
+            List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
+            resp.setItems(details.stream().map(this::toLineResponse).toList());
         }
 
+        return resp;
+    }
+
+    private ReservationHistoryResponse fromStandaloneOrderToHistoryResponse(Order order) {
+        ReservationHistoryResponse resp = new ReservationHistoryResponse();
+        resp.setReservationId(null); // No reservation linked
+        resp.setDate(order.getCreatedAt().toLocalDate());
+        resp.setStartTime(order.getCreatedAt().toLocalTime());
+        resp.setEndTime(order.getCreatedAt().toLocalTime().plusHours(1)); // Default duration for display
+        resp.setGuestNumber(0);
+        
+        // Map order status to a placeholder reservation status for display purposes
+        if (order.getStatus() == com.crowndine.common.enums.EOrderStatus.COMPLETED) {
+            resp.setReservationStatus(EReservationStatus.COMPLETED);
+        } else if (order.getStatus() == com.crowndine.common.enums.EOrderStatus.CANCELLED) {
+            resp.setReservationStatus(EReservationStatus.CANCELLED);
+        } else {
+            resp.setReservationStatus(EReservationStatus.CONFIRMED);
+        }
+        
+        resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : "N/A");
+        resp.setOrderId(order.getId());
+        resp.setOrderStatus(order.getStatus());
+        resp.setFinalPrice(order.getFinalPrice());
+        
+        List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
+        resp.setItems(details.stream().map(this::toLineResponse).toList());
         return resp;
     }
 
@@ -160,10 +230,10 @@ public class ReservationServiceImpl implements ReservationService {
         Order order = reservation.getOrder();
         // Tự động tạo order trống nếu chưa có (khi khách không chọn món)
         if (order == null) {
-            if (reservation.getCustomer() == null) {
+            if (reservation.getUser() == null) {
                 throw new ResourceNotFoundException("Customer not found for reservation");
             }
-            order = orderService.createOrderForReservation(reservation, reservation.getCustomer());
+            order = orderService.createOrderForReservation(reservation, reservation.getUser());
             reservation.setOrder(order);
             reservationRepository.save(reservation);
         }
@@ -226,7 +296,7 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
         reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
-        reservation.setCustomer(user);
+        reservation.setUser(user);
         reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);
 
@@ -345,7 +415,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
-        if (!reservation.getCustomer().getId().equals(user.getId())) {
+        if (!reservation.getUser().getId().equals(user.getId())) {
             throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
         }
     }

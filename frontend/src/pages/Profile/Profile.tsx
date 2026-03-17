@@ -1,17 +1,27 @@
 'use client'
 
 import React, { useState } from 'react'
-import { mockCurrentUser, mockReservations } from '@/lib/mock-user'
+import { mockCurrentUser } from '@/lib/mock-user'
 import ProfileSidebar from '@/components/Profile/sidebar'
 import ProfileInfo from '@/components/Profile/profile-info'
 import ReservationHistory from '@/components/Profile/reservation-history'
 import SecuritySettings from '@/components/Profile/security-setting'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { User } from '@/types/profile.type'
+import { useQuery } from '@tanstack/react-query'
+import reservationApi from '@/apis/reservation.api'
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('info')
   const authUser = useAuthStore((state) => state.user)
+
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
+    queryKey: ['reservation-history'],
+    queryFn: () => reservationApi.getReservationHistory({ page: 0, size: 100 }),
+    enabled: activeTab === 'reservations'
+  })
+
+  const reservations = historyData?.data?.data?.data || []
 
   // Use local state, initialize with authUser, but also update if authUser changes
   const [user, setUser] = useState<User>((authUser as any) || mockCurrentUser)
@@ -46,7 +56,9 @@ const Profile = () => {
           <div className='md:col-span-3'>
             {activeTab === 'info' && <ProfileInfo user={user} onSave={handleSaveProfile} />}
 
-            {activeTab === 'reservations' && <ReservationHistory reservations={mockReservations} />}
+            {activeTab === 'reservations' && (
+              <ReservationHistory reservations={reservations as any} isLoading={isHistoryLoading} />
+            )}
 
             {activeTab === 'security' && <SecuritySettings />}
           </div>

@@ -76,19 +76,12 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.DEPOSIT);
 
         Order order = reservation.getOrder();
-        BigDecimal totalOrder = calculateReservationOrderTotal(order);
-        log.info("Total order amount {} for order id {}", totalOrder, order.getId());
+        BigDecimal totalOrder = calculateReservationOrderAmountForDeposit(order);
+        log.info("Order amount used for deposit calculation {} for order id {}", totalOrder, order.getId());
         BigDecimal tableDeposit = calculateTableDeposit(reservation);
         log.info("Table id {} deposit: {}", reservation.getTable().getId(), tableDeposit);
         BigDecimal amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
         log.info("Total amount to pay: {}", amountToPay);
-
-        if (order.getVoucher() != null) {
-            BigDecimal discount = calculationService.calculateVoucherDiscount(totalOrder, order.getVoucher());
-            log.info("discount: {}", discount);
-            amountToPay = amountToPay.subtract(discount);
-            log.info("Total amount to pay after discount: {}", amountToPay);
-        }
 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đặt cọc bàn");
     }
@@ -104,6 +97,7 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.SETTLEMENT);
 
         BigDecimal amountToPay = order.getFinalPrice();
+        log.info("Order final price: {}", amountToPay);
 
         //Check order has reservation
         if (order.getReservation() != null) {
@@ -117,9 +111,13 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đơn hàng");
     }
 
-    private BigDecimal calculateReservationOrderTotal(Order order) {
+    private BigDecimal calculateReservationOrderAmountForDeposit(Order order) {
         if (order == null) {
             return BigDecimal.ZERO;
+        }
+
+        if (order.getFinalPrice() != null) {
+            return order.getFinalPrice();
         }
 
         List<OrderDetail> orderDetails = order.getOrderDetails();

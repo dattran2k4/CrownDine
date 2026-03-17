@@ -2,7 +2,6 @@ package com.crowndine.service.impl.user;
 
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
-import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.User;

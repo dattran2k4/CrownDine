@@ -50,7 +50,6 @@ spring:
             model: gemini-2.5-flash
             temperature: 0.7
 
-
 springdoc:
   api-docs:
     enabled: true
@@ -88,3 +87,5 @@ payos:
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
+
+

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -98,15 +99,21 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.SETTLEMENT);
 
         BigDecimal amountToPay = order.getFinalPrice();
-        log.info("Order final price: {}", amountToPay);
+        log.info("Order {} final price before settlement adjustment: {}", order.getId(), amountToPay);
 
-        //Check order has reservation
         if (order.getReservation() != null) {
-            BigDecimal totalDeposited = paymentRepository.sumAmountByTargetAndReservationIdAndStatus(EPaymentTarget.RESERVATION, order.getReservation().getId(), EPaymentStatus.SUCCESS);
+            boolean hasSuccessfulReservationDeposit = paymentRepository.existsByTargetAndReservationIdAndStatus(
+                    EPaymentTarget.RESERVATION, order.getReservation().getId(), EPaymentStatus.SUCCESS);
 
-            amountToPay = amountToPay.subtract(totalDeposited);
-            log.info("Order {} - Total: {}, Deposit: {}, Remaining: {}",
-                    order.getId(), order.getFinalPrice(), totalDeposited, amountToPay);
+            if (hasSuccessfulReservationDeposit) {
+                BigDecimal orderDepositPaid = calculateOrderDepositPaid(order);
+                amountToPay = amountToPay.subtract(orderDepositPaid);
+                log.info("Order {} settlement subtracts only order deposit {} from final price {}. Table deposit is retained by the restaurant. Remaining amount to collect: {}",
+                        order.getId(), orderDepositPaid, order.getFinalPrice(), amountToPay);
+            } else {
+                log.info("Order {} has reservation {} but no successful reservation deposit payment. Remaining amount stays at final price {}",
+                        order.getId(), order.getReservation().getId(), amountToPay);
+            }
         }
 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đơn hàng");
@@ -138,6 +145,14 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
     private BigDecimal calculateTableDeposit(Reservation reservation) {
         RestaurantTable table = reservation.getTable();
         return calculationService.calculateTableDeposit(table != null ? table.getBaseDeposit() : null, reservation.getStartTime(), reservation.getEndTime());
+    }
+
+    private BigDecimal calculateOrderDepositPaid(Order order) {
+        BigDecimal finalOrderPrice = getReservationOrderFinalPrice(order);
+        BigDecimal orderDepositPaid = finalOrderPrice.multiply(new BigDecimal("0.20")).setScale(2, RoundingMode.HALF_UP);
+        log.info("Calculated paid order deposit for order {} as 20% of final price {}: {}",
+                order.getId(), finalOrderPrice, orderDepositPaid);
+        return orderDepositPaid;
     }
 
     private void validatePositiveAmount(BigDecimal amountToPay) {

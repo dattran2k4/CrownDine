@@ -89,3 +89,17 @@ export type PreOrderCombo = ComboIdentity & {
 export type PreOrderEntry = PreOrderItem | PreOrderCombo
 
 export type PreOrderCartItem = PreOrderEntry & { quantity: number }
+
+export interface ReservationHistoryResponse {
+  reservationId?: number
+  date: string
+  startTime: string
+  endTime: string
+  guestNumber: number
+  reservationStatus: string
+  tableName: string
+  orderId?: number
+  orderStatus?: string
+  finalPrice?: number
+  items?: OrderLineResponse[]
+}

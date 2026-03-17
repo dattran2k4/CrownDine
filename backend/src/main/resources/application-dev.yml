@@ -88,4 +88,14 @@ payos:
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
 
+#Gemini AI
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
+  model: models/gemini-2.0-flash-001
 
+#OpenRouter
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY}

@@ -10,6 +10,9 @@ const feedbackApi = {
   },
   getFeedbacksByCombo(comboId: number | string) {
     return http.get<ApiResponse<Feedback[]>>(`${FEEDBACK_URL}/combos/${comboId}`)
+  },
+  getAllFeedbacks() {
+    return http.get<ApiResponse<Feedback[]>>(FEEDBACK_URL)
   }
 }
 

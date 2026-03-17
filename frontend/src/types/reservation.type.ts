@@ -91,7 +91,7 @@ export type PreOrderEntry = PreOrderItem | PreOrderCombo
 export type PreOrderCartItem = PreOrderEntry & { quantity: number }
 
 export interface ReservationHistoryResponse {
-  reservationId: number
+  reservationId?: number
   date: string
   startTime: string
   endTime: string

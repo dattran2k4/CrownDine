@@ -12,7 +12,7 @@ interface ReservationHistoryProps {
 }
 
 const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps) => {
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<number | string | null>(null)
 
   const getReservationStatusColor = (status: string) => {
     switch (status) {
@@ -51,7 +51,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
   if (isLoading) {
     return (
       <div className='bg-card border-border rounded-lg border p-8'>
-        <h2 className='mb-8 text-2xl font-bold'>Reservation History</h2>
+        <h2 className='mb-8 text-2xl font-bold'>Order & Reservation History</h2>
         <div className='flex items-center justify-center py-12'>
           <p className='text-foreground/60 animate-pulse'>Loading your history...</p>
         </div>
@@ -62,7 +62,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
   return (
     <div className='bg-card border-border rounded-lg border p-8'>
       {/* Header */}
-      <h2 className='mb-8 text-2xl font-bold'>Reservation History</h2>
+      <h2 className='mb-8 text-2xl font-bold'>Order & Reservation History</h2>
 
       {/* Reservations List */}
       <div className='space-y-4'>
@@ -72,24 +72,31 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
           </div>
         ) : (
           reservations.map((reservation) => {
-            const isExpanded = expandedId === reservation.reservationId
+            const itemId = reservation.reservationId || `order-${reservation.orderId}`
+            const isExpanded = expandedId === itemId
 
             return (
-              <div key={reservation.reservationId} className='border-border overflow-hidden rounded-lg border'>
+              <div key={itemId} className='border-border overflow-hidden rounded-lg border'>
                 {/* Summary */}
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : reservation.reservationId)}
+                  onClick={() => setExpandedId(isExpanded ? null : itemId)}
                   className='hover:bg-foreground/5 flex w-full items-center justify-between p-6 transition-colors'
                 >
                   <div className='flex flex-1 items-center gap-6'>
                     <div>
                       <h3 className='text-lg font-semibold'>
-                        {reservation.tableName} • {reservation.guestNumber} Guest
-                        {reservation.guestNumber !== 1 ? 's' : ''}
+                        {reservation.reservationId ? (
+                          <>
+                            {reservation.tableName} • {reservation.guestNumber} Guest
+                            {reservation.guestNumber !== 1 ? 's' : ''}
+                          </>
+                        ) : (
+                          <>Walk-in Order • {reservation.tableName}</>
+                        )}
                       </h3>
                       <p className='text-foreground/60 mt-1 text-sm'>
-                        {formatDate(reservation.date)} • {reservation.startTime.slice(0, 5)} -{' '}
-                        {reservation.endTime.slice(0, 5)}
+                        {formatDate(reservation.date)} • {reservation.startTime.slice(0, 5)} 
+                        {reservation.reservationId && <> - {reservation.endTime.slice(0, 5)}</>}
                       </p>
                     </div>
                   </div>
@@ -108,27 +115,29 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                 {isExpanded && (
                   <div className='border-border/50 bg-foreground/5 border-t p-6'>
                     {/* General Info */}
-                    <div className='border-border/50 mb-6 border-b pb-6'>
-                      <h4 className='mb-3 font-semibold'>Reservation Information</h4>
-                      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                        <div className='flex items-start gap-2'>
-                          <Table className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
-                          <div>
-                            <p className='text-foreground/60 text-sm'>Table</p>
-                            <p className='font-medium'>{reservation.tableName}</p>
+                    {reservation.reservationId && (
+                      <div className='border-border/50 mb-6 border-b pb-6'>
+                        <h4 className='mb-3 font-semibold'>Reservation Information</h4>
+                        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                          <div className='flex items-start gap-2'>
+                            <Table className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
+                            <div>
+                              <p className='text-foreground/60 text-sm'>Table</p>
+                              <p className='font-medium'>{reservation.tableName}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className='flex items-start gap-2'>
-                          <Clock className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
-                          <div>
-                            <p className='text-foreground/60 text-sm'>Time Slot</p>
-                            <p className='font-medium'>
-                              {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
-                            </p>
+                          <div className='flex items-start gap-2'>
+                            <Clock className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
+                            <div>
+                              <p className='text-foreground/60 text-sm'>Time Slot</p>
+                              <p className='font-medium'>
+                                {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Order Details */}
                     {reservation.orderId ? (

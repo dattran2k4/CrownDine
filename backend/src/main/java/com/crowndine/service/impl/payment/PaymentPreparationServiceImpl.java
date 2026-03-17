@@ -76,12 +76,13 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.DEPOSIT);
 
         Order order = reservation.getOrder();
-        BigDecimal totalOrder = calculateReservationOrderAmountForDeposit(order);
-        log.info("Order amount used for deposit calculation {} for order id {}", totalOrder, order.getId());
+        BigDecimal finalOrderPrice = getReservationOrderFinalPrice(order);
+        log.info("Order {} final price used for deposit calculation: {}", order.getId(), finalOrderPrice);
         BigDecimal tableDeposit = calculateTableDeposit(reservation);
-        log.info("Table id {} deposit: {}", reservation.getTable().getId(), tableDeposit);
-        BigDecimal amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
-        log.info("Total amount to pay: {}", amountToPay);
+        log.info("Reservation {} table {} deposit amount: {}", reservation.getId(), reservation.getTable().getId(), tableDeposit);
+        BigDecimal amountToPay = calculationService.calculateDepositPayment(finalOrderPrice, tableDeposit);
+        log.info("Reservation {} deposit payment amount calculated from final order price {} and table deposit {}: {}",
+                reservation.getId(), finalOrderPrice, tableDeposit, amountToPay);
 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đặt cọc bàn");
     }
@@ -111,21 +112,27 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đơn hàng");
     }
 
-    private BigDecimal calculateReservationOrderAmountForDeposit(Order order) {
+    private BigDecimal getReservationOrderFinalPrice(Order order) {
         if (order == null) {
+            log.info("Reservation has no order. Using 0 as final order price for deposit calculation");
             return BigDecimal.ZERO;
         }
 
         if (order.getFinalPrice() != null) {
+            log.info("Using persisted final price {} for order {}", order.getFinalPrice(), order.getId());
             return order.getFinalPrice();
         }
 
         List<OrderDetail> orderDetails = order.getOrderDetails();
         if (orderDetails == null) {
+            log.info("Order {} has no order details. Using 0 as final order price for deposit calculation", order.getId());
             return BigDecimal.ZERO;
         }
 
-        return calculationService.calculateTotalOrder(orderDetails);
+        BigDecimal recalculatedFinalPrice = calculationService.calculateTotalOrder(orderDetails);
+        log.warn("Order {} finalPrice is null. Falling back to recalculated amount from order details: {}",
+                order.getId(), recalculatedFinalPrice);
+        return recalculatedFinalPrice;
     }
 
     private BigDecimal calculateTableDeposit(Reservation reservation) {

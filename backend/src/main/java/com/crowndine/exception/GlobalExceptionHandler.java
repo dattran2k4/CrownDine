@@ -229,6 +229,30 @@ public class GlobalExceptionHandler {
         return errorResponse;
     }
 
+    @ResponseStatus(TOO_MANY_REQUESTS)
+    @ExceptionHandler(AiRateLimitException.class)
+    public ErrorResponse handleAiRateLimitException(AiRateLimitException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(TOO_MANY_REQUESTS.value());
+        errorResponse.setError("AI Rate Limit Exceeded");
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    @ResponseStatus(BAD_GATEWAY)
+    @ExceptionHandler(AiServiceException.class)
+    public ErrorResponse handleAiServiceException(AiServiceException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(BAD_GATEWAY.value());
+        errorResponse.setError("AI Service Error");
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
     /**
      * Handle exception when internal server error
      *

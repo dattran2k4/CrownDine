@@ -28,9 +28,9 @@ public class TokenServiceImpl implements TokenService {
         Token token = new Token();
         token.setUsername(username);
         token.setDevice(request.getHeader("User-Agent"));
-        token.setDevice(request.getRemoteAddr());
+        token.setIpAddress(request.getRemoteAddr());
         token.setRefreshToken(refreshToken);
-        token.setExpiredAt(LocalDateTime.now().plusSeconds(refreshExpiration));
+        token.setExpiredAt(LocalDateTime.now().plusNanos(refreshExpiration * 1_000_00));
         token.setIsRevoked(false);
         tokenRepository.save(token);
         log.info("Token saved with id {}", token.getId());
@@ -53,7 +53,7 @@ public class TokenServiceImpl implements TokenService {
         if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
             throw new InvalidDataException("Refresh token expired");
         }
-        
+
         if (Boolean.FALSE.equals(token.getIsRevoked())) {
             token.setIsRevoked(true);
         } else {

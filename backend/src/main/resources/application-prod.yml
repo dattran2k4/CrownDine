@@ -26,11 +26,11 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   mail:
-    from: ${MAIL_USERNAME:}
+    from: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
+    password: ${MAIL_PASSWORD:krdmwfrkaizzvgwb}
     properties:
       mail:
         smtp:
@@ -60,7 +60,7 @@ jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
   # 15 phút
-  access-key-expiration: 12000
+  access-key-expiration: 900000
   # 7 ngày
   refresh-key-expiration: 604800000
 

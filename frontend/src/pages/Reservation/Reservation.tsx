@@ -381,8 +381,6 @@ export default function Reservation() {
   }
 
   const handlePayment = () => {
-    if (!window.confirm('Xác nhận thanh toán tiền cọc?')) return
-
     if (!reservationCode) {
       alert('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
       return

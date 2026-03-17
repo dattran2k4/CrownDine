@@ -23,6 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +47,58 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     private static final List<String> THU = List.of("Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật");
 
+    /** Một ô lịch: nhân viên + ca + ngày. workScheduleId = null nếu là ca ảo (từ lịch lặp). */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class ScheduleSlot {
+        private Long userId;
+        private String staffCode;
+        private String fullName;
+        private Long shiftId;
+        private LocalDate workDate;
+        private Long workScheduleId;
+    }
+
+    /** Thu thập tất cả ô lịch trong tuần: ca bình thường + ca lặp đã mở rộng (giống màn Lịch làm việc). */
+    private List<ScheduleSlot> collectScheduleSlots(LocalDate weekStart, LocalDate weekEnd, String searchName) {
+        List<WorkSchedule> normal = workScheduleRepository.findNormalSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
+        Set<String> normalKeys = new HashSet<>();
+        List<ScheduleSlot> slots = new ArrayList<>();
+        for (WorkSchedule ws : normal) {
+            String key = ws.getStaff().getId() + "_" + ws.getShift().getId() + "_" + ws.getWorkDate();
+            if (normalKeys.add(key)) {
+                slots.add(new ScheduleSlot(
+                        ws.getStaff().getId(), ws.getStaff().getUsername(), ws.getStaff().getFullName(),
+                        ws.getShift().getId(), ws.getWorkDate(), ws.getId()));
+            }
+        }
+        List<WorkSchedule> repeating = workScheduleRepository.findRepeatingSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
+        for (WorkSchedule template : repeating) {
+            LocalDate current = weekStart.isAfter(template.getWorkDate()) ? weekStart : template.getWorkDate();
+            LocalDate end = template.getEndDate() != null && template.getEndDate().isBefore(weekEnd) ? template.getEndDate() : weekEnd;
+            while (!current.isAfter(end)) {
+                String dayStr = String.valueOf(current.getDayOfWeek().getValue());
+                if (template.getDaysOfWeek() != null && template.getDaysOfWeek().contains(dayStr)) {
+                    String key = template.getStaff().getId() + "_" + template.getShift().getId() + "_" + current;
+                    if (normalKeys.add(key)) {
+                        slots.add(new ScheduleSlot(
+                                template.getStaff().getId(), template.getStaff().getUsername(), template.getStaff().getFullName(),
+                                template.getShift().getId(), current, null));
+                    }
+                }
+                current = current.plusDays(1);
+            }
+        }
+        if (searchName != null && !searchName.isBlank()) {
+            String q = searchName.trim().toLowerCase();
+            slots = slots.stream()
+                    .filter(s -> s.getFullName().toLowerCase().contains(q) || s.getStaffCode().toLowerCase().contains(q))
+                    .toList();
+        }
+        return slots;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveRecord(AttendanceRecordRequest request) {
@@ -51,10 +107,11 @@ public class AttendanceServiceImpl implements AttendanceService {
         Shift shift = shiftRepository.findById(request.getShiftId())
                 .orElseThrow(() -> new ResourceNotFoundException("Ca làm việc không tồn tại"));
 
-        WorkSchedule workSchedule = workScheduleRepository.findByStaffAndShiftAndWorkDate(user, shift, request.getWorkDate())
+        LocalDate workDate = request.getWorkDate();
+        WorkSchedule workSchedule = workScheduleRepository.findByStaffAndShiftAndWorkDate(user, shift, workDate)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new InvalidDataException("Nhân viên không có lịch làm việc cho ca này trong ngày đã chọn"));
+                .orElseGet(() -> createWorkScheduleFromRepeatingTemplate(user, shift, workDate));
 
         Optional<Attendance> existing = attendanceRepository.findByWorkScheduleId(workSchedule.getId());
         Attendance attendance = existing.orElse(new Attendance());
@@ -75,6 +132,34 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         attendanceRepository.save(attendance);
         log.info("Saved attendance for user {} date {} shift {}", user.getUsername(), request.getWorkDate(), shift.getName());
+    }
+
+    /**
+     * Nếu nhân viên có lịch lặp (repeating) trùng ca + ngày, tạo bản ghi work_schedule cho ngày đó
+     * để có thể chấm công. Nếu không có template phù hợp thì throw.
+     */
+    private WorkSchedule createWorkScheduleFromRepeatingTemplate(User user, Shift shift, LocalDate workDate) {
+        List<WorkSchedule> templates = workScheduleRepository.findRepeatingSchedules(
+                workDate, workDate, user.getId(), shift.getId(), EWorkScheduleStatus.APPROVED);
+        String dayOfWeekStr = String.valueOf(workDate.getDayOfWeek().getValue());
+        WorkSchedule template = templates.stream()
+                .filter(t -> !workDate.isBefore(t.getWorkDate())
+                        && (t.getEndDate() == null || !workDate.isAfter(t.getEndDate()))
+                        && t.getDaysOfWeek() != null && t.getDaysOfWeek().contains(dayOfWeekStr))
+                .findFirst()
+                .orElseThrow(() -> new InvalidDataException("Nhân viên không có lịch làm việc cho ca này trong ngày đã chọn"));
+
+        WorkSchedule one = new WorkSchedule();
+        one.setWorkDate(workDate);
+        one.setStaff(user);
+        one.setShift(shift);
+        one.setStatus(EWorkScheduleStatus.APPROVED);
+        one.setNote(template.getNote());
+        one.setIsRepeated(false);
+        one.setRepeatGroupId("FROM-" + template.getId());
+        one.setEndDate(null);
+        one.setDaysOfWeek(null);
+        return workScheduleRepository.save(one);
     }
 
     private EAttendanceStatus computeStatus(Shift shift, AttendanceRecordRequest req) {
@@ -121,17 +206,10 @@ public class AttendanceServiceImpl implements AttendanceService {
         int weekNumber = weekStart.get(WeekFields.ISO.weekOfWeekBasedYear());
         int year = weekStart.getYear();
 
-        List<WorkSchedule> schedules = workScheduleRepository.findNormalSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
-        if (searchName != null && !searchName.isBlank()) {
-            String q = searchName.trim().toLowerCase();
-            schedules = schedules.stream()
-                    .filter(ws -> ws.getStaff().getFullName().toLowerCase().contains(q) || ws.getStaff().getUsername().toLowerCase().contains(q))
-                    .toList();
-        }
-
-        List<Long> workScheduleIds = schedules.stream().map(WorkSchedule::getId).toList();
+        List<ScheduleSlot> slots = collectScheduleSlots(weekStart, weekEnd, searchName);
+        Set<Long> workScheduleIds = slots.stream().map(ScheduleSlot::getWorkScheduleId).filter(Objects::nonNull).collect(Collectors.toSet());
         List<Attendance> attendances = attendanceRepository.findByWorkDateBetween(weekStart, weekEnd).stream()
-                .filter(a -> workScheduleIds.contains(a.getWorkSchedule().getId()))
+                .filter(a -> a.getWorkSchedule() != null && workScheduleIds.contains(a.getWorkSchedule().getId()))
                 .toList();
         Map<Long, Attendance> attendanceByWorkScheduleId = attendances.stream().collect(Collectors.toMap(a -> a.getWorkSchedule().getId(), a -> a));
 
@@ -144,15 +222,15 @@ public class AttendanceServiceImpl implements AttendanceService {
         for (Shift shift : shiftRepository.findAll()) {
             for (LocalDate d = weekStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {
                 LocalDate workDate = d;
-                List<AttendanceScheduleResponse.AttendanceScheduleEmployeeResponse> employees = schedules.stream()
-                        .filter(ws -> ws.getShift().getId().equals(shift.getId()) && ws.getWorkDate().equals(workDate))
-                        .map(ws -> {
-                            Attendance att = attendanceByWorkScheduleId.get(ws.getId());
+                List<AttendanceScheduleResponse.AttendanceScheduleEmployeeResponse> employees = slots.stream()
+                        .filter(s -> s.getShiftId().equals(shift.getId()) && s.getWorkDate().equals(workDate))
+                        .map(s -> {
+                            Attendance att = s.getWorkScheduleId() != null ? attendanceByWorkScheduleId.get(s.getWorkScheduleId()) : null;
                             String status = att != null && att.getStatus() != null ? att.getStatus().name() : EAttendanceStatus.NOT_PUNCHED.name();
                             return AttendanceScheduleResponse.AttendanceScheduleEmployeeResponse.builder()
-                                    .userId(ws.getStaff().getId())
-                                    .staffCode(ws.getStaff().getUsername())
-                                    .fullName(ws.getStaff().getFullName())
+                                    .userId(s.getUserId())
+                                    .staffCode(s.getStaffCode())
+                                    .fullName(s.getFullName())
                                     .status(status)
                                     .build();
                         })
@@ -186,25 +264,21 @@ public class AttendanceServiceImpl implements AttendanceService {
         LocalDate weekStart = date != null ? date.with(WeekFields.ISO.dayOfWeek(), 1) : LocalDate.now().with(WeekFields.ISO.dayOfWeek(), 1);
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        List<WorkSchedule> schedules = workScheduleRepository.findNormalSchedules(weekStart, weekEnd, null, null, EWorkScheduleStatus.APPROVED);
-        if (searchName != null && !searchName.isBlank()) {
-            String q = searchName.trim().toLowerCase();
-            schedules = schedules.stream()
-                    .filter(ws -> ws.getStaff().getFullName().toLowerCase().contains(q) || ws.getStaff().getUsername().toLowerCase().contains(q))
-                    .toList();
-        }
-
-        List<Attendance> attendances = attendanceRepository.findByWorkDateBetween(weekStart, weekEnd);
+        List<ScheduleSlot> slots = collectScheduleSlots(weekStart, weekEnd, searchName);
+        Set<Long> workScheduleIds = slots.stream().map(ScheduleSlot::getWorkScheduleId).filter(Objects::nonNull).collect(Collectors.toSet());
+        List<Attendance> attendances = attendanceRepository.findByWorkDateBetween(weekStart, weekEnd).stream()
+                .filter(a -> a.getWorkSchedule() != null && workScheduleIds.contains(a.getWorkSchedule().getId()))
+                .toList();
         Map<Long, Attendance> attByWsId = attendances.stream().collect(Collectors.toMap(a -> a.getWorkSchedule().getId(), a -> a));
 
-        Set<Long> userIds = schedules.stream().map(ws -> ws.getStaff().getId()).collect(Collectors.toSet());
+        Set<Long> userIds = slots.stream().map(ScheduleSlot::getUserId).collect(Collectors.toSet());
         Map<Long, User> userMap = userRepository.findAllById(userIds).stream().collect(Collectors.toMap(User::getId, u -> u));
 
         List<AttendanceSummaryResponse.EmployeeAttendanceSummaryResponse> list = new ArrayList<>();
         for (Long uid : userIds) {
             User user = userMap.get(uid);
             if (user == null) continue;
-            List<WorkSchedule> userSchedules = schedules.stream().filter(ws -> ws.getStaff().getId().equals(uid)).toList();
+            List<ScheduleSlot> userSlots = slots.stream().filter(s -> s.getUserId().equals(uid)).toList();
 
             int workShiftCount = 0;
             double workMinutes = 0;
@@ -214,8 +288,12 @@ public class AttendanceServiceImpl implements AttendanceService {
             int earlyCount = 0;
             long earlyMinutes = 0;
 
-            for (WorkSchedule ws : userSchedules) {
-                Attendance att = attByWsId.get(ws.getId());
+            for (ScheduleSlot slot : userSlots) {
+                if (slot.getWorkScheduleId() == null) {
+                    leaveShiftCount++;
+                    continue;
+                }
+                Attendance att = attByWsId.get(slot.getWorkScheduleId());
                 if (att == null) {
                     leaveShiftCount++;
                     continue;
@@ -228,17 +306,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                 if (att.getCheckInAt() != null && att.getCheckOutAt() != null) {
                     workMinutes += Duration.between(att.getCheckInAt(), att.getCheckOutAt()).toMinutes();
                 }
-                if (att.getCheckInAt() != null && att.getCheckInAt().toLocalTime().isAfter(ws.getShift().getStartTime())) {
-                    lateCount++;
-                    lateMinutes += Duration.between(ws.getShift().getStartTime().atDate(att.getCheckInAt().toLocalDate()), att.getCheckInAt()).toMinutes();
-                }
-                if (att.getCheckOutAt() != null && att.getCheckOutAt().toLocalTime().isBefore(ws.getShift().getEndTime())) {
-                    earlyCount++;
-                    earlyMinutes += Duration.between(att.getCheckOutAt(), ws.getShift().getEndTime().atDate(att.getCheckOutAt().toLocalDate())).toMinutes();
+                if (att.getWorkSchedule() != null && att.getWorkSchedule().getShift() != null) {
+                    if (att.getCheckInAt() != null && att.getCheckInAt().toLocalTime().isAfter(att.getWorkSchedule().getShift().getStartTime())) {
+                        lateCount++;
+                        lateMinutes += Duration.between(att.getWorkSchedule().getShift().getStartTime().atDate(att.getCheckInAt().toLocalDate()), att.getCheckInAt()).toMinutes();
+                    }
+                    if (att.getCheckOutAt() != null && att.getCheckOutAt().toLocalTime().isBefore(att.getWorkSchedule().getShift().getEndTime())) {
+                        earlyCount++;
+                        earlyMinutes += Duration.between(att.getCheckOutAt(), att.getWorkSchedule().getShift().getEndTime().atDate(att.getCheckOutAt().toLocalDate())).toMinutes();
+                    }
                 }
             }
 
-            boolean noData = userSchedules.isEmpty();
+            boolean noData = userSlots.isEmpty();
             list.add(AttendanceSummaryResponse.EmployeeAttendanceSummaryResponse.builder()
                     .userId(uid)
                     .staffCode(user.getUsername())

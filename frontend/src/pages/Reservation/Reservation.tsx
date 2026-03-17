@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
@@ -6,10 +7,13 @@ import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Ste
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
 import Step3FoodMenu from '@/pages/Reservation/components/step/Step3FoodMenu'
 import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4Payment'
+import orderApi from '@/apis/order.api'
 import reservationApi from '@/apis/reservation.api'
 import paymentApi from '@/apis/payment.api'
+import type { CreatePaymentRequest } from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
 import { useSearchParams } from 'react-router-dom'
@@ -21,7 +25,6 @@ import { toast } from 'sonner'
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [isProcessing, setIsProcessing] = useState(false) // Loading state for payment
 
   // Data State
   const [guests, setGuests] = useState(2)
@@ -67,9 +70,68 @@ export default function Reservation() {
   const [searchParams, setSearchParams] = useSearchParams()
   const processedParamsRef = useRef<string>('')
 
+  // Voucher state
+  const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(null)
+
   // Generated Data
   const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
   
+  // Reset voucher when reservation changes
+  useEffect(() => {
+    setVoucherPreview(null)
+    setAppliedVoucherCode(null)
+  }, [reservationId])
+
+  // Payment mutation
+  const paymentMutation = useMutation({
+    mutationFn: async ({
+      paymentRequest,
+      voucherCode,
+      orderId
+    }: {
+      paymentRequest: CreatePaymentRequest
+      voucherCode?: string
+      orderId?: number
+    }) => {
+      if (voucherCode && orderId && voucherCode !== appliedVoucherCode) {
+        await orderApi.applyVoucherToOrder(orderId, { code: voucherCode })
+        setAppliedVoucherCode(voucherCode)
+      }
+
+      const paymentResponse = await paymentApi.createPayment(paymentRequest)
+
+      return {
+        paymentResponse
+      }
+    },
+    onSuccess: ({ paymentResponse }) => {
+      const checkoutUrl = paymentResponse.data.data
+      const currentReservationCode = reservationCode
+
+      if (!currentReservationCode) {
+        throw new Error('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
+      }
+
+      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
+      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+
+      if (!checkoutUrl) {
+        throw new Error('Không nhận được liên kết thanh toán')
+      }
+
+      setPaymentResultToSession({
+        reservationCode: currentReservationCode,
+        amount: depositAmount,
+        paidAt: new Date().toISOString()
+      })
+
+      window.location.href = checkoutUrl
+    },
+  })
+  const isProcessing = paymentMutation.isPending
+
   // Handle query parameters from chatbot
   useEffect(() => {
     const targetStep = searchParams.get('step')
@@ -534,42 +596,20 @@ export default function Reservation() {
     }
   }
 
-  const handlePayment = async () => {
-    if (!window.confirm('Xác nhận thanh toán tiền cọc?')) return
-
+  const handlePayment = () => {
     if (!reservationCode) {
       alert('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
       return
     }
 
-    try {
-      setIsProcessing(true)
-      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
-      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
-      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
-
-      setPaymentResultToSession({
-        reservationCode,
-        amount: depositAmount,
-        paidAt: new Date().toISOString()
-      })
-
-      const response = await paymentApi.createPayment({
+    paymentMutation.mutate({
+      paymentRequest: {
         reservationCode,
         method: 'PAYOS'
-      })
-
-      const checkoutUrl = response.data.data
-      if (!checkoutUrl) {
-        throw new Error('Không nhận được liên kết thanh toán')
-      }
-
-      window.location.href = checkoutUrl
-    } catch (error) {
-      console.error('Failed to create payment link:', error)
-    } finally {
-      setIsProcessing(false)
-    }
+      },
+      voucherCode: voucherPreview?.code,
+      orderId: orderDetails?.orderId
+    })
   }
 
   const handleCancel = async () => {
@@ -659,6 +699,8 @@ export default function Reservation() {
               orderDetails={orderDetails}
               isLoadingOrderDetails={isLoadingOrderDetails}
               expiratedAt={expiratedAt}
+              voucherPreview={voucherPreview}
+              onVoucherPreviewChange={setVoucherPreview}
             />
           )}
         </div>

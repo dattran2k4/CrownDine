@@ -10,8 +10,28 @@ interface AuthState {
   roles: string[]
   user: User | null
   setAuth: (accessToken: string, refreshToken: string) => void
+  setAccessToken: (accessToken: string | null) => void
   setUser: (user: User) => void
   logout: () => void
+}
+
+const extractRolesFromAccessToken = (accessToken: string): string[] => {
+  try {
+    const decoded = jwtDecode<{ authorities?: string[]; role?: string[] }>(accessToken)
+    if (decoded.authorities && Array.isArray(decoded.authorities)) {
+      return decoded.authorities
+    }
+    if (decoded.role && Array.isArray(decoded.role) && decoded.role.length > 0) {
+      const roleStr = String(decoded.role[0])
+      const extractedRoles: string[] = []
+      if (roleStr.includes('ADMIN')) extractedRoles.push('ADMIN')
+      if (roleStr.includes('STAFF')) extractedRoles.push('STAFF')
+      return extractedRoles
+    }
+  } catch {
+    return []
+  }
+  return []
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,31 +43,22 @@ export const useAuthStore = create<AuthState>()(
       roles: [],
       user: null,
       setAuth: (accessToken: string, refreshToken: string) => {
-        try {
-          const decoded = jwtDecode<{ authorities?: string[], role?: string[] }>(accessToken)
-          
-          let extractedRoles: string[] = []
-          if (decoded.authorities && Array.isArray(decoded.authorities)) {
-            extractedRoles = decoded.authorities;
-          } else if (decoded.role && Array.isArray(decoded.role) && decoded.role.length > 0) {
-            // Spring Security might serialize the role array into a single string element like:
-            // "[STAFF, FactorGrantedAuthority ...]"
-            const roleStr = String(decoded.role[0]);
-            if (roleStr.includes('ADMIN')) extractedRoles.push('ADMIN');
-            if (roleStr.includes('STAFF')) extractedRoles.push('STAFF');
-          }
-
-          set((state) => ({
-            ...state,
-            accessToken,
-            refreshToken,
-            isAuthenticated: true,
-            roles: extractedRoles
-          }))
-        } catch {
-          set((state) => ({ ...state, accessToken, refreshToken, isAuthenticated: true, roles: [] }))
-        }
+        set((state) => ({
+          ...state,
+          accessToken,
+          refreshToken,
+          isAuthenticated: true,
+          roles: extractRolesFromAccessToken(accessToken)
+        }))
       },
+      setAccessToken: (accessToken: string | null) =>
+        set((state) => ({
+          ...state,
+          accessToken,
+          isAuthenticated: Boolean(accessToken && state.refreshToken),
+          roles: accessToken ? extractRolesFromAccessToken(accessToken) : [],
+          user: accessToken ? state.user : null
+        })),
       setUser: (user: User) => set((state) => ({ ...state, user })),
       logout: () => set({ accessToken: null, refreshToken: null, isAuthenticated: false, roles: [], user: null })
     }),

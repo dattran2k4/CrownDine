@@ -27,3 +27,17 @@ export interface OrderDetail {
   status: OrderDetailStatus
   totalPrice: number
 }
+
+export interface OrderApplyVoucherRequest {
+  code: string
+}
+
+export interface OrderApplyVoucherResponse {
+  orderId: number
+  orderCode: string
+  voucherId: number
+  voucherCode: string
+  totalPrice: number
+  discountPrice: number
+  finalPrice: number
+}

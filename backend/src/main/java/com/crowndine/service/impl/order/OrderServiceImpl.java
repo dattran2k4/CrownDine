@@ -322,6 +322,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        log.info("Total price for order with id {} is {}", orderId, totalPrice);
+
         if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
         }
@@ -329,7 +331,9 @@ public class OrderServiceImpl implements OrderService {
         Voucher voucher = userVoucherService.consumeVoucher(code, username);
 
         BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
+        log.info("Discount price for order with id {} is {}", orderId, discountPrice);
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+        log.info("Final price for order with id {} is {}", orderId, finalPrice);
 
         order.setVoucher(voucher);
         order.setTotalPrice(totalPrice);

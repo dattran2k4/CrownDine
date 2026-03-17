@@ -6,7 +6,6 @@ import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 import type { UserSummary } from '@/types/profile.type'
 import type { VoucherValidateResponse } from '@/types/voucher.type'
-import { useState } from 'react'
 import VoucherInput from '@/pages/Reservation/components/VoucherInput'
 
 interface CartItem {
@@ -33,6 +32,8 @@ interface Props {
   orderDetails: OrderDetailResponse | null
   isLoadingOrderDetails: boolean
   expiratedAt: string | null
+  voucherPreview: VoucherValidateResponse | null
+  onVoucherPreviewChange: (preview: VoucherValidateResponse | null) => void
 }
 const Step4Payment = ({
   user,
@@ -43,9 +44,10 @@ const Step4Payment = ({
   isProcessing,
   orderDetails,
   isLoadingOrderDetails,
-  expiratedAt
+  expiratedAt,
+  voucherPreview,
+  onVoucherPreviewChange
 }: Props) => {
-  const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Khách'
   const genderLabel =
     user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : user?.gender === 'OTHER' ? 'Khác' : ''
@@ -56,12 +58,16 @@ const Step4Payment = ({
   // Sử dụng dữ liệu từ API nếu có, nếu không thì tính từ local state
   const itemsTotal = orderDetails?.itemsTotal ?? foodTotal
   const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
-  const previewOrderAmount = voucherPreview?.orderAmount ?? itemsTotal
-  const previewDiscountAmount = voucherPreview?.discountAmount ?? 0
   const previewFinalAmount = voucherPreview?.finalAmount ?? itemsTotal
 
   // Tính depositAmount: nếu có orderDetails thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
   const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+  const discountedFoodDeposit = previewFinalAmount * 0.2
+  const discountedRemainingAmount = previewFinalAmount - discountedFoodDeposit
+  const discountedPayableNow =
+    voucherPreview && depositAmount > 0
+      ? Math.max(0, discountedFoodDeposit + tableDeposit)
+      : depositAmount
 
   // Tính cọc 20% món ăn
   const foodDeposit = itemsTotal * 0.2
@@ -156,8 +162,6 @@ const Step4Payment = ({
           </div>
         </div>
 
-        <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={setVoucherPreview} />
-
         {/* Phần Món ăn đã chọn */}
         {cartItems.length > 0 && (
           <div className='border-t border-gray-200 bg-orange-50/30 p-6'>
@@ -193,31 +197,43 @@ const Step4Payment = ({
 
         {/* Phần Payment Breakdown */}
         <div className='space-y-3 border-t border-gray-200 bg-gray-50 p-6'>
-          {previewOrderAmount > 0 && (
+          {itemsTotal > 0 && (
             <>
               <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
-                <span className='text-gray-700'>Tổng tiền món ăn</span>
-                <span className={`font-semibold ${voucherPreview ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                  {formatCurrency(previewOrderAmount)}
-                </span>
+                <span className='text-gray-700'>Tổng tiền món ăn tạm tính</span>
+                <div className='text-right'>
+                  {voucherPreview && (
+                    <p className='text-sm font-semibold text-gray-400 line-through'>{formatCurrency(itemsTotal)}</p>
+                  )}
+                  <span className='font-semibold text-gray-900'>{formatCurrency(previewFinalAmount)}</span>
+                </div>
               </div>
-              {voucherPreview && (
-                <>
-                  <div className='flex justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm'>
-                    <span className='text-emerald-800'>Giảm giá từ voucher</span>
-                    <span className='font-semibold text-emerald-700'>-{formatCurrency(previewDiscountAmount)}</span>
-                  </div>
-                  <div className='flex justify-between rounded-lg border border-neutral-200 bg-white p-3 text-sm'>
-                    <span className='text-gray-700'>Tổng tiền món sau ưu đãi</span>
-                    <span className='text-lg font-bold text-gray-900'>{formatCurrency(previewFinalAmount)}</span>
-                  </div>
-                </>
-              )}
               <div className='flex justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm'>
-                <span className='text-gray-700'>Cọc 20% món ăn</span>
-                <span className='font-semibold text-amber-700'>{formatCurrency(foodDeposit)}</span>
+                <span className='text-gray-700'>{voucherPreview ? 'Cọc 20% món ăn sau ưu đãi' : 'Cọc 20% món ăn'}</span>
+                <div className='text-right'>
+                  {voucherPreview && (
+                    <p className='text-sm font-semibold text-gray-400 line-through'>{formatCurrency(foodDeposit)}</p>
+                  )}
+                  <span className='font-semibold text-amber-700'>
+                    {formatCurrency(voucherPreview ? discountedFoodDeposit : foodDeposit)}
+                  </span>
+                </div>
               </div>
             </>
+          )}
+
+          {itemsTotal > 0 && (
+            <div className='flex justify-between rounded-lg bg-gray-100 p-3 text-sm'>
+              <span className='text-gray-600'>Món ăn còn lại (Thanh toán sau)</span>
+              <div className='text-right'>
+                {voucherPreview && (
+                  <p className='text-sm font-semibold text-gray-400 line-through'>{formatCurrency(remainingAmount)}</p>
+                )}
+                <span className='font-semibold text-gray-700'>
+                  {formatCurrency(voucherPreview ? discountedRemainingAmount : remainingAmount)}
+                </span>
+              </div>
+            </div>
           )}
 
           <div className='flex justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm'>
@@ -225,22 +241,26 @@ const Step4Payment = ({
             <span className='font-semibold text-gray-900'>{formatCurrency(tableDeposit)}</span>
           </div>
 
-          {itemsTotal > 0 && (
-            <div className='flex justify-between rounded-lg bg-gray-100 p-3 text-sm'>
-              <span className='text-gray-600'>Món ăn còn lại (Thanh toán sau)</span>
-              <span className='font-semibold text-gray-700'>{formatCurrency(remainingAmount)}</span>
-            </div>
-          )}
-
           <div className='mt-4 flex items-center justify-between rounded-lg border-2 border-orange-200 bg-orange-50 p-5'>
             <div>
               <span className='mb-1 block text-xl font-extrabold text-gray-900'>Tổng thanh toán ngay</span>
               <span className='text-xs text-gray-600'>
-                Mức thanh toán hiện tại trước khi xác nhận áp dụng voucher chính thức
+                {voucherPreview
+                  ? 'Khoản cần thanh toán ngay đã được cập nhật sau khi áp dụng voucher.'
+                  : 'Tiền cọc giữ bàn hiện tại.'}
               </span>
             </div>
-            <span className='text-4xl font-black text-orange-600'>{formatCurrency(depositAmount)}</span>
+            <div className='text-right'>
+              {voucherPreview && (
+                <p className='mb-1 text-sm font-semibold text-gray-400 line-through'>{formatCurrency(depositAmount)}</p>
+              )}
+              <span className='text-4xl font-black text-orange-600'>
+                {formatCurrency(voucherPreview ? discountedPayableNow : depositAmount)}
+              </span>
+            </div>
           </div>
+
+          <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={onVoucherPreviewChange} />
         </div>
       </div>
 

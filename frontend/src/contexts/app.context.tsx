@@ -13,14 +13,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        console.log('AppProvider: Fetching profile with token:', accessToken)
-        const res = await userApi.getProfile(accessToken!)
+        const res = await userApi.getProfile()
         if (res.data?.data) {
           setUser(res.data.data)
-          console.log('AppProvider: Profile fetched successfully', res.data.data)
         }
-      } catch (error) {
-        console.error('AppProvider: Failed to fetch profile', error)
+      } catch {
         logout()
       }
     }

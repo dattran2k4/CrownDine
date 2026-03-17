@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -76,17 +77,14 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.DEPOSIT);
 
         Order order = reservation.getOrder();
-        BigDecimal totalOrder = calculateReservationOrderTotal(order);
+        BigDecimal finalOrderPrice = getReservationOrderFinalPrice(order);
+        log.info("Order {} final price used for deposit calculation: {}", order.getId(), finalOrderPrice);
         BigDecimal tableDeposit = calculateTableDeposit(reservation);
-        BigDecimal amountToPay = calculationService.calculateDepositPayment(totalOrder, tableDeposit);
+        log.info("Reservation {} table {} deposit amount: {}", reservation.getId(), reservation.getTable().getId(), tableDeposit);
+        BigDecimal amountToPay = calculationService.calculateDepositPayment(finalOrderPrice, tableDeposit);
+        log.info("Reservation {} deposit payment amount calculated from final order price {} and table deposit {}: {}",
+                reservation.getId(), finalOrderPrice, tableDeposit, amountToPay);
 
-        if (order != null && order.getVoucher() != null) {
-            BigDecimal discount = calculationService.calculateVoucherDiscount(amountToPay, order.getVoucher());
-            amountToPay = amountToPay.subtract(discount);
-        }
-
-        log.info("Table deposit (total): {}", tableDeposit);
-        log.info("Total amount to pay: {}", amountToPay);
         return new PreparedPayment(payment, amountToPay, "Thanh toán đặt cọc bàn");
     }
 
@@ -101,35 +99,60 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         payment.setType(EPaymentType.SETTLEMENT);
 
         BigDecimal amountToPay = order.getFinalPrice();
+        log.info("Order {} final price before settlement adjustment: {}", order.getId(), amountToPay);
 
-        //Check order has reservation
         if (order.getReservation() != null) {
-            BigDecimal totalDeposited = paymentRepository.sumAmountByTargetAndReservationIdAndStatus(EPaymentTarget.RESERVATION, order.getReservation().getId(), EPaymentStatus.SUCCESS);
+            boolean hasSuccessfulReservationDeposit = paymentRepository.existsByTargetAndReservationIdAndStatus(
+                    EPaymentTarget.RESERVATION, order.getReservation().getId(), EPaymentStatus.SUCCESS);
 
-            amountToPay = amountToPay.subtract(totalDeposited);
-            log.info("Order {} - Total: {}, Deposit: {}, Remaining: {}",
-                    order.getId(), order.getFinalPrice(), totalDeposited, amountToPay);
+            if (hasSuccessfulReservationDeposit) {
+                BigDecimal orderDepositPaid = calculateOrderDepositPaid(order);
+                amountToPay = amountToPay.subtract(orderDepositPaid);
+                log.info("Order {} settlement subtracts only order deposit {} from final price {}. Table deposit is retained by the restaurant. Remaining amount to collect: {}",
+                        order.getId(), orderDepositPaid, order.getFinalPrice(), amountToPay);
+            } else {
+                log.info("Order {} has reservation {} but no successful reservation deposit payment. Remaining amount stays at final price {}",
+                        order.getId(), order.getReservation().getId(), amountToPay);
+            }
         }
 
         return new PreparedPayment(payment, amountToPay, "Thanh toán đơn hàng");
     }
 
-    private BigDecimal calculateReservationOrderTotal(Order order) {
+    private BigDecimal getReservationOrderFinalPrice(Order order) {
         if (order == null) {
+            log.info("Reservation has no order. Using 0 as final order price for deposit calculation");
             return BigDecimal.ZERO;
+        }
+
+        if (order.getFinalPrice() != null) {
+            log.info("Using persisted final price {} for order {}", order.getFinalPrice(), order.getId());
+            return order.getFinalPrice();
         }
 
         List<OrderDetail> orderDetails = order.getOrderDetails();
         if (orderDetails == null) {
+            log.info("Order {} has no order details. Using 0 as final order price for deposit calculation", order.getId());
             return BigDecimal.ZERO;
         }
 
-        return calculationService.calculateTotalOrder(orderDetails);
+        BigDecimal recalculatedFinalPrice = calculationService.calculateTotalOrder(orderDetails);
+        log.warn("Order {} finalPrice is null. Falling back to recalculated amount from order details: {}",
+                order.getId(), recalculatedFinalPrice);
+        return recalculatedFinalPrice;
     }
 
     private BigDecimal calculateTableDeposit(Reservation reservation) {
         RestaurantTable table = reservation.getTable();
         return calculationService.calculateTableDeposit(table != null ? table.getBaseDeposit() : null, reservation.getStartTime(), reservation.getEndTime());
+    }
+
+    private BigDecimal calculateOrderDepositPaid(Order order) {
+        BigDecimal finalOrderPrice = getReservationOrderFinalPrice(order);
+        BigDecimal orderDepositPaid = finalOrderPrice.multiply(new BigDecimal("0.20")).setScale(2, RoundingMode.HALF_UP);
+        log.info("Calculated paid order deposit for order {} as 20% of final price {}: {}",
+                order.getId(), finalOrderPrice, orderDepositPaid);
+        return orderDepositPaid;
     }
 
     private void validatePositiveAmount(BigDecimal amountToPay) {

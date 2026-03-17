@@ -101,4 +101,5 @@ export interface ReservationHistoryResponse {
   orderId?: number
   orderStatus?: string
   finalPrice?: number
+  items?: OrderLineResponse[]
 }

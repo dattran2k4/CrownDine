@@ -138,7 +138,6 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                         </div>
                       </div>
                     )}
-
                     {/* Order Details */}
                     {reservation.orderId ? (
                       <div className='bg-card border-border/50 space-y-4 rounded-lg border p-6'>
@@ -149,7 +148,26 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                           </Badge>
                         </div>
 
-                        <div className='border-border/50 flex items-center justify-between border-t pt-4'>
+                        {reservation.items && reservation.items.length > 0 && (
+                          <div className='border-border/50 space-y-2 border-b border-t py-4'>
+                            {reservation.items.map((item, idx) => (
+                              <div key={idx} className='flex justify-between text-sm'>
+                                <div className='flex items-center gap-2'>
+                                  <Badge
+                                    variant='outline'
+                                    className='flex h-5 min-w-[24px] items-center justify-center px-1 py-0 text-[10px]'
+                                  >
+                                    x{item.quantity}
+                                  </Badge>
+                                  <span className='font-medium'>{item.name}</span>
+                                </div>
+                                <span className='text-foreground/80'>{formatCurrency(item.totalPrice)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className='flex items-center justify-between'>
                           <span className='flex items-center gap-2 font-semibold'>
                             <DollarSign className='text-primary h-4 w-4' />
                             Final Bill

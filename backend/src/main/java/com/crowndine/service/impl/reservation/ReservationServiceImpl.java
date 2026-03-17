@@ -189,6 +189,9 @@ public class ReservationServiceImpl implements ReservationService {
             resp.setOrderId(order.getId());
             resp.setOrderStatus(order.getStatus());
             resp.setFinalPrice(order.getFinalPrice());
+            
+            List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
+            resp.setItems(details.stream().map(this::toLineResponse).toList());
         }
 
         return resp;
@@ -215,6 +218,9 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setOrderId(order.getId());
         resp.setOrderStatus(order.getStatus());
         resp.setFinalPrice(order.getFinalPrice());
+        
+        List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
+        resp.setItems(details.stream().map(this::toLineResponse).toList());
         return resp;
     }
 

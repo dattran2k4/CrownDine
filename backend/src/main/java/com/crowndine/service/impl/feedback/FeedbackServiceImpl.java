@@ -181,7 +181,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .avatarUrl(feedback.getUser() != null ? feedback.getUser().getAvatarUrl() : null)
                 .guestName(feedback.getGuestName())
                 .isFeatured(feedback.getIsFeatured())
-                .status(feedback.getStatus())
+                .status(feedback.getStatus() != null ? feedback.getStatus().name() : null)
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();

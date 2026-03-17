@@ -1,5 +1,6 @@
 package com.crowndine.model;
 
+import com.crowndine.common.enums.EFeedbackStatus;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -36,8 +37,9 @@ public class Feedback extends AbstractEntity<Long> {
     @Column(name = "is_featured")
     private Boolean isFeatured = false;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status = "APPROVED";
+    private EFeedbackStatus status = EFeedbackStatus.APPROVED;
 
     @ManyToOne
     @JoinColumn(name = "item_id")

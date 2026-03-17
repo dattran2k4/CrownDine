@@ -1,19 +1,13 @@
 package com.crowndine.controller;
 
-import com.cloudinary.Cloudinary;
 import com.crowndine.dto.request.ChangePasswordRequest;
-import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
-import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.security.Principal;
 
 @RestController
 @Validated
@@ -23,7 +17,6 @@ import java.security.Principal;
 public class ApiUserController {
 
     private final UserService userService;
-    private final Cloudinary cloudinary;
 
     @GetMapping
     public ApiResponse getListUsers() {

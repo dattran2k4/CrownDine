@@ -2,8 +2,6 @@ package com.crowndine.repository;
 
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.model.Reservation;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

@@ -24,7 +24,7 @@ CREATE TABLE `combos` (
                           `image_url` varchar(255) DEFAULT NULL,
                           `name` varchar(255) DEFAULT NULL,
                           `slug` varchar(255) DEFAULT NULL,
-                          `status` enum('AVAILABLE','UNAVAILABLE') DEFAULT NULL,
+                          `status` enum('TEST') DEFAULT NULL,
                           PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 

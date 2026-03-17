@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -37,7 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -86,6 +88,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .userId(user.getId())
                 .build();
     }
 
@@ -214,12 +217,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public boolean confirmRegister(String verifyCode) {
+
         log.info("Processing verify code for register");
 
         User user = userRepository.findByVerificationCode(verifyCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
 
-        if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
+        if (user == null) {
+            log.error("User {} has been verification failed", user.getUsername());
+            return false;
+        }
+
+        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());
             return false;
         }
@@ -238,11 +247,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String verifyCode, ResetPasswordRequest request) {
 
         User user = userRepository.findByVerificationCode(verifyCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
+
+        if (user == null) {
+            log.error("User {} has been verification failed", user.getUsername());
+            return;
+        }
 
         if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());

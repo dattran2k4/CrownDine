@@ -42,8 +42,16 @@ public class ChatService {
 
     private String getSystemPrompt() {
         String restaurantContext = contextService.getRestaurantContext();
-        return """
+        // Get current date and time for AI context
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        String currentDateTime = now.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String currentDate = now.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        
+        return String.format("""
         Bạn là trợ lý AI thông minh của nhà hàng CrownDine, chuyên hỗ trợ khách hàng đặt bàn.
+        
+        THỜI GIAN HIỆN TẠI: %s (Ngày: %s)
+        QUAN TRỌNG: Bạn PHẢI sử dụng thời gian hiện tại này để kiểm tra xem ngày khách muốn đặt có trong quá khứ hay không.
         
         Vai trò của bạn:
         1. Hỗ trợ khách hàng đặt bàn một cách thân thiện và chuyên nghiệp
@@ -68,17 +76,41 @@ public class ChatService {
         Nếu khách muốn đặt bàn, hãy hỏi:
         - Số lượng khách
         - Ngày muốn đặt
-        - Giờ muốn đến
+        - Giờ muốn đến (PHẢI trong khoảng 09:00 - 22:00, không được sau 22:00)
+        - Thời lượng đặt bàn (1 tiếng, 2 tiếng, 3 tiếng, v.v.) - nếu khách không nói thì mặc định là 2 tiếng
         - Có yêu cầu đặc biệt gì không (bàn ngoài trời, khu vực yên tĩnh, v.v.)
+        
+        QUAN TRỌNG VỀ THỜI GIAN:
+        - Nhà hàng mở cửa từ 09:00 đến 22:00
+        - KHÔNG được đề xuất hoặc chấp nhận đặt bàn sau 22:00
+        - KHÔNG được đề xuất hoặc chấp nhận đặt bàn trước 09:00
+        - Thời gian kết thúc đặt bàn PHẢI trước 22:00
+        - Nếu khách muốn đặt sau 22:00 hoặc trước 09:00, hãy từ chối và đề xuất thời gian khác trong giờ mở cửa
+        - Nếu khách muốn đặt bàn với thời lượng mà giờ kết thúc vượt quá 22:00, hãy điều chỉnh thời lượng hoặc giờ bắt đầu để đảm bảo kết thúc trước 22:00
+        
+        QUAN TRỌNG VỀ NGÀY ĐẶT BÀN:
+        - KHÔNG được đề xuất hoặc chấp nhận đặt bàn vào NGÀY TRONG QUÁ KHỨ
+        - PHẢI so sánh ngày khách muốn đặt với THỜI GIAN HIỆN TẠI ở trên (%s)
+        - Nếu khách muốn đặt vào ngày đã qua (ngày < ngày hiện tại), hãy TỪ CHỐI và nhắc nhở: "Xin lỗi, không thể đặt bàn vào ngày trong quá khứ. Vui lòng chọn ngày từ hôm nay (%s) trở đi."
+        - Ví dụ: Nếu hiện tại là %s và khách muốn đặt ngày 15/03/2026, nhưng ngày hiện tại đã là %s, thì ngày 15/03/2026 là trong quá khứ → TỪ CHỐI
+        - Chỉ chấp nhận đặt bàn từ ngày hiện tại (%s) trở đi
+        
+        QUAN TRỌNG VỀ THỜI GIAN ĐẶT BÀN:
+        - KHÔNG được đề xuất hoặc chấp nhận thời gian đặt bàn trong quá khứ
+        - Nhà hàng mở cửa từ 09:00 đến 22:00
+        - PHẢI kiểm tra thời gian hiện tại: nếu khách muốn đặt vào giờ đã qua trong ngày hôm nay, hãy đề xuất đặt vào ngày mai hoặc ngày khác
+        - PHẢI kiểm tra giờ mở cửa: nếu khách muốn đặt trước 09:00, hãy từ chối và đề xuất thời gian từ 09:00 trở đi
+        - PHẢI kiểm tra giờ đóng cửa: nếu khách muốn đặt sau 22:00, hãy nhắc nhở rằng nhà hàng đóng cửa lúc 22:00 và đề xuất thời gian sớm hơn (ví dụ: 20:00-22:00)
+        - Luôn kiểm tra thời gian hiện tại và giờ mở/đóng cửa trước khi xác nhận đặt bàn
         
         QUY TRÌNH ĐẶT BÀN SAU KHI KHÁCH XÁC NHẬN:
         Sau khi khách xác nhận đặt bàn với thông tin đầy đủ (bàn, ngày, giờ, số khách), bạn cần:
         
         1. Xác nhận lại thông tin đặt bàn một cách rõ ràng:
-           - Tên bàn (ví dụ: Bàn 01)
+           - Tên bàn (ví dụ: Bàn 01, T2-01)
            - Tầng và khu vực (ví dụ: Tầng 1, khu vực Sảnh chính)
            - Số lượng khách
-           - Ngày và giờ đặt bàn
+           - Ngày và giờ đặt bàn (bao gồm thời lượng: 1 tiếng, 2 tiếng, 3 tiếng, v.v.)
         
         2. Hỏi khách có muốn đặt món trước không:
            - Nếu khách muốn đặt món: NGAY LẬP TỨC trả về link để chuyển thẳng đến bước 3 (đặt món)
@@ -86,40 +118,54 @@ public class ChatService {
            - Nếu khách trả lời "có", "xác nhận", "đồng ý", "ok", "được", "thanh toán": NGAY LẬP TỨC trả về link để chuyển thẳng đến bước 4 (thanh toán đặt cọc)
         
         3. Tạo link chuyển hướng (BẮT BUỘC khi khách xác nhận):
-           Khi khách xác nhận muốn đặt món hoặc thanh toán đặt cọc, bạn BẮT BUỘC phải trả về link trong cùng câu trả lời với format sau:
+           Khi khách xác nhận muốn đặt món hoặc thanh toán đặt cọc, bạn BẮT BUỘC phải trả về link ĐẦY ĐỦ trong cùng câu trả lời với format CHÍNH XÁC sau:
            
            Nếu khách muốn đặt món (bước 3):
-           "/reservation?step=3&tableName=[Tên bàn]&date=[Ngày YYYY-MM-DD]&startTime=[Giờ HH:mm]&endTime=[Giờ HH:mm]&guests=[Số khách]"
+           "/reservation?step=3&tableName=[Tên bàn CHÍNH XÁC]&date=[Ngày YYYY-MM-DD]&startTime=[Giờ HH:mm]&endTime=[Giờ HH:mm]&guests=[Số khách]"
            
            Nếu khách muốn thanh toán đặt cọc (bước 4):
-           "/reservation?step=4&tableName=[Tên bàn]&date=[Ngày YYYY-MM-DD]&startTime=[Giờ HH:mm]&endTime=[Giờ HH:mm]&guests=[Số khách]"
+           "/reservation?step=4&tableName=[Tên bàn CHÍNH XÁC]&date=[Ngày YYYY-MM-DD]&startTime=[Giờ HH:mm]&endTime=[Giờ HH:mm]&guests=[Số khách]"
+           
+           QUAN TRỌNG VỀ THÔNG TIN TRONG LINK:
+           - Bạn PHẢI lấy thông tin từ cuộc trò chuyện trước đó:
+             * Tên bàn: Lấy từ bàn bạn đã đề xuất và khách đã xác nhận (ví dụ: "Bàn 01", "T2-01", "Bàn T2-01")
+             * Ngày: Lấy từ ngày khách đã xác nhận, format YYYY-MM-DD (ví dụ: 2025-03-17)
+             * Giờ bắt đầu: Lấy từ giờ khách đã xác nhận, format HH:mm (ví dụ: 11:00, 13:30)
+             * Giờ kết thúc: Lấy từ giờ kết thúc khách đã xác nhận, format HH:mm (ví dụ: 13:00, 15:30)
+             * Số khách: Lấy từ số lượng khách khách đã xác nhận (ví dụ: 2, 4, 6)
+           - KHÔNG được bỏ sót bất kỳ thông tin nào trong link
+           - KHÔNG được cắt ngắn link hoặc chỉ trả về một phần link
+           - Link PHẢI bắt đầu bằng "/reservation?step=" và có đầy đủ 5 tham số: step, tableName, date, startTime, endTime, guests
            
            Ví dụ cụ thể:
-           - Đặt món: "/reservation?step=3&tableName=Bàn 01&date=2025-01-20&startTime=13:00&endTime=15:00&guests=2"
+           - Đặt món: "/reservation?step=3&tableName=T2-01&date=2025-03-17&startTime=11:00&endTime=13:00&guests=4"
            - Thanh toán: "/reservation?step=4&tableName=Bàn 01&date=2025-01-20&startTime=16:00&endTime=18:00&guests=2"
         
         4. Format câu trả lời khi khách xác nhận (QUAN TRỌNG):
            - Nếu khách muốn đặt món: "Tuyệt vời! Tôi sẽ chuyển bạn đến trang đặt món ngay bây giờ."
-             Sau đó đặt link ở cuối dòng (link sẽ tự động được xử lý, không hiển thị cho khách):
+             Sau đó đặt link ĐẦY ĐỦ ở cuối dòng (link sẽ tự động được xử lý, không hiển thị cho khách):
              /reservation?step=3&tableName=[Tên bàn]&date=[Ngày]&startTime=[Giờ]&endTime=[Giờ]&guests=[Số khách]
            
            - Nếu khách muốn thanh toán: "Tuyệt vời! Tôi sẽ chuyển bạn đến trang thanh toán đặt cọc ngay bây giờ."
-             Sau đó đặt link ở cuối dòng (link sẽ tự động được xử lý, không hiển thị cho khách):
+             Sau đó đặt link ĐẦY ĐỦ ở cuối dòng (link sẽ tự động được xử lý, không hiển thị cho khách):
              /reservation?step=4&tableName=[Tên bàn]&date=[Ngày]&startTime=[Giờ]&endTime=[Giờ]&guests=[Số khách]
            
            QUAN TRỌNG: 
            - Link PHẢI được đặt ở cuối câu trả lời (trên một dòng riêng hoặc sau dấu chấm)
+           - Link PHẢI ĐẦY ĐỦ với tất cả 5 tham số: step, tableName, date, startTime, endTime, guests
            - KHÔNG được chỉ xác nhận lại thông tin mà không có link
+           - KHÔNG được cắt ngắn link hoặc chỉ trả về một phần link
            - Link sẽ được tự động xử lý và chuyển hướng, KHÔNG hiển thị cho khách
            - Nếu khách nói "xác nhận", "có", "đồng ý" về thanh toán → PHẢI trả về link step=4 ngay lập tức
-           - Format: Câu trả lời thông thường + xuống dòng + link (link sẽ tự động bị ẩn)
+           - Format: Câu trả lời thông thường + xuống dòng + link ĐẦY ĐỦ (link sẽ tự động bị ẩn)
         
         Lưu ý quan trọng:
         - Luôn tạo link với đầy đủ thông tin: step, tableName, date, startTime, endTime, guests
-        - Format ngày phải là YYYY-MM-DD (ví dụ: 2025-01-20)
-        - Format giờ phải là HH:mm (ví dụ: 13:00, 18:30)
-        - Tên bàn phải chính xác như đã đề xuất (ví dụ: "Bàn 01", "Bàn T2-01")
+        - Format ngày phải là YYYY-MM-DD (ví dụ: 2025-03-17)
+        - Format giờ phải là HH:mm (ví dụ: 11:00, 13:30)
+        - Tên bàn phải chính xác như đã đề xuất (ví dụ: "Bàn 01", "T2-01", "Bàn T2-01")
         - Số khách phải là số nguyên (ví dụ: 2, 4, 6)
+        - Nếu bạn không nhớ thông tin từ cuộc trò chuyện trước, hãy hỏi lại khách trước khi tạo link
         
         VÍ DỤ FLOW KHI KHÁCH XÁC NHẬN:
         
@@ -143,7 +189,7 @@ public class ChatService {
         - Link sẽ tự động được xử lý và không hiển thị cho khách
         
         DỮ LIỆU NHÀ HÀNG (SỬ DỤNG ĐỂ TRẢ LỜI):
-        """ + restaurantContext;
+        """, currentDateTime, currentDate, currentDateTime, currentDate, currentDateTime, currentDate, currentDate) + restaurantContext;
     }
 
     @Transactional
@@ -442,18 +488,54 @@ public class ChatService {
             return text;
         }
         
-        // Format menu items - add line break after each dish
-        // Pattern: "Món X: Tên món: Tên chi tiết - Giá: Y VNĐ"
-        text = text.replaceAll("(Món [^:]+):\\s*([^:]+):\\s*([^-]+)\\s*-\\s*Giá:\\s*([0-9.,]+\\s*VNĐ)", "\n$1:\n   $2: $3\n   - Giá: $4\n");
+        // Ensure menu categories have line breaks before them
+        text = text.replaceAll("(MENU:|COMBO:)", "\n$1\n");
         
-        // Format menu items with just name and price (fallback pattern)
-        text = text.replaceAll("([^:]+):\\s*([^-]+)\\s*-\\s*Giá:\\s*([0-9.,]+\\s*VNĐ)", "$1:\n   $2\n   - Giá: $3\n");
+        // Format menu category headers (Món súp:, Món bò:, etc.) - add line break before
+        text = text.replaceAll("([^\\n])(Món [^:]+:)", "$1\n\n$2");
         
-        // Add line break after each menu category (Món bò, Món hải sản, etc.) if not already formatted
-        text = text.replaceAll("(Món [^:]+):\\s*([^\\n])", "\n$1:\n   $2");
+        // Format menu items - ensure each item starts on new line after category
+        // Pattern: "Món X:\n  - Tên món - Giá: X VNĐ"
+        // Add line break before each dash item if not already there
+        text = text.replaceAll("([^\\n])(\\s+-\\s+)", "$1\n$2");
         
-        // Add line break after price (VNĐ) when followed by text
+        // CRITICAL: Keep price on same line as menu item (but NOT for combos)
+        // IMPORTANT: Process combos FIRST to preserve their format, then process regular items
+        
+        // Step 1: Protect combo format - ensure price stays on separate line for combos
+        // Pattern: Combo name followed by newline and "Giá:" -> keep as is (don't merge)
+        // This ensures combos keep their format: "  - Combo X\n    Giá: Y VNĐ"
+        
+        // Step 2: For regular menu items (not combos), merge price to same line
+        // Pattern 1: Item name on one line, "Giá:" on next line -> merge to same line (only for regular items, not combos)
+        // Use negative lookahead to exclude items starting with "Combo"
+        text = text.replaceAll("(\\s+-\\s+(?!Combo)[^\\n]+)\\n\\s+Giá:", "$1 - Giá:");
+        // Pattern 2: Item name with colon, description, then "Giá:" on next line -> merge to same line (not for combos)
+        text = text.replaceAll("(\\s+-\\s+(?!Combo)[^\\n]+):\\s*([^\\n]+)\\n\\s+Giá:", "$1: $2 - Giá:");
+        // Pattern 3: Any line break before "Giá:" after a dash item -> remove it (not for combos)
+        text = text.replaceAll("(\\s+-\\s+(?!Combo)[^\\n]+)\\s+\\n\\s+Giá:", "$1 - Giá:");
+        
+        // Step 2.5: Ensure combo price doesn't have "-" before "Giá:" (should be just "Giá:")
+        // Remove any "-" that might appear before "Giá:" on a line with indent (combo format)
+        text = text.replaceAll("(\\s+)-\\s+Giá:", "$1Giá:");
+        // Pattern 4: Category name followed by "Giá:" on next line (shouldn't happen but just in case)
+        text = text.replaceAll("([^\\n]+:)\\s+\\n\\s+Giá:", "$1");
+        
+        // Step 3: Ensure line breaks between combo items (after VNĐ and before next dash item)
+        // This ensures proper spacing between combos
+        text = text.replaceAll("([0-9.,]+\\s*VNĐ[^\\n]*)\\n\\s+(\\s+-\\s+)", "$1\n\n$2");
+        
+        // Format numbered list items (1., 2., etc.) - add line break before each
+        text = text.replaceAll("([^\\n])(\\d+\\.\\s+)", "$1\n\n$2");
+        
+        // Format table information - add line breaks for better readability
+        // Pattern: "Bàn X (Y người)" followed by details
+        text = text.replaceAll("([^\\n])(Bàn [^\\n]+\\s+\\(\\d+\\s+người\\))", "$1\n$2");
+        
+        // Add line break after price (VNĐ) when followed by new item or category
         text = text.replaceAll("([0-9.,]+\\s*VNĐ)\\s+([A-ZĐ])", "$1\n\n$2");
+        text = text.replaceAll("([0-9.,]+\\s*VNĐ)\\s+(\\d+\\.)", "$1\n\n$2");
+        text = text.replaceAll("([0-9.,]+\\s*VNĐ)\\s+(\\s+-)", "$1\n$2");
         
         // Add line break before "Hoặc" when starting a new question
         text = text.replaceAll("([^\\n])(Hoặc bạn|Hoặc)", "$1\n\n$2");
@@ -468,23 +550,19 @@ public class ChatService {
         text = text.replaceAll("(:)\\s+(Số lượng|Bạn có|Vui lòng|Có|Không có|Ví dụ|Mỗi|Sau)", "$1\n$2");
         
         // Add line break before common question patterns
-        text = text.replaceAll("\\s+(Số lượng khách|Ngày muốn đặt|Giờ muốn đến|Bạn có yêu cầu|Vui lòng cho tôi|Có yêu cầu đặc biệt)", "\n$1");
+        text = text.replaceAll("([^\\n])(Số lượng khách|Ngày muốn đặt|Giờ muốn đến|Bạn có yêu cầu|Vui lòng cho tôi|Có yêu cầu đặc biệt)", "$1\n$2");
         
         // Add line break after periods if followed by capital letter (new sentence)
         text = text.replaceAll("\\.\\s+([A-ZĐ])", ".\n\n$1");
         
         // Add line break after common phrases that start new topics
-        text = text.replaceAll("(Tuyệt vời|Cảm ơn|Để hoàn tất|Sau khi có đủ thông tin)", "\n$1");
+        text = text.replaceAll("([^\\n])(Tuyệt vời|Cảm ơn|Để hoàn tất|Sau khi có đủ thông tin)", "$1\n\n$2");
         
-        // Format table listings - ensure each table is on a new line
-        // Pattern: "Bàn X ở tầng Y, khu vực Z" -> format nicely
-        text = text.replaceAll("(Bàn [^,]+)\\s+ở\\s+(tầng|Tầng)\\s+(\\d+),\\s+(khu vực|Khu vực)\\s+([^\\n\\.]+)", "$1\n   - $2 $3, $4 $5");
+        // Format table listings - ensure each table detail is on a new line
+        text = text.replaceAll("(Bàn [^\\n]+)\\s+ở\\s+(tầng|Tầng)\\s+(\\d+),\\s+(khu vực|Khu vực)\\s+([^\\n\\.]+)", "$1\n   - $2 $3, $4 $5");
         
         // Format numbered lists (1. Bàn X, 2. Bàn Y) - ensure each on new line
-        text = text.replaceAll("(\\d+\\.\\s+Bàn[^\\n]+)", "\n$1");
-        
-        // Format "Bàn X ở tầng Y" patterns
-        text = text.replaceAll("(Bàn [^\\n]+)\\s+ở\\s+(tầng|Tầng)\\s+(\\d+),\\s+(khu vực|Khu vực)\\s+([^\\n\\.]+)", "$1\n   - $2 $3, $4 $5");
+        text = text.replaceAll("([^\\n])(\\d+\\.\\s+Bàn[^\\n]+)", "$1\n$2");
         
         // Add line break before "Bạn thích" or similar questions after table list
         text = text.replaceAll("([^\\n])(Bạn thích|Bạn muốn|Bạn có muốn)", "$1\n\n$2");
@@ -492,19 +570,6 @@ public class ChatService {
         // Clean up multiple consecutive line breaks (max 2)
         text = text.replaceAll("\\n{3,}", "\n\n");
         
-        // Trim each line and remove empty lines
-        String[] lines = text.split("\\n");
-        StringBuilder formatted = new StringBuilder();
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i].trim();
-            if (!line.isEmpty()) {
-                formatted.append(line);
-                if (i < lines.length - 1) {
-                    formatted.append("\n");
-                }
-            }
-        }
-        
-        return formatted.toString().trim();
+        return text.trim();
     }
 }

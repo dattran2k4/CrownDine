@@ -36,15 +36,18 @@ public class ChatContextService {
         
         // Restaurant info
         context.append("THÔNG TIN NHÀ HÀNG CROWNDINE:\n");
-        context.append("- Giờ mở cửa: 10:00 - 22:00 hàng ngày\n");
+        context.append("- Giờ mở cửa: 09:00 - 22:00 hàng ngày\n");
+        context.append("- QUAN TRỌNG: KHÔNG được đặt bàn sau 22:00 (giờ đóng cửa)\n");
+        context.append("- QUAN TRỌNG: KHÔNG được đặt bàn trước 09:00 (giờ mở cửa)\n");
+        context.append("- Thời gian đặt bàn phải kết thúc TRƯỚC 22:00\n");
         context.append("- Địa chỉ: [Cập nhật địa chỉ]\n");
         context.append("- Số điện thoại: [Cập nhật số điện thoại]\n\n");
         
         // Categories and Menu Items
-        context.append("MENU:\n");
+        context.append("MENU:\n\n");
         List<Category> categories = categoryRepository.findAll();
         for (Category category : categories) {
-            context.append("\n").append(category.getName()).append(":\n");
+            context.append(category.getName()).append(":\n");
             List<Item> items = itemRepository.findAll().stream()
                     .filter(item -> item.getCategory() != null && 
                             item.getCategory().getId().equals(category.getId()) &&
@@ -52,10 +55,7 @@ public class ChatContextService {
                     .collect(Collectors.toList());
             
             for (Item item : items) {
-                context.append("  - ").append(item.getName());
-                if (item.getDescription() != null && !item.getDescription().isEmpty()) {
-                    context.append(": ").append(item.getDescription());
-                }
+                context.append("\n  - ").append(item.getName());
                 context.append(" - Giá: ");
                 if (item.getPriceAfterDiscount() != null && 
                     item.getPriceAfterDiscount().compareTo(item.getPrice()) < 0) {
@@ -64,20 +64,17 @@ public class ChatContextService {
                 } else {
                     context.append(item.getPrice()).append(" VNĐ");
                 }
-                context.append("\n");
             }
+            context.append("\n");
         }
         
         // Combos
         List<Combo> combos = comboRepository.findAll();
         if (!combos.isEmpty()) {
-            context.append("\nCOMBO:\n");
+            context.append("\nCOMBO:\n\n");
             for (Combo combo : combos) {
                 context.append("  - ").append(combo.getName());
-                if (combo.getDescription() != null && !combo.getDescription().isEmpty()) {
-                    context.append(": ").append(combo.getDescription());
-                }
-                context.append(" - Giá: ");
+                context.append("\n    Giá: ");
                 if (combo.getPriceAfterDiscount() != null && 
                     combo.getPriceAfterDiscount().compareTo(combo.getPrice()) < 0) {
                     context.append(combo.getPriceAfterDiscount()).append(" VNĐ (giảm từ ")
@@ -85,7 +82,7 @@ public class ChatContextService {
                 } else {
                     context.append(combo.getPrice()).append(" VNĐ");
                 }
-                context.append("\n");
+                context.append("\n\n");
             }
         }
         
@@ -159,9 +156,9 @@ public class ChatContextService {
             info.append(index).append(". Bàn ").append(table.getName())
                 .append(" (").append(table.getCapacity()).append(" người)");
             
-            // Add floor and area information on same line for compact display
+            // Add floor and area information with line breaks for better readability
             if (table.getArea() != null && table.getArea().getFloor() != null) {
-                info.append("\n   - Tầng ");
+                info.append("\n   - Tầng: ");
                 if (table.getArea().getFloor().getFloorNumber() != null) {
                     info.append(table.getArea().getFloor().getFloorNumber());
                 } else {
@@ -169,14 +166,14 @@ public class ChatContextService {
                 }
                 
                 if (table.getArea().getName() != null && !table.getArea().getName().isEmpty()) {
-                    info.append(", khu vực ").append(table.getArea().getName());
+                    info.append("\n   - Khu vực: ").append(table.getArea().getName());
                 }
             }
             
             if (table.getBaseDeposit() != null) {
                 info.append("\n   - Đặt cọc: ").append(table.getBaseDeposit()).append(" VNĐ");
             }
-            info.append("\n");
+            info.append("\n\n");
             index++;
         }
         
@@ -206,10 +203,7 @@ public class ChatContextService {
         StringBuilder result = new StringBuilder("Kết quả tìm kiếm cho \"" + keyword + "\":\n");
         for (Item item : items) {
             result.append("  - ").append(item.getName());
-            if (item.getDescription() != null) {
-                result.append(": ").append(item.getDescription());
-            }
-            result.append(" - ").append(item.getPrice()).append(" VNĐ\n");
+            result.append(" - Giá: ").append(item.getPrice()).append(" VNĐ\n");
         }
         
         return result.toString();

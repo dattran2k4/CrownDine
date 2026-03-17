@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom'
 import layoutApi from '@/apis/layout.api'
 import type { TableLayout } from '@/types/layout'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
+import { toast } from 'sonner'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
@@ -103,19 +104,68 @@ export default function Reservation() {
             guestNumber: parseInt(targetGuests)
           })
 
-          // Find table by name - improved matching
-          const normalizedTableName = tableName.toLowerCase().trim()
+          // Find table by name - improved matching with multiple strategies
+          const normalizedTableName = tableName.toLowerCase().trim().replace(/\s+/g, '')
+          
+          console.log(' Searching for table:', {
+            searchName: tableName,
+            normalizedName: normalizedTableName,
+            availableTables: res.data.data.map((t: TableLayout) => t.name)
+          })
+          
           const foundTable = res.data.data.find((t: TableLayout) => {
-            const normalizedTName = t.name.toLowerCase().trim()
-            // Exact match or contains match
-            return normalizedTName === normalizedTableName || 
-                   normalizedTName.includes(normalizedTableName) || 
-                   normalizedTableName.includes(normalizedTName) ||
-                   // Match "Bàn 01" with "01" or "Bàn01"
-                   normalizedTName.replace(/\s+/g, '') === normalizedTableName.replace(/\s+/g, '')
+            const normalizedTName = t.name.toLowerCase().trim().replace(/\s+/g, '')
+            
+            // Strategy 1: Exact match (with or without spaces) - highest priority
+            if (normalizedTName === normalizedTableName) {
+              console.log('✅ Exact match found:', t.name)
+              return true
+            }
+            
+            // Strategy 2: Extract identifiers and match (e.g., "T2-01" = "Bàn T2-01")
+            const extractIdentifiers = (str: string) => str.replace(/[^a-z0-9]/gi, '')
+            const tableId = extractIdentifiers(normalizedTName)
+            const searchId = extractIdentifiers(normalizedTableName)
+            if (tableId === searchId && tableId.length > 0) {
+              console.log('✅ Identifier match found:', t.name, 'IDs:', tableId, searchId)
+              return true
+            }
+            
+            // Strategy 3: Contains match (either direction) - but only if both are meaningful
+            if (normalizedTableName.length >= 2 && normalizedTName.length >= 2) {
+              if (normalizedTName.includes(normalizedTableName) || normalizedTableName.includes(normalizedTName)) {
+                // Additional check: ensure it's not just a partial match (e.g., "01" matching "101")
+                const isMeaningfulMatch = 
+                  normalizedTableName.length >= 3 || // Search term is at least 3 chars
+                  normalizedTName.endsWith(normalizedTableName) || // Ends with search term
+                  normalizedTName.startsWith(normalizedTableName) // Starts with search term
+                
+                if (isMeaningfulMatch) {
+                  console.log('✅ Contains match found:', t.name)
+                  return true
+                }
+              }
+            }
+            
+            // Strategy 4: Match if both contain same key parts (e.g., "T2" and "01")
+            const tableParts = normalizedTName.split(/[^a-z0-9]+/).filter(p => p.length > 0)
+            const nameParts = normalizedTableName.split(/[^a-z0-9]+/).filter(p => p.length > 0)
+            if (nameParts.length > 0 && nameParts.length <= 3 && nameParts.every(part => tableParts.includes(part))) {
+              console.log('✅ Key parts match found:', t.name, 'Parts:', nameParts, tableParts)
+              return true
+            }
+            
+            return false
           })
 
           if (foundTable) {
+            console.log('✅ Table found:', {
+              id: foundTable.id,
+              name: foundTable.name,
+              capacity: foundTable.capacity,
+              status: foundTable.status
+            })
+            
             // Convert TableLayout to ReservationTable
             // Map status: UNAVAILABLE -> AVAILABLE (since we're creating reservation, table should be available)
             const mappedStatus = foundTable.status === 'UNAVAILABLE' ? 'AVAILABLE' : foundTable.status as 'AVAILABLE' | 'RESERVED' | 'OCCUPIED'
@@ -129,6 +179,13 @@ export default function Reservation() {
 
             // Create reservation
             setIsCreatingReservation(true)
+            console.log('📝 Creating reservation with:', {
+              tableId: foundTable.id,
+              date: targetDate,
+              startTime: targetStartTime,
+              endTime: targetEndTime,
+              guests: targetGuests
+            })
             try {
               const reservationRes = await reservationApi.createReservation({
                 date: targetDate,
@@ -144,9 +201,17 @@ export default function Reservation() {
                 setExpiratedAt(reservationRes.data.data.expiratedAt)
                 setSelectedTable(reservationTable)
 
+                // Show success message
+                toast.success('Đặt bàn thành công!', {
+                  description: `Bàn ${foundTable.name} đã được đặt cho ${targetGuests} khách vào ${targetDate} từ ${targetStartTime} đến ${targetEndTime}`
+                })
+
                 // Navigate to target step
                 if (targetStep === '3') {
                   setCurrentStep(3)
+                  toast.info('Chọn món ăn', {
+                    description: 'Bạn có thể chọn món ăn trước cho bàn đã đặt'
+                  })
                 } else if (targetStep === '4') {
                   // For step 4, need to fetch order details first
                   setIsLoadingOrderDetails(true)
@@ -154,9 +219,15 @@ export default function Reservation() {
                     const orderRes = await reservationApi.getReservationOrderDetails(reservationRes.data.data.reservationId)
                     setOrderDetails(orderRes.data.data)
                     setCurrentStep(4)
+                    toast.info('Thanh toán đặt cọc', {
+                      description: 'Vui lòng thanh toán đặt cọc để hoàn tất đặt bàn'
+                    })
                   } catch (error) {
                     console.error('Failed to load order details:', error)
                     setCurrentStep(4) // Still go to step 4, it has fallback logic
+                    toast.warning('Đã chuyển đến bước thanh toán', {
+                      description: 'Không thể tải chi tiết đơn hàng, nhưng bạn vẫn có thể thanh toán'
+                    })
                   } finally {
                     setIsLoadingOrderDetails(false)
                   }
@@ -166,22 +237,30 @@ export default function Reservation() {
                 setSearchParams({})
                 setIsProcessingChatbotParams(false)
               }
-            } catch (error) {
+            } catch (error: any) {
               console.error('Failed to create reservation:', error)
-              alert('Không thể tạo đặt bàn. Vui lòng thử lại.')
+              const errorMessage = error?.response?.data?.message || 'Không thể tạo đặt bàn. Vui lòng thử lại.'
+              toast.error('Lỗi đặt bàn', {
+                description: errorMessage
+              })
               setIsProcessingChatbotParams(false)
             } finally {
               setIsCreatingReservation(false)
             }
           } else {
-            alert(`Không tìm thấy bàn "${tableName}". Vui lòng chọn bàn khác.`)
+            toast.error('Không tìm thấy bàn', {
+              description: `Không tìm thấy bàn "${tableName}". Vui lòng chọn bàn khác hoặc liên hệ chatbot để được hỗ trợ.`
+            })
             // Clear query params
             setSearchParams({})
             setIsProcessingChatbotParams(false)
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to find table:', error)
-          alert('Không thể tải danh sách bàn. Vui lòng thử lại.')
+          const errorMessage = error?.response?.data?.message || 'Không thể tải danh sách bàn. Vui lòng thử lại.'
+          toast.error('Lỗi tải dữ liệu', {
+            description: errorMessage
+          })
           // Clear query params
           setSearchParams({})
           setIsProcessingChatbotParams(false)

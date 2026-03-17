@@ -10,6 +10,7 @@ import PaymentResult from '@/pages/PaymentResult'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
+import VoucherList from '@/pages/Admin/Voucher/VoucherList'
 import PriceSettings from '@/pages/Admin/Price/PriceSettings'
 import Dashboard from '@/pages/Admin/Dashboard/Dashboard'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
@@ -79,6 +80,10 @@ const router = createBrowserRouter([
           {
             path: 'staff',
             element: <StaffList />
+          },
+          {
+            path: 'vouchers',
+            element: <VoucherList />
           },
           {
             path: 'price-settings',

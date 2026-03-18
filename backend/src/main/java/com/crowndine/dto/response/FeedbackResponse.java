@@ -16,6 +16,7 @@ public class FeedbackResponse {
 
     private Long itemId;
     private Long comboId;
+    private Long orderId;
     private Long orderDetailId;
     private Long userId;
     private String fullName;

@@ -1,9 +1,19 @@
--- Add columns to support anonymous feedback and moderation
 ALTER TABLE feedbacks
     ADD COLUMN guest_name VARCHAR(100) NULL,
     ADD COLUMN guest_email VARCHAR(255) NULL,
     ADD COLUMN is_featured BOOLEAN DEFAULT FALSE,
-    ADD COLUMN status ENUM('PENDING', 'APPROVED', 'HIDDEN') DEFAULT 'APPROVED';
+    ADD COLUMN status ENUM('PENDING', 'APPROVED', 'HIDDEN') DEFAULT 'APPROVED',
+    ADD COLUMN order_id BIGINT NULL;
+
+ALTER TABLE feedbacks
+    ADD CONSTRAINT FK_feedbacks_order
+        FOREIGN KEY (order_id) REFERENCES orders(id);
+
+ALTER TABLE feedbacks
+    DROP CONSTRAINT uq_feedbacks_user_order_detail;
+
+ALTER TABLE feedbacks
+    ADD CONSTRAINT uq_feedbacks_user_order UNIQUE (user_id, order_id);
 
 -- Add more sample feedback data
 -- Linked to existing items and users from V2

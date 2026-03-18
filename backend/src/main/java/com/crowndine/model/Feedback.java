@@ -16,8 +16,8 @@ import lombok.Setter;
 @Table(
         name = "feedbacks",
         uniqueConstraints = @UniqueConstraint(
-                name = "uq_feedbacks_user_order_detail",
-                columnNames = {"user_id", "order_detail_id"}
+                name = "uq_feedbacks_user_order",
+                columnNames = {"user_id", "order_id"}
         )
 )
 public class Feedback extends AbstractEntity<Long> {
@@ -48,6 +48,10 @@ public class Feedback extends AbstractEntity<Long> {
     @ManyToOne
     @JoinColumn(name = "combo_id")
     private Combo combo;
+
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 
     @ManyToOne
     @JoinColumn(name = "order_detail_id")

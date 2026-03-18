@@ -1,10 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import type { ReservationHistoryResponse } from '@/types/reservation.type'
+import type { ReservationHistoryResponse, OrderLineResponse } from '@/types/reservation.type'
 import { Badge } from '@/components/ui/badge'
-import { ChevronDown, Clock, Table, DollarSign } from 'lucide-react'
+import { ChevronDown, Clock, Table, DollarSign, Star, MessageSquare } from 'lucide-react'
 import { formatCurrency } from '@/utils/utils'
+import { cn } from '@/lib/utils'
+import { Modal } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import feedbackApi from '@/apis/feedback.api'
+import { toast } from 'react-toastify'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface ReservationHistoryProps {
   reservations: ReservationHistoryResponse[]
@@ -13,6 +19,64 @@ interface ReservationHistoryProps {
 
 const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps) => {
   const [expandedId, setExpandedId] = useState<number | string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [currentTarget, setCurrentTarget] = useState<{
+    orderId: number
+    orderDetailId?: number
+    itemName?: string
+  } | null>(null)
+
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: {
+      rating: number
+      comment: string
+      orderId: number
+      orderDetailId?: number
+      itemId?: number
+      comboId?: number
+    }) => feedbackApi.createFeedback(data),
+    onSuccess: () => {
+      toast.success('Feedback sent successfully!')
+      setIsModalOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['reservation-history'] })
+      // Reset state
+      setRating(5)
+      setComment('')
+      setCurrentTarget(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to send feedback')
+    }
+  })
+
+  const handleOpenFeedback = (orderId: number, item?: any) => {
+    setCurrentTarget({
+      orderId,
+      orderDetailId: item?.orderDetailId,
+      itemName: item?.name
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleSubmitFeedback = () => {
+    if (!currentTarget) return
+
+    const reservation = reservations.find((r) => r.orderId === currentTarget.orderId)
+    const item = reservation?.items?.find((i: OrderLineResponse) => i.orderDetailId === currentTarget.orderDetailId)
+
+    mutation.mutate({
+      rating,
+      comment,
+      orderId: currentTarget.orderId,
+      orderDetailId: currentTarget.orderDetailId,
+      itemId: item?.type === 'ITEM' ? item?.productId : undefined,
+      comboId: item?.type === 'COMBO' ? item?.productId : undefined
+    })
+  }
 
   const getReservationStatusColor = (status: string) => {
     switch (status) {
@@ -143,14 +207,32 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                       <div className='bg-card border-border/50 space-y-4 rounded-lg border p-6'>
                         <div className='flex items-center justify-between'>
                           <h4 className='font-semibold'>Order Summary</h4>
-                          <Badge variant='outline' className={getOrderStatusColor(reservation.orderStatus || '')}>
-                            Order #{reservation.orderId} • {reservation.orderStatus}
-                          </Badge>
+                          <div className='flex items-center gap-3'>
+                            {reservation.orderStatus === 'COMPLETED' && !reservation.hasFeedback && (
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                className='h-8 gap-1.5'
+                                onClick={() => handleOpenFeedback(reservation.orderId!)}
+                              >
+                                <MessageSquare className='h-3.5 w-3.5' />
+                                Feedback Order
+                              </Button>
+                            )}
+                            {reservation.hasFeedback && (
+                              <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
+                                Reviewed
+                              </Badge>
+                            )}
+                            <Badge variant='outline' className={getOrderStatusColor(reservation.orderStatus || '')}>
+                              Order #{reservation.orderId} • {reservation.orderStatus}
+                            </Badge>
+                          </div>
                         </div>
 
                         {reservation.items && reservation.items.length > 0 && (
                           <div className='border-border/50 space-y-2 border-b border-t py-4'>
-                            {reservation.items.map((item, idx) => (
+                            {reservation.items.map((item: OrderLineResponse, idx: number) => (
                               <div key={idx} className='flex justify-between text-sm'>
                                 <div className='flex items-center gap-2'>
                                   <Badge
@@ -160,6 +242,14 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                                     x{item.quantity}
                                   </Badge>
                                   <span className='font-medium'>{item.name}</span>
+                                  {reservation.orderStatus === 'COMPLETED' && !reservation.hasFeedback && (
+                                    <button
+                                      onClick={() => handleOpenFeedback(reservation.orderId!, item)}
+                                      className='text-primary hover:text-primary/80 ml-2 text-xs font-semibold'
+                                    >
+                                      Rate dish
+                                    </button>
+                                  )}
                                 </div>
                                 <span className='text-foreground/80'>{formatCurrency(item.totalPrice)}</span>
                               </div>
@@ -192,6 +282,71 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
           })
         )}
       </div>
+
+      {/* Feedback Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={currentTarget?.itemName ? `Rate: ${currentTarget.itemName}` : 'Rate your overall experience'}
+      >
+        <div className='space-y-6'>
+          <div className='flex flex-col items-center gap-3 py-4 text-center'>
+            <p className='text-foreground/60 text-sm'>
+              {currentTarget?.itemName 
+                ? `How was the ${currentTarget.itemName}? Your feedback helps other food lovers.`
+                : 'How was your experience with CrownDine?'}
+            </p>
+            <div className='flex gap-2'>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className='hover:scale-110 transition-transform focus:outline-none'
+                >
+                  <Star
+                    className={cn(
+                      'h-10 w-10',
+                      star <= rating ? 'fill-yellow-400 text-yellow-400' : 'fill-none text-gray-300'
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className='text-sm font-semibold text-yellow-600 capitalize'>
+              {rating === 1 && 'Poor'}
+              {rating === 2 && 'Fair'}
+              {rating === 3 && 'Good'}
+              {rating === 4 && 'Very Good'}
+              {rating === 5 && 'Excellent!'}
+            </p>
+          </div>
+
+          <div className='space-y-2'>
+            <label className='text-sm font-medium'>Your comment (optional)</label>
+            <textarea
+              className='border-border bg-foreground/[0.02] focus:ring-primary/20 w-full rounded-lg border p-4 text-sm focus:outline-none focus:ring-2'
+              rows={4}
+              placeholder='Add a comment...'
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <p className='text-foreground/40 text-right text-xs'>{comment.length}/200</p>
+          </div>
+
+          <div className='flex gap-3'>
+            <Button variant='outline' className='flex-1' onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button className='flex-1' onClick={handleSubmitFeedback} disabled={mutation.isPending}>
+              {mutation.isPending ? 'Submitting...' : 'Submit Review'}
+            </Button>
+          </div>
+          
+          <p className='text-foreground/40 mt-4 text-center text-xs'>
+            * Each order can only be reviewed once. Once submitted, you cannot change your rating.
+          </p>
+        </div>
+      </Modal>
     </div>
   )
 }

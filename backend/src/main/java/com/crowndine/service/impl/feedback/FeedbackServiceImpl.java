@@ -15,6 +15,7 @@ import com.crowndine.model.User;
 import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.repository.OrderDetailRepository;
 import com.crowndine.repository.UserRepository;
+import com.crowndine.repository.OrderRepository;
 import com.crowndine.service.feedback.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final OrderRepository orderRepository;
 
     @Override
     @Transactional
@@ -42,24 +44,46 @@ public class FeedbackServiceImpl implements FeedbackService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        OrderDetail detail = orderDetailRepository.findById(request.getOrderDetailId())
-                .orElseThrow(() -> new ResourceNotFoundException("Order detail not found"));
+        Order order;
+        OrderDetail detail = null;
 
-        validateTarget(detail, request);
+        if (request.getOrderDetailId() != null) {
+            detail = orderDetailRepository.findById(request.getOrderDetailId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Order detail not found"));
+            order = detail.getOrder();
+            validateTarget(detail, request);
+        } else if (request.getOrderId() != null) {
+            order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        } else {
+            throw new InvalidDataException("Cần cung cấp orderId hoặc orderDetailId");
+        }
 
-        Order order = detail.getOrder();
         if (order == null || order.getUser() == null) {
             throw new InvalidDataException("Order không hợp lệ");
         }
+        
         if (!order.getUser().getId().equals(user.getId())) {
             throw new InvalidDataException("Không có quyền feedback đơn này");
         }
 
-        if (feedbackRepository.findByUser_IdAndOrderDetail_Id(user.getId(), detail.getId()).isPresent()) {
-            throw new InvalidDataException("Bạn đã feedback món này rồi");
+        // Each order can only have ONE feedback entry (generic or for one item)
+        if (feedbackRepository.existsByUser_IdAndOrder_Id(user.getId(), order.getId())) {
+            throw new InvalidDataException("Bạn đã gửi feedback cho đơn hàng này rồi");
         }
 
-        LocalDateTime completedAt = resolveCompletedAt(detail);
+        LocalDateTime completedAt = (detail != null) ? resolveCompletedAt(detail) : 
+                                    (order.getStatus() == EOrderStatus.COMPLETED ? order.getUpdatedAt() : null);
+        
+        if (completedAt == null && order.getReservation() != null) {
+            Reservation res = order.getReservation();
+            if (res.getStatus() == EReservationStatus.COMPLETED) {
+                completedAt = res.getUpdatedAt() != null ? res.getUpdatedAt() : 
+                              (res.getDate() != null && res.getEndTime() != null ? 
+                              LocalDateTime.of(res.getDate(), res.getEndTime()) : null);
+            }
+        }
+
         if (completedAt == null) {
             throw new InvalidDataException("Chỉ được feedback sau khi ăn xong");
         }
@@ -76,9 +100,13 @@ public class FeedbackServiceImpl implements FeedbackService {
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
         feedback.setUser(user);
-        feedback.setItem(detail.getItem());
-        feedback.setCombo(detail.getCombo());
-        feedback.setOrderDetail(detail);
+        feedback.setOrder(order);
+        
+        if (detail != null) {
+            feedback.setItem(detail.getItem());
+            feedback.setCombo(detail.getCombo());
+            feedback.setOrderDetail(detail);
+        }
 
         return mapToResponse(feedbackRepository.save(feedback));
     }
@@ -173,6 +201,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .id(feedback.getId())
                 .rating(feedback.getRating())
                 .comment(feedback.getComment())
+                .orderId(feedback.getOrder() != null ? feedback.getOrder().getId() : null)
                 .itemId(feedback.getItem() != null ? feedback.getItem().getId() : null)
                 .comboId(feedback.getCombo() != null ? feedback.getCombo().getId() : null)
                 .orderDetailId(feedback.getOrderDetail() != null ? feedback.getOrderDetail().getId() : null)

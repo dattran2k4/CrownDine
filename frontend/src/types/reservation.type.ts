@@ -28,6 +28,7 @@ export interface ReservationCreateResponse {
 
 export interface OrderLineResponse {
   orderDetailId: number
+  productId: number
   name: string
   type: 'ITEM' | 'COMBO'
   quantity: number
@@ -102,4 +103,5 @@ export interface ReservationHistoryResponse {
   orderStatus?: string
   finalPrice?: number
   items?: OrderLineResponse[]
+  hasFeedback?: boolean
 }

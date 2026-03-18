@@ -47,6 +47,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final RestaurantTableRepository tableRepository;
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final FeedbackRepository feedbackRepository;
 
     private final CalculationService calculationService;
     private final OrderService orderService;
@@ -192,6 +193,9 @@ public class ReservationServiceImpl implements ReservationService {
             
             List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
             resp.setItems(details.stream().map(this::toLineResponse).toList());
+            
+            // Check if user has already given feedback for this order
+            resp.setHasFeedback(feedbackRepository.existsByUser_IdAndOrder_Id(r.getUser().getId(), order.getId()));
         }
 
         return resp;
@@ -221,6 +225,9 @@ public class ReservationServiceImpl implements ReservationService {
         
         List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
         resp.setItems(details.stream().map(this::toLineResponse).toList());
+        
+        // Check if user has already given feedback for this order
+        resp.setHasFeedback(feedbackRepository.existsByUser_IdAndOrder_Id(order.getUser().getId(), order.getId()));
         return resp;
     }
 
@@ -246,6 +253,7 @@ public class ReservationServiceImpl implements ReservationService {
     private OrderLineResponse toLineResponse(OrderDetail od) {
         OrderLineResponse r = new OrderLineResponse();
         r.setOrderDetailId(od.getId());
+        r.setProductId(od.getCombo() != null ? od.getCombo().getId() : (od.getItem() != null ? od.getItem().getId() : null));
         r.setName(od.getProductName());
         r.setType(od.getCombo() != null ? "COMBO" : "ITEM");
         r.setQuantity(od.getQuantity());

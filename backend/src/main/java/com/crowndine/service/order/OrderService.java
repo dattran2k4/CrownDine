@@ -32,7 +32,7 @@ public interface OrderService {
 
     UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
-    void createOrderByStaff(OrderRequest request, String username);
+    void createWalkInOrder(OrderRequest request, String username);
 
     void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
 

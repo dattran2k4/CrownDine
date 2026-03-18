@@ -41,11 +41,10 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     public void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request) {
         log.info("Processing {} items for order {}", request.size(), order.getId());
 
-        List<OrderDetail> orderDetails = new ArrayList<>();
+        List<OrderDetail> newOrderDetails = new ArrayList<>();
 
         request.forEach(item -> {
             OrderDetail orderDetailItem = new OrderDetail();
-            orderDetailItem.setOrder(order);
             if (item.getItemId() != null) {
                 orderDetailItem.setItem(itemRepository.findById(item.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item Not Found")));
             }
@@ -57,11 +56,12 @@ public class OrderDetailServiceImpl implements OrderDetailService {
             orderDetailItem.setNote(item.getNote());
             orderDetailItem.setStatus(EOrderDetailStatus.PENDING);
             orderDetailItem.calculateAndSetTotalPrice();
-            orderDetails.add(orderDetailItem);
+            order.addOrderDetail(orderDetailItem);
+            newOrderDetails.add(orderDetailItem);
             log.info("Added order detail for order {}", order.getId());
         });
 
-        orderDetailRepository.saveAll(orderDetails);
+        orderDetailRepository.saveAll(newOrderDetails);
 
         log.info("Added successfully order detail for order {}", order.getId());
     }

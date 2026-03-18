@@ -266,7 +266,7 @@ export default function MenuDetail() {
                       className='border-border flex flex-col gap-2 border-b border-dashed pb-6 last:border-0'
                     >
                       <div className='flex items-center justify-between gap-4'>
-                        <span className='font-semibold'>Khách hàng</span>
+                        <span className='font-semibold'>{fb.fullName || 'Khách hàng'}</span>
                         <span className='text-muted-foreground text-sm'>
                           {formatDate(fb.createdAt)}
                         </span>

@@ -47,6 +47,7 @@ public class AppConfig {
                         .requestMatchers("/api/combos/**").permitAll()
                         .requestMatchers("/api/items/**").permitAll()
                         .requestMatchers("/api/combos/**").permitAll()
+                        .requestMatchers("/api/feedbacks/**").permitAll()
                         .requestMatchers("/img/**").permitAll()
                         .requestMatchers("/ws-restaurant/**").permitAll()
                         .requestMatchers("/api/feedbacks/items/**").permitAll()

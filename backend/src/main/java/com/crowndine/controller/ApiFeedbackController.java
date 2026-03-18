@@ -57,4 +57,13 @@ public class ApiFeedbackController {
                 .build();
     }
 
+    @GetMapping
+    public ApiResponse getFeedbacks() {
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy tất cả feedback thành công")
+                .data(feedbackService.getAllFeedbacks())
+                .build();
+    }
+
 }

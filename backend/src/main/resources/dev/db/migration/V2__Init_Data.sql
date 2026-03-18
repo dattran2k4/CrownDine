@@ -25,20 +25,20 @@ VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
        ('Đồ uống', 'do-uong', 'Nước uống', NOW(), NOW()),
        ('Tráng miệng', 'trang-mieng', 'Món tráng miệng', NOW(), NOW());
 
-INSERT INTO items (name, description, image_url, price, price_after_discount, status, category_id, created_at,
+INSERT INTO items (name, description, image_url, price, price_after_discount, sold_count, status, category_id, created_at,
                    updated_at)
-VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 'AVAILABLE', 1, NOW(), NOW()),
-       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 'AVAILABLE', 2, NOW(), NOW()),
-       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 'AVAILABLE', 3, NOW(), NOW()),
-       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 'AVAILABLE', 4, NOW(), NOW()),
-       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 'AVAILABLE', 5, NOW(), NOW()),
-       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 'AVAILABLE', 6, NOW(), NOW()),
-       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 'AVAILABLE', 7, NOW(),
+VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 48, 'AVAILABLE', 1, NOW(), NOW()),
+       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 36, 'AVAILABLE', 2, NOW(), NOW()),
+       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 92, 'AVAILABLE', 3, NOW(), NOW()),
+       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 55, 'AVAILABLE', 4, NOW(), NOW()),
+       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 24, 'AVAILABLE', 5, NOW(), NOW()),
+       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 61, 'AVAILABLE', 6, NOW(), NOW()),
+       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 32, 'AVAILABLE', 7, NOW(),
         NOW()),
-       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 'AVAILABLE', 8, NOW(), NOW()),
-       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 'AVAILABLE', 10, NOW(), NOW());
+       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 44, 'AVAILABLE', 8, NOW(), NOW()),
+       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 80, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 96, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 27, 'AVAILABLE', 10, NOW(), NOW());
 
 
 INSERT INTO combos (name, slug, description, image_url, price, price_after_discount, sold_count, status, created_at, updated_at)

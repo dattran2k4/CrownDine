@@ -38,7 +38,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request) {
+    public void createPendingOrderDetails(Order order, List<OrderItemRequest> request) {
         log.info("Processing {} items for order {}", request.size(), order.getId());
 
         List<OrderDetail> newOrderDetails = new ArrayList<>();

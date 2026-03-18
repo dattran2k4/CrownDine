@@ -172,11 +172,7 @@ public class OrderServiceImpl implements OrderService {
             orderDetails.add(detail);
         }
 
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(orderDetails);
-
-        order.setTotalPrice(totalPrice);
-
-        order.setFinalPrice(totalPrice);
+        recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
         log.info("Order has been saved with id {}", result.getId());
@@ -200,9 +196,7 @@ public class OrderServiceImpl implements OrderService {
         detailToUpdate.setNote(request.getNote());
         detailToUpdate.calculateAndSetTotalPrice();
 
-        order.setTotalPrice(calculationService.calculateTotalOrder(orderDetails));
-
-        order.setFinalPrice(calculationService.calculateTotalOrder(orderDetails));
+        recalculateOrderPricing(order);
 
         orderRepository.save(order);
         log.info("Updating quantity or note for detailId successfully for detailId {}", detailToUpdate.getId());
@@ -221,9 +215,7 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Item removed successfully from order list");
 
-        BigDecimal newTotalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(newTotalPrice);
-        order.setFinalPrice(newTotalPrice);
+        recalculateOrderPricing(order);
 
         orderRepository.save(order);
     }
@@ -277,11 +269,8 @@ public class OrderServiceImpl implements OrderService {
         order.setRestaurantTable(table);
         orderRepository.save(order);
 
-        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
-
-        //Tính lại tổng hoá đơn
-        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
-        order.setFinalPrice(order.getTotalPrice());
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
+        recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
         log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
@@ -289,13 +278,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
+    public void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name) {
         Order order = getOrder(id);
 
-        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
-
-        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
-        order.setFinalPrice(order.getTotalPrice());
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
+        recalculateOrderPricing(order);
         orderRepository.save(order);
 
         log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
@@ -413,6 +400,22 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
+    }
+
+    private void recalculateOrderPricing(Order order) {
+        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        order.setTotalPrice(totalPrice);
+
+        if (order.getVoucher() == null) {
+            order.setDiscountPrice(BigDecimal.ZERO);
+            order.setFinalPrice(totalPrice);
+            return;
+        }
+
+        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
+        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+        order.setDiscountPrice(discountPrice);
+        order.setFinalPrice(finalPrice);
     }
 
     private OrderResponse toResponse(Order order) {

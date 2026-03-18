@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface OrderDetailService {
 
-    void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request);
+    void createPendingOrderDetails(Order order, List<OrderItemRequest> request);
 
     void updateOrderDetail(Long id, UpdateOrderDetailRequest request);
 

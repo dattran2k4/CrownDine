@@ -34,7 +34,7 @@ public interface OrderService {
 
     void createWalkInOrder(OrderRequest request, String username);
 
-    void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
+    void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name);
 
     Order getOrder(Long id);
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
@@ -16,11 +16,7 @@ import type { OrderDetailResponse } from '@/types/reservation.type'
 import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
-import { useSearchParams } from 'react-router-dom'
-import layoutApi from '@/apis/layout.api'
-import type { TableLayout } from '@/types/layout'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
-import { toast } from 'sonner'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
@@ -64,26 +60,15 @@ export default function Reservation() {
   const [isPaid] = useState(false) // Đánh dấu đã thanh toán
   const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
-  const [isProcessingChatbotParams, setIsProcessingChatbotParams] = useState(false)
-
-  const authUser = useAuthStore((state) => state.user)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const processedParamsRef = useRef<string>('')
-
-  // Voucher state
   const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
   const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(null)
 
-  // Generated Data
-  const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
-  
-  // Reset voucher when reservation changes
   useEffect(() => {
     setVoucherPreview(null)
     setAppliedVoucherCode(null)
   }, [reservationId])
 
-  // Payment mutation
+  const authUser = useAuthStore((state) => state.user)
   const paymentMutation = useMutation({
     mutationFn: async ({
       paymentRequest,
@@ -132,209 +117,8 @@ export default function Reservation() {
   })
   const isProcessing = paymentMutation.isPending
 
-  // Handle query parameters from chatbot
-  useEffect(() => {
-    const targetStep = searchParams.get('step')
-    const tableName = searchParams.get('tableName')
-    const targetDate = searchParams.get('date')
-    const targetStartTime = searchParams.get('startTime')
-    const targetEndTime = searchParams.get('endTime')
-    const targetGuests = searchParams.get('guests')
-
-    // Create a unique key for these params
-    const paramsKey = `${targetStep}-${tableName}-${targetDate}-${targetStartTime}-${targetEndTime}-${targetGuests}`
-
-    // If we have chatbot parameters and haven't processed them yet, auto-fill form and navigate
-    if (targetStep && (targetStep === '3' || targetStep === '4') && tableName && targetDate && targetStartTime && targetEndTime && targetGuests && processedParamsRef.current !== paramsKey) {
-      processedParamsRef.current = paramsKey
-      setIsProcessingChatbotParams(true)
-      
-      // Set form values first
-      setDate(targetDate)
-      setStartTime(targetStartTime)
-      setEndTime(targetEndTime)
-      setGuests(parseInt(targetGuests))
-
-      // Find and select table by name
-      const findAndSelectTable = async () => {
-        try {
-          // Get available tables for the time slot
-          const res = await layoutApi.getAvailableTables({
-            date: targetDate,
-            startTime: targetStartTime,
-            endTime: targetEndTime,
-            guestNumber: parseInt(targetGuests)
-          })
-
-          // Find table by name - improved matching with multiple strategies
-          const normalizedTableName = tableName.toLowerCase().trim().replace(/\s+/g, '')
-          
-          console.log(' Searching for table:', {
-            searchName: tableName,
-            normalizedName: normalizedTableName,
-            availableTables: res.data.data.map((t: TableLayout) => t.name)
-          })
-          
-          const foundTable = res.data.data.find((t: TableLayout) => {
-            const normalizedTName = t.name.toLowerCase().trim().replace(/\s+/g, '')
-            
-            // Strategy 1: Exact match (with or without spaces) - highest priority
-            if (normalizedTName === normalizedTableName) {
-              console.log('✅ Exact match found:', t.name)
-              return true
-            }
-            
-            // Strategy 2: Extract identifiers and match (e.g., "T2-01" = "Bàn T2-01")
-            const extractIdentifiers = (str: string) => str.replace(/[^a-z0-9]/gi, '')
-            const tableId = extractIdentifiers(normalizedTName)
-            const searchId = extractIdentifiers(normalizedTableName)
-            if (tableId === searchId && tableId.length > 0) {
-              console.log('✅ Identifier match found:', t.name, 'IDs:', tableId, searchId)
-              return true
-            }
-            
-            // Strategy 3: Contains match (either direction) - but only if both are meaningful
-            if (normalizedTableName.length >= 2 && normalizedTName.length >= 2) {
-              if (normalizedTName.includes(normalizedTableName) || normalizedTableName.includes(normalizedTName)) {
-                // Additional check: ensure it's not just a partial match (e.g., "01" matching "101")
-                const isMeaningfulMatch = 
-                  normalizedTableName.length >= 3 || // Search term is at least 3 chars
-                  normalizedTName.endsWith(normalizedTableName) || // Ends with search term
-                  normalizedTName.startsWith(normalizedTableName) // Starts with search term
-                
-                if (isMeaningfulMatch) {
-                  console.log('✅ Contains match found:', t.name)
-                  return true
-                }
-              }
-            }
-            
-            // Strategy 4: Match if both contain same key parts (e.g., "T2" and "01")
-            const tableParts = normalizedTName.split(/[^a-z0-9]+/).filter(p => p.length > 0)
-            const nameParts = normalizedTableName.split(/[^a-z0-9]+/).filter(p => p.length > 0)
-            if (nameParts.length > 0 && nameParts.length <= 3 && nameParts.every(part => tableParts.includes(part))) {
-              console.log('✅ Key parts match found:', t.name, 'Parts:', nameParts, tableParts)
-              return true
-            }
-            
-            return false
-          })
-
-          if (foundTable) {
-            console.log('✅ Table found:', {
-              id: foundTable.id,
-              name: foundTable.name,
-              capacity: foundTable.capacity,
-              status: foundTable.status
-            })
-            
-            // Convert TableLayout to ReservationTable
-            // Map status: UNAVAILABLE -> AVAILABLE (since we're creating reservation, table should be available)
-            const mappedStatus = foundTable.status === 'UNAVAILABLE' ? 'AVAILABLE' : foundTable.status as 'AVAILABLE' | 'RESERVED' | 'OCCUPIED'
-            const reservationTable: Table = {
-              id: foundTable.id.toString(),
-              name: foundTable.name,
-              capacity: foundTable.capacity || 2,
-              status: mappedStatus,
-              type: 'STANDARD' // Default type
-            }
-
-            // Create reservation
-            setIsCreatingReservation(true)
-            console.log('📝 Creating reservation with:', {
-              tableId: foundTable.id,
-              date: targetDate,
-              startTime: targetStartTime,
-              endTime: targetEndTime,
-              guests: targetGuests
-            })
-            try {
-              const reservationRes = await reservationApi.createReservation({
-                date: targetDate,
-                startTime: targetStartTime,
-                endTime: targetEndTime,
-                guestNumber: parseInt(targetGuests),
-                tableId: foundTable.id,
-                note: ''
-              })
-
-              if (reservationRes.data.data) {
-                setReservationId(reservationRes.data.data.reservationId)
-                setExpiratedAt(reservationRes.data.data.expiratedAt)
-                setSelectedTable(reservationTable)
-
-                // Show success message
-                toast.success('Đặt bàn thành công!', {
-                  description: `Bàn ${foundTable.name} đã được đặt cho ${targetGuests} khách vào ${targetDate} từ ${targetStartTime} đến ${targetEndTime}`
-                })
-
-                // Navigate to target step
-                if (targetStep === '3') {
-                  setCurrentStep(3)
-                  toast.info('Chọn món ăn', {
-                    description: 'Bạn có thể chọn món ăn trước cho bàn đã đặt'
-                  })
-                } else if (targetStep === '4') {
-                  // For step 4, need to fetch order details first
-                  setIsLoadingOrderDetails(true)
-                  try {
-                    const orderRes = await reservationApi.getReservationOrderDetails(reservationRes.data.data.reservationId)
-                    setOrderDetails(orderRes.data.data)
-                    setCurrentStep(4)
-                    toast.info('Thanh toán đặt cọc', {
-                      description: 'Vui lòng thanh toán đặt cọc để hoàn tất đặt bàn'
-                    })
-                  } catch (error) {
-                    console.error('Failed to load order details:', error)
-                    setCurrentStep(4) // Still go to step 4, it has fallback logic
-                    toast.warning('Đã chuyển đến bước thanh toán', {
-                      description: 'Không thể tải chi tiết đơn hàng, nhưng bạn vẫn có thể thanh toán'
-                    })
-                  } finally {
-                    setIsLoadingOrderDetails(false)
-                  }
-                }
-
-                // Clear query params
-                setSearchParams({})
-                setIsProcessingChatbotParams(false)
-              }
-            } catch (error: any) {
-              console.error('Failed to create reservation:', error)
-              const errorMessage = error?.response?.data?.message || 'Không thể tạo đặt bàn. Vui lòng thử lại.'
-              toast.error('Lỗi đặt bàn', {
-                description: errorMessage
-              })
-              setIsProcessingChatbotParams(false)
-            } finally {
-              setIsCreatingReservation(false)
-            }
-          } else {
-            toast.error('Không tìm thấy bàn', {
-              description: `Không tìm thấy bàn "${tableName}". Vui lòng chọn bàn khác hoặc liên hệ chatbot để được hỗ trợ.`
-            })
-            // Clear query params
-            setSearchParams({})
-            setIsProcessingChatbotParams(false)
-          }
-        } catch (error: any) {
-          console.error('Failed to find table:', error)
-          const errorMessage = error?.response?.data?.message || 'Không thể tải danh sách bàn. Vui lòng thử lại.'
-          toast.error('Lỗi tải dữ liệu', {
-            description: errorMessage
-          })
-          // Clear query params
-          setSearchParams({})
-          setIsProcessingChatbotParams(false)
-        }
-      }
-
-      findAndSelectTable()
-    } else {
-      setIsProcessingChatbotParams(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  // Generated Data
+  const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
 
   // --- HANDLERS ---
   const toggleTable = async (table: Table) => {
@@ -646,16 +430,7 @@ export default function Reservation() {
 
         {/* Main Content Area */}
         <div className='bg-card min-h-100'>
-          {/* Show loading when processing chatbot params */}
-          {isProcessingChatbotParams && (
-            <div className='flex min-h-[400px] items-center justify-center p-6'>
-              <div className='flex flex-col items-center gap-4 text-gray-600'>
-                <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent' />
-                <p className='text-sm'>Đang tìm bàn và tạo đặt bàn...</p>
-              </div>
-            </div>
-          )}
-          {!isProcessingChatbotParams && currentStep === 1 && (
+          {currentStep === 1 && (
             <Step1DateTime
               guests={guests}
               setGuests={setGuests}

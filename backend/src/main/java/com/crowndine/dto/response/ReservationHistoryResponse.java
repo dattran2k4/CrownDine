@@ -25,5 +25,5 @@ public class ReservationHistoryResponse {
     private EOrderStatus orderStatus;
     private BigDecimal finalPrice;
     private List<OrderLineResponse> items;
-    private boolean hasFeedback;
+    private boolean hasGeneralFeedback;
 }

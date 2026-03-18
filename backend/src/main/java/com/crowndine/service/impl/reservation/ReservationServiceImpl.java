@@ -192,10 +192,10 @@ public class ReservationServiceImpl implements ReservationService {
             resp.setFinalPrice(order.getFinalPrice());
             
             List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
-            resp.setItems(details.stream().map(this::toLineResponse).toList());
+            resp.setItems(details.stream().map(d -> toLineResponse(d, r.getUser().getId())).toList());
             
-            // Check if user has already given feedback for this order
-            resp.setHasFeedback(feedbackRepository.existsByUser_IdAndOrder_Id(r.getUser().getId(), order.getId()));
+            // Check if user has already given general feedback
+            resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(r.getUser().getId(), order.getId()));
         }
 
         return resp;
@@ -224,10 +224,10 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setFinalPrice(order.getFinalPrice());
         
         List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
-        resp.setItems(details.stream().map(this::toLineResponse).toList());
+        resp.setItems(details.stream().map(d -> toLineResponse(d, order.getUser().getId())).toList());
         
-        // Check if user has already given feedback for this order
-        resp.setHasFeedback(feedbackRepository.existsByUser_IdAndOrder_Id(order.getUser().getId(), order.getId()));
+        // Check if user has already given general feedback
+        resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(order.getUser().getId(), order.getId()));
         return resp;
     }
 
@@ -250,7 +250,7 @@ public class ReservationServiceImpl implements ReservationService {
         return toOrderDetailPageResponse(order, reservation.getStartTime(), reservation.getEndTime());
     }
 
-    private OrderLineResponse toLineResponse(OrderDetail od) {
+    private OrderLineResponse toLineResponse(OrderDetail od, Long userId) {
         OrderLineResponse r = new OrderLineResponse();
         r.setOrderDetailId(od.getId());
         r.setProductId(od.getCombo() != null ? od.getCombo().getId() : (od.getItem() != null ? od.getItem().getId() : null));
@@ -258,6 +258,10 @@ public class ReservationServiceImpl implements ReservationService {
         r.setType(od.getCombo() != null ? "COMBO" : "ITEM");
         r.setQuantity(od.getQuantity());
         r.setTotalPrice(od.getTotalPrice());
+        
+        if (userId != null) {
+            r.setHasFeedback(feedbackRepository.existsByUser_IdAndOrderDetail_Id(userId, od.getId()));
+        }
 
         if (od.getCombo() != null) {
             r.setUnitPrice(od.getCombo().getPrice());
@@ -562,7 +566,7 @@ public class ReservationServiceImpl implements ReservationService {
     private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order, LocalTime startTime, LocalTime endTime) {
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
-                .map(this::toLineResponse)
+                .map(od -> toLineResponse(od, order.getUser() != null ? order.getUser().getId() : null))
                 .toList();
 
         BigDecimal itemsTotal = orderDetails.stream()

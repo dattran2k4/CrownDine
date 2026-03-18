@@ -208,7 +208,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                         <div className='flex items-center justify-between'>
                           <h4 className='font-semibold'>Order Summary</h4>
                           <div className='flex items-center gap-3'>
-                            {reservation.orderStatus === 'COMPLETED' && !reservation.hasFeedback && (
+                            {reservation.orderStatus === 'COMPLETED' && !reservation.hasGeneralFeedback && (
                               <Button
                                 size='sm'
                                 variant='outline'
@@ -219,9 +219,10 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                                 Feedback Order
                               </Button>
                             )}
-                            {reservation.hasFeedback && (
+                            {reservation.hasGeneralFeedback && (
                               <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
-                                Reviewed
+                                <Star className='mr-1 h-3 w-3 fill-current' />
+                                Order Reviewed
                               </Badge>
                             )}
                             <Badge variant='outline' className={getOrderStatusColor(reservation.orderStatus || '')}>
@@ -242,13 +243,18 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                                     x{item.quantity}
                                   </Badge>
                                   <span className='font-medium'>{item.name}</span>
-                                  {reservation.orderStatus === 'COMPLETED' && !reservation.hasFeedback && (
+                                  {reservation.orderStatus === 'COMPLETED' && !item.hasFeedback && (
                                     <button
                                       onClick={() => handleOpenFeedback(reservation.orderId!, item)}
-                                      className='text-primary hover:text-primary/80 ml-2 text-xs font-semibold'
+                                      className='text-primary hover:text-primary/80 ml-2 text-xs font-semibold underline underline-offset-2'
                                     >
                                       Rate dish
                                     </button>
+                                  )}
+                                  {item.hasFeedback && (
+                                    <span className='text-green-600 ml-2 text-[10px] italic font-medium'>
+                                      (Rated)
+                                    </span>
                                   )}
                                 </div>
                                 <span className='text-foreground/80'>{formatCurrency(item.totalPrice)}</span>
@@ -342,8 +348,8 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
             </Button>
           </div>
           
-          <p className='text-foreground/40 mt-4 text-center text-xs'>
-            * Each order can only be reviewed once. Once submitted, you cannot change your rating.
+          <p className='text-foreground/40 mt-4 text-center text-xs italic'>
+            * Each item or summary can only be reviewed once.
           </p>
         </div>
       </Modal>

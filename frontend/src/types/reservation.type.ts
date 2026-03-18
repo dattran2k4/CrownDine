@@ -34,6 +34,7 @@ export interface OrderLineResponse {
   quantity: number
   unitPrice: number
   totalPrice: number
+  hasFeedback?: boolean
 }
 
 export interface OrderDetailResponse {
@@ -103,5 +104,6 @@ export interface ReservationHistoryResponse {
   orderStatus?: string
   finalPrice?: number
   items?: OrderLineResponse[]
-  hasFeedback?: boolean
+  hasGeneralFeedback?: boolean
+  hasFeedback?: boolean // Keep for backward compatibility or during migration
 }

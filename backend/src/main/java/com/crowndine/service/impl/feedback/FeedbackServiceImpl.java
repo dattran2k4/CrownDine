@@ -67,9 +67,15 @@ public class FeedbackServiceImpl implements FeedbackService {
             throw new InvalidDataException("Không có quyền feedback đơn này");
         }
 
-        // Each order can only have ONE feedback entry (generic or for one item)
-        if (feedbackRepository.existsByUser_IdAndOrder_Id(user.getId(), order.getId())) {
-            throw new InvalidDataException("Bạn đã gửi feedback cho đơn hàng này rồi");
+        // Each order can have ONE general feedback AND ONE feedback per order detail
+        if (detail == null) {
+            if (feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(user.getId(), order.getId())) {
+                throw new InvalidDataException("Bạn đã gửi feedback tổng quan cho đơn hàng này rồi");
+            }
+        } else {
+            if (feedbackRepository.existsByUser_IdAndOrderDetail_Id(user.getId(), detail.getId())) {
+                throw new InvalidDataException("Bạn đã gửi feedback cho món ăn này rồi");
+            }
         }
 
         LocalDateTime completedAt = (detail != null) ? resolveCompletedAt(detail) : 

@@ -13,7 +13,7 @@ ALTER TABLE feedbacks
     DROP CONSTRAINT uq_feedbacks_user_order_detail;
 
 ALTER TABLE feedbacks
-    ADD CONSTRAINT uq_feedbacks_user_order UNIQUE (user_id, order_id);
+    ADD CONSTRAINT uq_feedbacks_user_order_item UNIQUE (user_id, order_id, order_detail_id);
 
 -- Add more sample feedback data
 -- Linked to existing items and users from V2

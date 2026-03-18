@@ -12,7 +12,8 @@ import java.util.Optional;
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Optional<Feedback> findByUser_IdAndOrderDetail_Id(Long userId, Long orderDetailId);
 
-    boolean existsByUser_IdAndOrder_Id(Long userId, Long orderId);
+    boolean existsByUser_IdAndOrder_IdAndOrderDetailIsNull(Long userId, Long orderId);
+    boolean existsByUser_IdAndOrderDetail_Id(Long userId, Long orderDetailId);
 
     List<Feedback> findByItem_IdOrderByCreatedAtDesc(Long itemId);
 

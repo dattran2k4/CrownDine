@@ -5,7 +5,9 @@ import { mockCurrentUser } from '@/lib/mock-user'
 import ProfileSidebar from '@/components/Profile/sidebar'
 import ProfileInfo from '@/components/Profile/profile-info'
 import ReservationHistory from '@/components/Profile/reservation-history'
+import MyVouchers from '@/components/Profile/my-vouchers'
 import SecuritySettings from '@/components/Profile/security-setting'
+import userVoucherApi from '@/apis/userVoucher.api'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { User } from '@/types/profile.type'
 import { useQuery } from '@tanstack/react-query'
@@ -21,7 +23,14 @@ const Profile = () => {
     enabled: activeTab === 'reservations'
   })
 
+  const { data: vouchersData, isLoading: isVouchersLoading } = useQuery({
+    queryKey: ['my-vouchers'],
+    queryFn: () => userVoucherApi.getMyVouchers(),
+    enabled: activeTab === 'vouchers'
+  })
+
   const reservations = historyData?.data?.data?.data || []
+  const vouchers = vouchersData?.data?.data || []
 
   // Use local state, initialize with authUser, but also update if authUser changes
   const [user, setUser] = useState<User>((authUser as any) || mockCurrentUser)
@@ -58,6 +67,10 @@ const Profile = () => {
 
             {activeTab === 'reservations' && (
               <ReservationHistory reservations={reservations as any} isLoading={isHistoryLoading} />
+            )}
+
+            {activeTab === 'vouchers' && (
+              <MyVouchers vouchers={vouchers} isLoading={isVouchersLoading} />
             )}
 
             {activeTab === 'security' && <SecuritySettings />}

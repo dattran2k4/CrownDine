@@ -265,8 +265,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createOrderByStaff(OrderRequest request, String username) {
-        log.info("Processing create new order by staff username {}", username);
+    public void createWalkInOrder(OrderRequest request, String username) {
+        log.info("Processing create new walk-in order by username {}", username);
         User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
         RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
@@ -275,6 +275,8 @@ public class OrderServiceImpl implements OrderService {
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
+        orderRepository.save(order);
+
         orderDetailService.addOrderDetailsForOrder(order, request.getItems());
 
         //Tính lại tổng hoá đơn
@@ -282,7 +284,7 @@ public class OrderServiceImpl implements OrderService {
         order.setFinalPrice(order.getTotalPrice());
 
         Order result = orderRepository.save(order);
-        log.info("Created order with id {}", result.getId());
+        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
     }
 
     @Override

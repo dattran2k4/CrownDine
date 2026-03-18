@@ -41,7 +41,7 @@ public class ApiOrderController {
 
     @PostMapping
     public ApiResponse createOrder(@Valid @RequestBody OrderRequest request, Principal principal) {
-        orderService.createOrderByStaff(request, principal.getName());
+        orderService.createWalkInOrder(request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully created order + details")

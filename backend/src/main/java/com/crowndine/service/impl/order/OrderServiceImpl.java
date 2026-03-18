@@ -13,10 +13,12 @@ import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -45,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
     private final UserVoucherService userVoucherService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
 
@@ -399,9 +402,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void markAsPaid(Order order) {
+        if (order.getStatus() == EOrderStatus.COMPLETED) {
+            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
+            return;
+        }
+
         order.setStatus(EOrderStatus.COMPLETED);
         orderRepository.save(order);
-        log.info("Order id {} status changed to {}", order.getId(), order.getStatus());
+        eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
+        log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
 
     private OrderResponse toResponse(Order order) {

@@ -18,4 +18,5 @@ export interface DashboardSalesResponse {
   revenueChart: ChartData[]
   customerChart: ChartData[]
   topProducts: ChartData[]
+  topProductsQuantity: ChartData[]
 }

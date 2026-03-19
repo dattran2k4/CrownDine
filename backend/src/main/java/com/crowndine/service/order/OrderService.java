@@ -28,13 +28,16 @@ public interface OrderService {
 
     void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request);
 
-    PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size);
+    PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
+            int size);
 
     UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
     void createOrderByStaff(OrderRequest request, String username);
 
     void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
+
+    void mapCustomerToOrder(Long orderId, Long customerId);
 
     Order getOrder(Long id);
 

@@ -10,6 +10,7 @@ import com.crowndine.service.payment.PreparedPayment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import com.crowndine.service.order.OrderService;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -17,9 +18,11 @@ import java.util.Map;
 @Service("cash")
 @Slf4j(topic = "CASH-SERVICE")
 public class CashService extends AbstractPaymentStrategy {
+    private final OrderService orderService;
 
-    public CashService(PaymentPreparationService paymentPreparationService) {
+    public CashService(PaymentPreparationService paymentPreparationService, OrderService orderService) {
         super(paymentPreparationService);
+        this.orderService = orderService;
     }
 
     @Override
@@ -44,6 +47,11 @@ public class CashService extends AbstractPaymentStrategy {
     protected String doCreatePayment(PreparedPayment prepared) {
         BigDecimal amountToPay = prepared.amount();
         log.info("Cash payment created, code={}, amount={}", prepared.payment().getCode(), amountToPay);
+        
+        if (prepared.payment().getOrder() != null) {
+            orderService.updateOrderStatus(prepared.payment().getOrder().getId(), com.crowndine.common.enums.EOrderStatus.COMPLETED);
+        }
+
         return "Đã tạo thành công số tiền thành toán là " + amountToPay;
     }
 

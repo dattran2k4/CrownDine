@@ -1,6 +1,7 @@
 package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderStatus;
+import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
@@ -14,6 +15,8 @@ import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.voucher.UserVoucherService;
+import com.crowndine.util.OrderCodeGenerator;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -45,12 +48,14 @@ public class OrderServiceImpl implements OrderService {
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
     private final UserVoucherService userVoucherService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
 
     @Override
     public Order getOrderByCode(String code) {
-        return orderRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
+        return orderRepository.findByCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
     }
 
     @Override
@@ -103,10 +108,9 @@ public class OrderServiceImpl implements OrderService {
             orderDetails.add(detail);
         }
         order.setOrderDetails(orderDetails);
-        order.setTotalPrice(calculationService.calculateTotalOrder(orderDetails));
+        recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
-
 
         log.info("Order has been saved {}", result.getId());
     }
@@ -123,7 +127,7 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
-        order.setCode(UUID.randomUUID().toString());
+        order.setCode(OrderCodeGenerator.generateOrderCode());
 
         Order result = orderRepository.save(order);
 
@@ -135,17 +139,18 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void addOrUpdateItemToOrder(Long orderId, OrderItemRequest request) {
         log.info("Processing add item {} for order {}", request.getItemId(), orderId);
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
 
         List<OrderDetail> orderDetails = order.getOrderDetails();
 
-        //Check trùng orderDetails item id == request item id
+        // Check trùng orderDetails item id == request item id
         Optional<OrderDetail> existedDetail = orderDetails
                 .stream()
                 .filter(detail -> isSameProduct(detail, request.getItemId(), request.getComboId()))
                 .findFirst();
 
-        //Nếu có thì update quantity
+        // Nếu có thì update quantity
         if (existedDetail.isPresent()) {
             log.info("Updating existed item {} for order {}", request.getItemId(), orderId);
             existedDetail.get().setQuantity(existedDetail.get().getQuantity() + request.getQuantity());
@@ -153,14 +158,16 @@ public class OrderServiceImpl implements OrderService {
             existedDetail.get().calculateAndSetTotalPrice();
         }
 
-        //Không có thì tạo mới order detail rồi order.add
+        // Không có thì tạo mới order detail rồi order.add
         else {
             log.info("Adding new item {} for order {}", request.getItemId(), orderId);
             OrderDetail detail = new OrderDetail();
             if (request.getItemId() != null) {
-                detail.setItem(itemRepository.findById(request.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item not found")));
+                detail.setItem(itemRepository.findById(request.getItemId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Item not found")));
             } else {
-                detail.setCombo(comboRepository.findById(request.getComboId()).orElseThrow(() -> new ResourceNotFoundException("Combo not found")));
+                detail.setCombo(comboRepository.findById(request.getComboId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Combo not found")));
             }
             detail.setQuantity(request.getQuantity());
             detail.setNote(request.getNote());
@@ -169,11 +176,7 @@ public class OrderServiceImpl implements OrderService {
             orderDetails.add(detail);
         }
 
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(orderDetails);
-
-        order.setTotalPrice(totalPrice);
-
-        order.setFinalPrice(totalPrice);
+        recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
         log.info("Order has been saved with id {}", result.getId());
@@ -197,9 +200,7 @@ public class OrderServiceImpl implements OrderService {
         detailToUpdate.setNote(request.getNote());
         detailToUpdate.calculateAndSetTotalPrice();
 
-        order.setTotalPrice(calculationService.calculateTotalOrder(orderDetails));
-
-        order.setFinalPrice(calculationService.calculateTotalOrder(orderDetails));
+        recalculateOrderPricing(order);
 
         orderRepository.save(order);
         log.info("Updating quantity or note for detailId successfully for detailId {}", detailToUpdate.getId());
@@ -210,7 +211,8 @@ public class OrderServiceImpl implements OrderService {
     public void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request) {
         log.info("Removing order item  for order {}", order.getId());
 
-        boolean removed = order.getOrderDetails().removeIf(detail -> isSameProduct(detail, request.getItemId(), request.getComboId()));
+        boolean removed = order.getOrderDetails()
+                .removeIf(detail -> isSameProduct(detail, request.getItemId(), request.getComboId()));
 
         if (!removed) {
             throw new ResourceNotFoundException("Sản phẩm này không tồn tại trong đơn hàng để xóa");
@@ -218,15 +220,14 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Item removed successfully from order list");
 
-        BigDecimal newTotalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(newTotalPrice);
-        order.setFinalPrice(newTotalPrice);
+        recalculateOrderPricing(order);
 
         orderRepository.save(order);
     }
 
     @Override
-    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size) {
+    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
+            int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
 
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
@@ -254,9 +255,26 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(status);
         orderRepository.save(order);
 
+        if (status == EOrderStatus.COMPLETED || status == EOrderStatus.CANCELLED) {
+            RestaurantTable table = order.getRestaurantTable();
+            if (table != null) {
+                table.setStatus(ETableStatus.AVAILABLE);
+                tableRepository.save(table);
+
+                RestaurantTableResponse tableRes = new RestaurantTableResponse();
+                BeanUtils.copyProperties(table, tableRes);
+                tableRes.setId(table.getId());
+                messagingTemplate.convertAndSend("/topic/tables", tableRes);
+                log.info("Released table {} to AVAILABLE after order updated to {}", table.getId(), status);
+            }
+        }
+
         UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
         response.setId(order.getId());
         response.setStatus(order.getStatus());
+
+        messagingTemplate.convertAndSend("/topic/orders", response);
+
         return response;
     }
 
@@ -264,22 +282,32 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void createOrderByStaff(OrderRequest request, String username) {
         log.info("Processing create new order by staff username {}", username);
-        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        User staff = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        RestaurantTable table = tableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
 
-        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+        table.setStatus(ETableStatus.OCCUPIED);
+        tableRepository.save(table);
+
         Order order = new Order();
-        order.setCode(UUID.randomUUID().toString());
+        order.setCode(com.crowndine.util.OrderCodeGenerator.generateOrderCode());
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
         orderDetailService.addOrderDetailsForOrder(order, request.getItems());
 
-        //Tính lại tổng hoá đơn
-        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
-        order.setFinalPrice(order.getTotalPrice());
+        // Tính lại tổng hoá đơn
+        recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
         log.info("Created order with id {}", result.getId());
+
+        RestaurantTableResponse tableRes = new RestaurantTableResponse();
+        BeanUtils.copyProperties(table, tableRes);
+        tableRes.setId(table.getId());
+        messagingTemplate.convertAndSend("/topic/tables", tableRes);
+        messagingTemplate.convertAndSend("/topic/orders", toResponse(result));
     }
 
     @Override
@@ -289,8 +317,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderDetailService.addOrderDetailsForOrder(order, request.getItems());
 
-        order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
-        order.setFinalPrice(order.getTotalPrice());
+        recalculateOrderPricing(order);
         orderRepository.save(order);
 
         log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
@@ -299,6 +326,16 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order getOrder(Long id) {
         return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void mapCustomerToOrder(Long orderId, Long customerId) {
+        Order order = getOrder(orderId);
+        User customer = userRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        order.setUser(customer);
+        orderRepository.save(order);
+        log.info("Mapped user {} to order {}", customerId, orderId);
     }
 
     @Override
@@ -312,8 +349,11 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
         }
 
+        // Determine the customer username to check ownership
+        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
+
         if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
-            userVoucherService.releaseVoucher(order.getVoucher().getCode(), username);
+            userVoucherService.releaseVoucher(order.getVoucher().getCode(), customerUsername);
             order.setVoucher(null);
         }
 
@@ -326,7 +366,7 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
         }
 
-        Voucher voucher = userVoucherService.consumeVoucher(code, username);
+        Voucher voucher = userVoucherService.consumeVoucher(code, customerUsername);
 
         BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
@@ -365,8 +405,10 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Đơn hàng chưa áp voucher");
         }
 
+        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
+
         String voucherCode = order.getVoucher().getCode();
-        userVoucherService.releaseVoucher(voucherCode, username);
+        userVoucherService.releaseVoucher(voucherCode, customerUsername);
 
         order.setVoucher(null);
 
@@ -405,6 +447,10 @@ public class OrderServiceImpl implements OrderService {
             response.setGuestName(order.getUser().getFullName());
         }
 
+        if (order.getRestaurantTable() != null) {
+            response.setTableName(order.getRestaurantTable().getName());
+        }
+
         List<OrderDetailResponse> details = order.getOrderDetails().stream().map(d -> {
             OrderDetailResponse od = new OrderDetailResponse();
             od.setId(d.getId());
@@ -415,11 +461,20 @@ public class OrderServiceImpl implements OrderService {
             }
             od.setQuantity(d.getQuantity());
             od.setNote(d.getNote());
+            od.setStatus(d.getStatus());
             od.setTotalPrice(d.getTotalPrice());
             return od;
         }).toList();
 
         response.setOrderDetails(details);
+
+        if (order.getVoucher() != null) {
+            OrderResponse.VoucherSlimResponse vr = new OrderResponse.VoucherSlimResponse();
+            vr.setId(order.getVoucher().getId());
+            vr.setCode(order.getVoucher().getCode());
+            vr.setName(order.getVoucher().getName());
+            response.setVoucher(vr);
+        }
 
         return response;
     }
@@ -450,5 +505,19 @@ public class OrderServiceImpl implements OrderService {
             return detail.getCombo().getId().equals(comboId);
         }
         return false;
+    }
+
+    private void recalculateOrderPricing(Order order) {
+        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        order.setTotalPrice(totalPrice);
+
+        if (order.getVoucher() != null) {
+            BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
+            order.setDiscountPrice(discountPrice);
+            order.setFinalPrice(calculationService.calculateFinalTotalPrice(totalPrice, discountPrice));
+        } else {
+            order.setDiscountPrice(BigDecimal.ZERO);
+            order.setFinalPrice(totalPrice);
+        }
     }
 }

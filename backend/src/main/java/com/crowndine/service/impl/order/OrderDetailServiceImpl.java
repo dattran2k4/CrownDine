@@ -45,7 +45,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         request.forEach(item -> {
             OrderDetail orderDetailItem = new OrderDetail();
-            orderDetailItem.setOrder(order);
+            order.addOrderDetail(orderDetailItem);
             if (item.getItemId() != null) {
                 orderDetailItem.setItem(itemRepository.findById(item.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item Not Found")));
             }
@@ -73,8 +73,11 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         Order order = orderDetail.getOrder();
 
-        if (order.getStatus().equals(EOrderStatus.COMPLETED) || order.getStatus().equals(EOrderStatus.CANCELLED)) {
-            throw new InvalidDataException("Không thể cập nhật món cho hóa đơn đã đóng.");
+        if (order.getStatus().equals(EOrderStatus.CONFIRMED) || 
+            order.getStatus().equals(EOrderStatus.IN_PROGRESS) || 
+            order.getStatus().equals(EOrderStatus.COMPLETED) || 
+            order.getStatus().equals(EOrderStatus.CANCELLED)) {
+            throw new InvalidDataException("Không thể cập nhật món khi đơn hàng đang ở trạng thái này.");
         }
 
         BigDecimal oldOrderDetailTotalPrice = orderDetail.getTotalPrice();
@@ -98,10 +101,21 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteOrderDetail(Long id) {
-        orderDetailRepository.delete(findById(id));
+        OrderDetail detail = findById(id);
+        Order order = detail.getOrder();
 
-        Order order = findById(id).getOrder();
+        if (order.getStatus().equals(EOrderStatus.CONFIRMED) || 
+            order.getStatus().equals(EOrderStatus.IN_PROGRESS) || 
+            order.getStatus().equals(EOrderStatus.COMPLETED) || 
+            order.getStatus().equals(EOrderStatus.CANCELLED)) {
+            throw new InvalidDataException("Không thể xóa món khi đơn hàng đang ở trạng thái này.");
+        }
+
+        order.getOrderDetails().remove(detail);
+        orderDetailRepository.delete(detail);
+        
         order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
+        order.setFinalPrice(order.getTotalPrice());
         log.info("Deleted successfully order detail id {}", id);
     }
 

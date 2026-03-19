@@ -12,6 +12,7 @@ import com.crowndine.repository.PaymentRepository;
 import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
+import com.crowndine.service.order.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,15 +32,18 @@ public class PayOSService extends AbstractPaymentStrategy {
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
+    private final OrderService orderService;
 
     public PayOSService(PaymentPreparationService paymentPreparationService,
                         PayOSConfig payOSConfig,
                         PayOS payOS,
-                        PaymentRepository paymentRepository) {
+                        PaymentRepository paymentRepository,
+                        OrderService orderService) {
         super(paymentPreparationService);
         this.payOSConfig = payOSConfig;
         this.payOS = payOS;
         this.paymentRepository = paymentRepository;
+        this.orderService = orderService;
     }
 
     @Override
@@ -105,8 +109,13 @@ public class PayOSService extends AbstractPaymentStrategy {
             paymentRepository.save(payment);
 
             Reservation reservation = payment.getReservation();
-            reservation.setStatus(EReservationStatus.CONFIRMED);
-            reservation.setExpiratedAt(null);
+            if (reservation != null) {
+                reservation.setStatus(EReservationStatus.CONFIRMED);
+                reservation.setExpiratedAt(null);
+            }
+            if (payment.getOrder() != null) {
+                orderService.updateOrderStatus(payment.getOrder().getId(), com.crowndine.common.enums.EOrderStatus.COMPLETED);
+            }
 
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {

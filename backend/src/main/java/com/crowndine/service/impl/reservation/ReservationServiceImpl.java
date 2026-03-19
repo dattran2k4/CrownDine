@@ -1,6 +1,5 @@
 package com.crowndine.service.impl.reservation;
 
-import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.*;
@@ -11,6 +10,8 @@ import com.crowndine.model.*;
 import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.reservation.ReservationAvailabilityService;
+import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.ReservationService;
 
 import lombok.RequiredArgsConstructor;
@@ -37,10 +38,7 @@ import static com.crowndine.service.impl.CalculationServiceImpl.DEPOSIT_RATE;
 @RequiredArgsConstructor
 @Slf4j(topic = "RESERVATION-SERVICE")
 public class ReservationServiceImpl implements ReservationService {
-    private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
-    private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
     private static final long HOLD_TABLE_MINUTES = 10;
-    private static final long DEFAULT_RESERVATION_DURATION_HOURS = 4;
 
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
@@ -52,6 +50,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final CalculationService calculationService;
     private final OrderService orderService;
+    private final ReservationTimePolicy reservationTimePolicy;
+    private final ReservationAvailabilityService reservationAvailabilityService;
 
     @Override
     public PageResponse<ReservationResponse> getAllReservations(LocalDate fromDate, LocalDate toDate, EReservationStatus status, int page, int size) {
@@ -276,9 +276,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
-        LocalTime calculatedEndTime = calculateReservationEndTime(request.getStartTime());
-        LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
-        validateReservationTime(startDateTime);
+        LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
+        LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
+        reservationTimePolicy.validateStartTime(startDateTime);
 
         User user = getUserByUserName(username);
 
@@ -291,31 +291,18 @@ public class ReservationServiceImpl implements ReservationService {
         if (table.getCapacity() != null && table.getCapacity() < request.getGuestNumber()) {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
-
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
-
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(
-                request.getDate(),
-                request.getStartTime(),
-                calculatedEndTime,
-                blockingStatuses,
-                now
-        );
-
-        if (reservedIds.contains(table.getId())) {
-            throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
-        }
+        
+        reservationAvailabilityService.ensureTableAvailable(request.getDate(), request.getStartTime(), table.getId());
 
         Reservation reservation = new Reservation();
         reservation.setDate(request.getDate());
         reservation.setStartTime(request.getStartTime());
-        reservation.setEndTime(calculatedEndTime);
+        reservation.setEndTime(endDateTime.toLocalTime());
         reservation.setCheckedOutAt(null);
         reservation.setGuestNumber(request.getGuestNumber());
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
-        reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
+        reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
         reservation.setUser(user);
         reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);
@@ -342,10 +329,6 @@ public class ReservationServiceImpl implements ReservationService {
             response.setFloorNumber(table.getArea().getFloor().getFloorNumber());
         }
         return response;
-    }
-
-    private LocalTime calculateReservationEndTime(LocalTime startTime) {
-        return startTime.plusHours(DEFAULT_RESERVATION_DURATION_HOURS);
     }
 
     @Override
@@ -444,17 +427,6 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime) {
-
-        if (startDateTime.isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
-        }
-
-        if (startDateTime.toLocalTime().isBefore(OPEN_TIME)) {
-            throw new InvalidDataException("Giờ bắt đầu phải sau giờ mở cửa của nhà hàng");
-        }
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelReservation(Long reservationId, String username) {
@@ -503,26 +475,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
 
-        // Kiểm tra xem bàn mới có bị đặt trong khung giờ này không
-        // Loại trừ reservation hiện tại khỏi danh sách reserved
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(
+        reservationAvailabilityService.ensureTableAvailable(
                 reservation.getDate(),
                 reservation.getStartTime(),
-                reservation.getEndTime(),
-                blockingStatuses,
-                now
+                newTable.getId(),
+                reservation.getId()
         );
-
-        // Loại trừ bàn hiện tại của reservation này (nếu có)
-        if (reservation.getTable() != null) {
-            reservedIds.remove(reservation.getTable().getId());
-        }
-
-        if (reservedIds.contains(newTable.getId())) {
-            throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
-        }
 
         // Cập nhật bàn cho reservation
         reservation.setTable(newTable);

@@ -63,7 +63,7 @@ public class ApiOrderController {
     @PostMapping("/{orderId}/details")
     public ApiResponse addOrderDetails(@Min(1) @PathVariable("orderId") Long id,
             @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
-        orderService.addDetailsToOrder(id, request, principal.getName());
+            orderService.addDetailsToOrder(id, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Added order details successfully")

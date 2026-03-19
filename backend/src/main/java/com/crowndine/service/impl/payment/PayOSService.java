@@ -13,6 +13,7 @@ import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.reservation.ReservationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,17 +34,19 @@ public class PayOSService extends AbstractPaymentStrategy {
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
     private final OrderService orderService;
+    private final ReservationService reservationService;
 
     public PayOSService(PaymentPreparationService paymentPreparationService,
                         PayOSConfig payOSConfig,
                         PayOS payOS,
                         PaymentRepository paymentRepository,
-                        OrderService orderService) {
+                        OrderService orderService, ReservationService reservationService) {
         super(paymentPreparationService);
         this.payOSConfig = payOSConfig;
         this.payOS = payOS;
         this.paymentRepository = paymentRepository;
         this.orderService = orderService;
+        this.reservationService = reservationService;
     }
 
     @Override
@@ -111,15 +114,7 @@ public class PayOSService extends AbstractPaymentStrategy {
             payment.setRawApiData(rawApiData);
             paymentRepository.save(payment);
 
-            Reservation reservation = payment.getReservation();
-            if (reservation != null) {
-                reservation.setStatus(EReservationStatus.CONFIRMED);
-                reservation.setExpiratedAt(null);
-            }
-            if (payment.getOrder() != null) {
-                orderService.updateOrderStatus(payment.getOrder().getId(), com.crowndine.common.enums.EOrderStatus.COMPLETED);
-            }
-
+            handlePaymentSuccess(payment);
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {
             log.error("Error while handling PayOS webhook: {}", e.getMessage(), e);

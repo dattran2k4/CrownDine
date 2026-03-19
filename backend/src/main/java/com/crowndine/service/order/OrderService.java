@@ -46,4 +46,7 @@ public interface OrderService {
     OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
 
     void markAsPaid(Order order);
+
+    void createOrderByStaff(OrderRequest request, String username);
+     void addDetailsToOrder(Long orderId, OrderItemBatchRequest request, String name);
 }

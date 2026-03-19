@@ -134,6 +134,35 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         return UpdateStatusOrderDetailResponse.builder().id(id).status(status).build();
     }
 
+    @Override
+    public void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request) {
+        log.info("Processing {} items for order {}", request.size(), order.getId());
+
+        List<OrderDetail> orderDetails = new ArrayList<>();
+
+        request.forEach(item -> {
+            OrderDetail orderDetailItem = new OrderDetail();
+            order.addOrderDetail(orderDetailItem);
+            if (item.getItemId() != null) {
+                orderDetailItem.setItem(itemRepository.findById(item.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item Not Found")));
+            }
+            if (item.getComboId() != null) {
+                orderDetailItem.setCombo(comboRepository.findById(item.getComboId()).orElseThrow(() -> new ResourceNotFoundException("Combo Not Found")));
+            }
+
+            orderDetailItem.setQuantity(item.getQuantity());
+            orderDetailItem.setNote(item.getNote());
+            orderDetailItem.setStatus(EOrderDetailStatus.PENDING);
+            orderDetailItem.calculateAndSetTotalPrice();
+            orderDetails.add(orderDetailItem);
+            log.info("Added order detail for order {}", order.getId());
+        });
+
+        orderDetailRepository.saveAll(orderDetails);
+
+        log.info("Added successfully order detail for order {}", order.getId());
+    }
+
     private OrderDetail findById(Long id) {
         return orderDetailRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn trong đơn hàng"));
     }

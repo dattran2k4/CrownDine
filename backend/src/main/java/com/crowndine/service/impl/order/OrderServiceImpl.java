@@ -51,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailService orderDetailService;
     private final UserVoucherService userVoucherService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
 
@@ -281,6 +282,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public void createWalkInOrder(OrderRequest request, String username) {
+
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void createOrderByStaff(OrderRequest request, String username) {
         log.info("Processing create new order by staff username {}", username);
@@ -394,6 +400,18 @@ public class OrderServiceImpl implements OrderService {
                 .discountPrice(updatedOrder.getDiscountPrice())
                 .finalPrice(updatedOrder.getFinalPrice())
                 .build();
+    }
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
+        Order order = getOrder(id);
+
+        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+
+        recalculateOrderPricing(order);
+        orderRepository.save(order);
+
+        log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
     }
 
     @Override
@@ -541,19 +559,5 @@ public class OrderServiceImpl implements OrderService {
             return detail.getCombo().getId().equals(comboId);
         }
         return false;
-    }
-
-    private void recalculateOrderPricing(Order order) {
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(totalPrice);
-
-        if (order.getVoucher() != null) {
-            BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
-            order.setDiscountPrice(discountPrice);
-            order.setFinalPrice(calculationService.calculateFinalTotalPrice(totalPrice, discountPrice));
-        } else {
-            order.setDiscountPrice(BigDecimal.ZERO);
-            order.setFinalPrice(totalPrice);
-        }
     }
 }

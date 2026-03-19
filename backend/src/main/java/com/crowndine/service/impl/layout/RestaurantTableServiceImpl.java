@@ -6,6 +6,7 @@ import com.crowndine.dto.request.TableRequest;
 import com.crowndine.dto.response.RestaurantTableResponse;
 import com.crowndine.dto.response.TableLayoutResponse;
 import com.crowndine.dto.response.TableResponse;
+import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Area;
 import com.crowndine.model.RestaurantTable;
@@ -32,6 +33,8 @@ import java.util.Set;
 @Transactional
 @Slf4j(topic = "RESTAURANT-TABLE-SERVICE")
 public class RestaurantTableServiceImpl implements RestaurantTableService {
+    private static final long DEFAULT_RESERVATION_DURATION_HOURS = 4;
+    private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
 
     private final RestaurantTableRepository tableRepository;
     private final AreaRepository areaRepository;
@@ -79,12 +82,12 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     }
 
     @Override
-    public List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber) {
+    public List<TableLayoutResponse> getTablesForReservation(LocalDate date, LocalTime startTime, Integer guestNumber) {
+        LocalTime endTime = calculateReservationEndTime(startTime);
         LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
-        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
-        validateReservationTime(startDateTime, endDateTime);
+        validateReservationTime(startDateTime);
 
-        List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(guestNumber, ETableStatus.AVAILABLE);
+        List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusNotOrderByCapacityAsc(guestNumber, ETableStatus.UNAVAILABLE);
 
         if (candidates.isEmpty()) {
             return List.of();
@@ -98,6 +101,10 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         Set<Long> reservedSet = new HashSet<>(reservedIds);
 
         return candidates.stream().filter(t -> !reservedSet.contains(t.getId())).map(this::map).toList();
+    }
+
+    private LocalTime calculateReservationEndTime(LocalTime startTime) {
+        return startTime.plusHours(DEFAULT_RESERVATION_DURATION_HOURS);
     }
 
     @Override
@@ -126,7 +133,14 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         return response;
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+    private void validateReservationTime(LocalDateTime startDateTime) {
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
+        }
+
+        if (startDateTime.toLocalTime().isBefore(OPEN_TIME)) {
+            throw new InvalidDataException("Giờ bắt đầu phải sau giờ mở cửa của nhà hàng");
+        }
     }
 
     private TableLayoutResponse map(RestaurantTable table) {

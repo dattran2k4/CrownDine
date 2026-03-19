@@ -26,6 +26,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             where r.table is not null
               and r.date = :date
               and r.status in :statuses
+              and r.checkedOutAt is null
               and r.startTime < :endTime
               and r.endTime > :startTime
               and (r.status <> 'PENDING' or (r.expiratedAt is not null and r.expiratedAt > :now))

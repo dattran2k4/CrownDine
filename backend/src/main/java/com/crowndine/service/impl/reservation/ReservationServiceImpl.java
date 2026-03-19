@@ -191,10 +191,10 @@ public class ReservationServiceImpl implements ReservationService {
             resp.setOrderId(order.getId());
             resp.setOrderStatus(order.getStatus());
             resp.setFinalPrice(order.getFinalPrice());
-            
+
             List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
             resp.setItems(details.stream().map(d -> toLineResponse(d, r.getUser().getId())).toList());
-            
+
             // Check if user has already given general feedback
             resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(r.getUser().getId(), order.getId()));
         }
@@ -209,7 +209,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setStartTime(order.getCreatedAt().toLocalTime());
         resp.setEndTime(order.getCreatedAt().toLocalTime().plusHours(1)); // Default duration for display
         resp.setGuestNumber(0);
-        
+
         // Map order status to a placeholder reservation status for display purposes
         if (order.getStatus() == com.crowndine.common.enums.EOrderStatus.COMPLETED) {
             resp.setReservationStatus(EReservationStatus.COMPLETED);
@@ -218,15 +218,15 @@ public class ReservationServiceImpl implements ReservationService {
         } else {
             resp.setReservationStatus(EReservationStatus.CONFIRMED);
         }
-        
+
         resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : "N/A");
         resp.setOrderId(order.getId());
         resp.setOrderStatus(order.getStatus());
         resp.setFinalPrice(order.getFinalPrice());
-        
+
         List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
         resp.setItems(details.stream().map(d -> toLineResponse(d, order.getUser().getId())).toList());
-        
+
         // Check if user has already given general feedback
         resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(order.getUser().getId(), order.getId()));
         return resp;
@@ -259,7 +259,7 @@ public class ReservationServiceImpl implements ReservationService {
         r.setType(od.getCombo() != null ? "COMBO" : "ITEM");
         r.setQuantity(od.getQuantity());
         r.setTotalPrice(od.getTotalPrice());
-        
+
         if (userId != null) {
             r.setHasFeedback(feedbackRepository.existsByUser_IdAndOrderDetail_Id(userId, od.getId()));
         }
@@ -278,8 +278,7 @@ public class ReservationServiceImpl implements ReservationService {
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
         LocalTime calculatedEndTime = calculateReservationEndTime(request.getStartTime());
         LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
-        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), calculatedEndTime);
-        validateReservationTime(startDateTime, endDateTime);
+        validateReservationTime(startDateTime);
 
         User user = getUserByUserName(username);
 
@@ -445,18 +444,14 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+    private void validateReservationTime(LocalDateTime startDateTime) {
 
         if (startDateTime.isBefore(LocalDateTime.now())) {
             throw new InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
         }
 
-        if (!endDateTime.isAfter(startDateTime)) {
-            throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
-        }
-
-        if (startDateTime.toLocalTime().isBefore(OPEN_TIME) || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
-            throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
+        if (startDateTime.toLocalTime().isBefore(OPEN_TIME)) {
+            throw new InvalidDataException("Giờ bắt đầu phải sau giờ mở cửa của nhà hàng");
         }
     }
 

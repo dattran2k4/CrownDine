@@ -115,6 +115,14 @@ const Step1DateTime = ({
           </p>
         </div>
       </div>
+
+      <div className='rounded-lg border border-amber-200 bg-amber-50 p-4'>
+        <p className='text-sm font-semibold text-amber-800'>Lưu ý về thời gian giữ bàn</p>
+        <p className='mt-1 text-xs leading-5 text-amber-700'>
+          Mỗi lượt đặt bàn sẽ được giữ mặc định khoảng 4 tiếng. Nếu bàn trước đã hoàn tất sớm, hệ thống vẫn có thể
+          cho phép khách khác tiếp tục đặt bàn trong khung giờ gần nhất.
+        </p>
+      </div>
     </div>
   )
 }

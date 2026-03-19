@@ -11,5 +11,5 @@ import java.util.List;
 public interface RestaurantTableRepository
         extends JpaRepository<RestaurantTable, Long> {
     List<RestaurantTable> findByAreaId(Long areaIds);
-    List<RestaurantTable> findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(Integer capacity, ETableStatus status);
+    List<RestaurantTable> findByCapacityGreaterThanEqualAndStatusNotOrderByCapacityAsc(Integer capacity, ETableStatus status);
 }

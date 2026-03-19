@@ -1,6 +1,5 @@
 package com.crowndine.service.impl.reservation;
 
-import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.*;
@@ -11,6 +10,8 @@ import com.crowndine.model.*;
 import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.reservation.ReservationAvailabilityService;
+import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.ReservationService;
 
 import lombok.RequiredArgsConstructor;
@@ -37,8 +38,6 @@ import static com.crowndine.service.impl.CalculationServiceImpl.DEPOSIT_RATE;
 @RequiredArgsConstructor
 @Slf4j(topic = "RESERVATION-SERVICE")
 public class ReservationServiceImpl implements ReservationService {
-    private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
-    private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
     private static final long HOLD_TABLE_MINUTES = 10;
 
     private final ReservationRepository reservationRepository;
@@ -51,6 +50,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final CalculationService calculationService;
     private final OrderService orderService;
+    private final ReservationTimePolicy reservationTimePolicy;
+    private final ReservationAvailabilityService reservationAvailabilityService;
 
     @Override
     public PageResponse<ReservationResponse> getAllReservations(LocalDate fromDate, LocalDate toDate, EReservationStatus status, int page, int size) {
@@ -190,10 +191,10 @@ public class ReservationServiceImpl implements ReservationService {
             resp.setOrderId(order.getId());
             resp.setOrderStatus(order.getStatus());
             resp.setFinalPrice(order.getFinalPrice());
-            
+
             List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
             resp.setItems(details.stream().map(d -> toLineResponse(d, r.getUser().getId())).toList());
-            
+
             // Check if user has already given general feedback
             resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(r.getUser().getId(), order.getId()));
         }
@@ -208,7 +209,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setStartTime(order.getCreatedAt().toLocalTime());
         resp.setEndTime(order.getCreatedAt().toLocalTime().plusHours(1)); // Default duration for display
         resp.setGuestNumber(0);
-        
+
         // Map order status to a placeholder reservation status for display purposes
         if (order.getStatus() == com.crowndine.common.enums.EOrderStatus.COMPLETED) {
             resp.setReservationStatus(EReservationStatus.COMPLETED);
@@ -217,15 +218,15 @@ public class ReservationServiceImpl implements ReservationService {
         } else {
             resp.setReservationStatus(EReservationStatus.CONFIRMED);
         }
-        
+
         resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : "N/A");
         resp.setOrderId(order.getId());
         resp.setOrderStatus(order.getStatus());
         resp.setFinalPrice(order.getFinalPrice());
-        
+
         List<OrderDetail> details = orderDetailRepository.findByOrder_Id(order.getId());
         resp.setItems(details.stream().map(d -> toLineResponse(d, order.getUser().getId())).toList());
-        
+
         // Check if user has already given general feedback
         resp.setHasGeneralFeedback(feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(order.getUser().getId(), order.getId()));
         return resp;
@@ -246,8 +247,8 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         // Use the unified mapping to ensure response contains:
-        // itemsTotal, tableDeposit (base_deposit * hours), depositAmount (20% items + tableDeposit), remainingAmount, and items.
-        return toOrderDetailPageResponse(order, reservation.getStartTime(), reservation.getEndTime());
+        // itemsTotal, tableDeposit, depositAmount (20% items + tableDeposit), remainingAmount, and items.
+        return toOrderDetailPageResponse(order);
     }
 
     private OrderLineResponse toLineResponse(OrderDetail od, Long userId) {
@@ -258,7 +259,7 @@ public class ReservationServiceImpl implements ReservationService {
         r.setType(od.getCombo() != null ? "COMBO" : "ITEM");
         r.setQuantity(od.getQuantity());
         r.setTotalPrice(od.getTotalPrice());
-        
+
         if (userId != null) {
             r.setHasFeedback(feedbackRepository.existsByUser_IdAndOrderDetail_Id(userId, od.getId()));
         }
@@ -275,9 +276,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
-        LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
-        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
-        validateReservationTime(startDateTime, endDateTime);
+        LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
+        LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
+        reservationTimePolicy.validateStartTime(startDateTime);
 
         User user = getUserByUserName(username);
 
@@ -290,24 +291,18 @@ public class ReservationServiceImpl implements ReservationService {
         if (table.getCapacity() != null && table.getCapacity() < request.getGuestNumber()) {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
-
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
-
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(request.getDate(), request.getStartTime(), request.getEndTime(), blockingStatuses, now);
-
-        if (reservedIds.contains(table.getId())) {
-            throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
-        }
+        
+        reservationAvailabilityService.ensureTableAvailable(request.getDate(), request.getStartTime(), table.getId());
 
         Reservation reservation = new Reservation();
         reservation.setDate(request.getDate());
         reservation.setStartTime(request.getStartTime());
-        reservation.setEndTime(request.getEndTime());
+        reservation.setEndTime(endDateTime.toLocalTime());
+        reservation.setCheckedOutAt(null);
         reservation.setGuestNumber(request.getGuestNumber());
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
-        reservation.setExpiratedAt(now.plusMinutes(HOLD_TABLE_MINUTES));
+        reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
         reservation.setUser(user);
         reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);
@@ -315,8 +310,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation saved = reservationRepository.save(reservation);
         log.info("Reservation has been saved with id: {}", saved.getId());
 
-        // Tính tiền cọc theo giờ
-        BigDecimal tableDeposit = getTableDeposit(table, saved.getStartTime(), saved.getEndTime());
+        BigDecimal tableDeposit = getTableDeposit(table);
 
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
@@ -432,21 +426,6 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
-
-        if (startDateTime.isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
-        }
-
-        if (!endDateTime.isAfter(startDateTime)) {
-            throw new InvalidDataException("Giờ kết thúc phải sau giờ bắt đầu");
-        }
-
-        if (startDateTime.toLocalTime().isBefore(OPEN_TIME) || endDateTime.toLocalTime().isAfter(CLOSE_TIME)) {
-            throw new InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
-        }
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelReservation(Long reservationId, String username) {
@@ -495,26 +474,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
         }
 
-        // Kiểm tra xem bàn mới có bị đặt trong khung giờ này không
-        // Loại trừ reservation hiện tại khỏi danh sách reserved
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(
+        reservationAvailabilityService.ensureTableAvailable(
                 reservation.getDate(),
                 reservation.getStartTime(),
-                reservation.getEndTime(),
-                blockingStatuses,
-                now
+                newTable.getId(),
+                reservation.getId()
         );
-
-        // Loại trừ bàn hiện tại của reservation này (nếu có)
-        if (reservation.getTable() != null) {
-            reservedIds.remove(reservation.getTable().getId());
-        }
-
-        if (reservedIds.contains(newTable.getId())) {
-            throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
-        }
 
         // Cập nhật bàn cho reservation
         reservation.setTable(newTable);
@@ -539,31 +504,17 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     /**
-     * Tính tiền cọc bàn theo giờ
-     *
-     * @param table     Bàn
-     * @param startTime Thời gian bắt đầu
-     * @param endTime   Thời gian kết thúc
-     * @return Tiền cọc = baseDeposit * số giờ
+     * Lấy tiền cọc cố định của bàn.
      */
-    private BigDecimal getTableDeposit(RestaurantTable table, LocalTime startTime, LocalTime endTime) {
+    private BigDecimal getTableDeposit(RestaurantTable table) {
         if (table == null || table.getBaseDeposit() == null) {
             return BigDecimal.ZERO;
         }
 
-        if (startTime == null || endTime == null) {
-            return table.getBaseDeposit();
-        }
-
-        // Tính số giờ (có thể là số thập phân)
-        long minutes = java.time.Duration.between(startTime, endTime).toMinutes();
-        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-
-        // Tiền cọc = baseDeposit * số giờ
-        return table.getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
+        return table.getBaseDeposit().setScale(2, RoundingMode.HALF_UP);
     }
 
-    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order, LocalTime startTime, LocalTime endTime) {
+    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order) {
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
                 .map(od -> toLineResponse(od, order.getUser() != null ? order.getUser().getId() : null))
@@ -572,7 +523,7 @@ public class ReservationServiceImpl implements ReservationService {
         BigDecimal itemsTotal = orderDetails.stream()
                 .map(OrderDetail::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable(), startTime, endTime);
+        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable());
         BigDecimal depositAmount = calculationService.calculateDepositPayment(itemsTotal, tableDeposit);
         BigDecimal remainingAmount = itemsTotal.subtract(itemsTotal.multiply(DEPOSIT_RATE))
                 .setScale(2, RoundingMode.HALF_UP);
@@ -585,7 +536,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setDiscountPrice(order.getDiscountPrice()); // tiền giảm giá
         resp.setFinalPrice(order.getFinalPrice()); // tổng tiền sau giảm giá
         resp.setItemsTotal(itemsTotal); // tổng tiền các món
-        resp.setTableDeposit(tableDeposit); // tiền cọc bàn (theo giờ)
+        resp.setTableDeposit(tableDeposit); // tiền cọc bàn cố định
         resp.setDepositAmount(depositAmount); // tiền cọc trước = 20% món + cọc bàn
         resp.setRemainingAmount(remainingAmount); // 80% còn lại trả sau
         resp.setCreatedAt(order.getCreatedAt());

@@ -1,18 +1,17 @@
 package com.crowndine.service.impl.layout;
 
-import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.TableRequest;
 import com.crowndine.dto.response.RestaurantTableResponse;
 import com.crowndine.dto.response.TableLayoutResponse;
-import com.crowndine.dto.response.TableResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Area;
 import com.crowndine.model.RestaurantTable;
 import com.crowndine.repository.AreaRepository;
-import com.crowndine.repository.ReservationRepository;
 import com.crowndine.repository.RestaurantTableRepository;
 import com.crowndine.service.layout.RestaurantTableService;
+import com.crowndine.service.reservation.ReservationAvailabilityService;
+import com.crowndine.service.reservation.ReservationTimePolicy;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,22 +19,18 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j(topic = "RESTAURANT-TABLE-SERVICE")
 public class RestaurantTableServiceImpl implements RestaurantTableService {
-
     private final RestaurantTableRepository tableRepository;
     private final AreaRepository areaRepository;
-    private final ReservationRepository reservationRepository;
+    private final ReservationTimePolicy reservationTimePolicy;
+    private final ReservationAvailabilityService reservationAvailabilityService;
 
     @Override
     public TableLayoutResponse create(Long areaId, TableRequest request) {
@@ -79,25 +74,22 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     }
 
     @Override
-    public List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber) {
-        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
-        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
-        validateReservationTime(startDateTime, endDateTime);
+    public List<TableLayoutResponse> getTablesForReservation(LocalDate date, LocalTime startTime, Integer guestNumber) {
+        reservationTimePolicy.validateStartTime(reservationTimePolicy.toStartDateTime(date, startTime));
 
-        List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(guestNumber, ETableStatus.AVAILABLE);
+        List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusNotOrderByCapacityAsc(guestNumber, ETableStatus.UNAVAILABLE);
 
         if (candidates.isEmpty()) {
             return List.of();
         }
 
-        List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
+        List<Long> candidateTableIds = candidates.stream().map(RestaurantTable::getId).toList();
+        var blockedTableIds = reservationAvailabilityService.findBlockedTableIds(date, startTime, candidateTableIds);
 
-        LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses, now);
-
-        Set<Long> reservedSet = new HashSet<>(reservedIds);
-
-        return candidates.stream().filter(t -> !reservedSet.contains(t.getId())).map(this::map).toList();
+        return candidates.stream()
+                .filter(t -> !blockedTableIds.contains(t.getId()))
+                .map(this::map)
+                .toList();
     }
 
     @Override
@@ -124,9 +116,6 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         BeanUtils.copyProperties(restaurantTable, response);
         response.setId(restaurantTable.getId());
         return response;
-    }
-
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
     }
 
     private TableLayoutResponse map(RestaurantTable table) {

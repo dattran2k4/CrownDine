@@ -78,7 +78,12 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
 
         Order order = reservation.getOrder();
         BigDecimal finalOrderPrice = getReservationOrderFinalPrice(order);
-        log.info("Order {} final price used for deposit calculation: {}", order.getId(), finalOrderPrice);
+        if (order != null) {
+            log.info("Order {} final price used for reservation deposit calculation: {}", order.getId(), finalOrderPrice);
+        } else {
+            log.info("Reservation {} has no order. Using final order price {} for reservation deposit calculation",
+                    reservation.getId(), finalOrderPrice);
+        }
         BigDecimal tableDeposit = calculateTableDeposit(reservation);
         log.info("Reservation {} table {} deposit amount: {}", reservation.getId(), reservation.getTable().getId(), tableDeposit);
         BigDecimal amountToPay = calculationService.calculateDepositPayment(finalOrderPrice, tableDeposit);

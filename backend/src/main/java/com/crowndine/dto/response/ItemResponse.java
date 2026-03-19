@@ -26,6 +26,8 @@ public class ItemResponse {
     private EItemStatus status;
 
     private Long categoryId;
+    private Double averageRating;
+    private Integer feedbackCount;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

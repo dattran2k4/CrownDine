@@ -39,15 +39,17 @@ public class ApiOrderController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping
     public ApiResponse createOrder(@Valid @RequestBody OrderRequest request, Principal principal) {
-        orderService.createOrderByStaff(request, principal.getName());
+        orderService.createWalkInOrder(request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully created order + details")
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse updateOrder(@Min(1) @PathVariable Long id, @Valid @RequestBody OrderItemBatchRequest request,
             Principal principal) {

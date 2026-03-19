@@ -33,9 +33,9 @@ public interface OrderService {
 
     UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
-    void createOrderByStaff(OrderRequest request, String username);
+    void createWalkInOrder(OrderRequest request, String username);
 
-    void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name);
+    void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name);
 
     void mapCustomerToOrder(Long orderId, Long customerId);
 
@@ -44,4 +44,6 @@ public interface OrderService {
     OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username);
 
     OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
+
+    void markAsPaid(Order order);
 }

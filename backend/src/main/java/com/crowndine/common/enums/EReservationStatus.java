@@ -6,5 +6,9 @@ public enum EReservationStatus {
     CHECKED_IN,
     COMPLETED,
     CANCELLED,
-    NO_SHOW
+    NO_SHOW;
+
+    public boolean isFinal() {
+        return this == COMPLETED || this == CANCELLED || this == NO_SHOW;
+    }
 }

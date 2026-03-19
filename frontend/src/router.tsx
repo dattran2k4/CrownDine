@@ -6,9 +6,11 @@ import Menu from '@/pages/Menu'
 import MenuDetail from '@/pages/MenuDetail'
 import Register from '@/pages/Register'
 import Reservation from '@/pages/Reservation'
+import PaymentResult from '@/pages/PaymentResult'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
 import StaffList from '@/pages/Admin/Staff/StaffList'
+import VoucherList from '@/pages/Admin/Voucher/VoucherList'
 import PriceSettings from '@/pages/Admin/Price/PriceSettings'
 import Dashboard from '@/pages/Admin/Dashboard/Dashboard'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
@@ -23,6 +25,7 @@ import OrderManagement from './pages/Staffs/OrderManagement'
 import KitchenDisplay from './pages/Staffs/KitchenDisplay'
 import WorkSchedule from './pages/Staffs/WorkSchedule'
 import StaffChat from './pages/Staffs/StaffChat'
+import AttendanceBoard from './pages/Staffs/Attendance'
 
 const router = createBrowserRouter([
   {
@@ -34,6 +37,8 @@ const router = createBrowserRouter([
       { path: '/menu', element: <Menu /> },
       { path: '/menu/item/:id', element: <MenuDetail /> },
       { path: '/menu/combo/:id', element: <MenuDetail /> },
+      { path: path.paymentSuccess, element: <PaymentResult /> },
+      { path: path.paymentFailure, element: <PaymentResult /> },
       {
         element: <ProtectedRoute />,
         children: [
@@ -77,6 +82,10 @@ const router = createBrowserRouter([
             element: <StaffList />
           },
           {
+            path: 'vouchers',
+            element: <VoucherList />
+          },
+          {
             path: 'price-settings',
             element: <PriceSettings />
           },
@@ -87,6 +96,10 @@ const router = createBrowserRouter([
           {
             path: 'layout',
             element: <LayoutPage />
+          },
+          {
+            path: 'attendance',
+            element: <AttendanceBoard />
           }
         ]
       }

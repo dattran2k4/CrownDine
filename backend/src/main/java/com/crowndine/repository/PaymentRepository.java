@@ -20,6 +20,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     //Các giao dịch CỌC đã THÀNH CÔNG của bàn
     List<Payment> findByTargetAndReservationIdAndStatus(EPaymentTarget ePaymentTarget, Long id, EPaymentStatus ePaymentStatus);
 
+    boolean existsByTargetAndReservationIdAndStatus(EPaymentTarget target, Long reservationId, EPaymentStatus status);
+
+    boolean existsByTargetAndOrderIdAndStatus(EPaymentTarget target, Long orderId, EPaymentStatus status);
+
     @Query("select coalesce(sum(p.amount), 0) from Payment p where p.target = :target and p.reservation.id = :reservationId and p.status = :status")
     BigDecimal sumAmountByTargetAndReservationIdAndStatus(
             @Param("target") EPaymentTarget target,

@@ -14,12 +14,14 @@ import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.util.OrderCodeGenerator;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -295,7 +297,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
-        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+        orderRepository.save(order);
 
         // Tính lại tổng hoá đơn
         recalculateOrderPricing(order);
@@ -312,7 +314,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
+    public void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name) {
         Order order = getOrder(id);
 
         orderDetailService.addOrderDetailsForOrder(order, request.getItems());
@@ -362,6 +364,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        log.info("Total price for order with id {} is {}", orderId, totalPrice);
+
         if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
         }
@@ -369,7 +373,9 @@ public class OrderServiceImpl implements OrderService {
         Voucher voucher = userVoucherService.consumeVoucher(code, customerUsername);
 
         BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
+        log.info("Discount price for order with id {} is {}", orderId, discountPrice);
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+        log.info("Final price for order with id {} is {}", orderId, finalPrice);
 
         order.setVoucher(voucher);
         order.setTotalPrice(totalPrice);
@@ -432,6 +438,36 @@ public class OrderServiceImpl implements OrderService {
                 .discountPrice(updatedOrder.getDiscountPrice())
                 .finalPrice(updatedOrder.getFinalPrice())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markAsPaid(Order order) {
+        if (order.getStatus() == EOrderStatus.COMPLETED) {
+            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
+            return;
+        }
+
+        order.setStatus(EOrderStatus.COMPLETED);
+        orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
+        log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
+    }
+
+    private void recalculateOrderPricing(Order order) {
+        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
+        order.setTotalPrice(totalPrice);
+
+        if (order.getVoucher() == null) {
+            order.setDiscountPrice(BigDecimal.ZERO);
+            order.setFinalPrice(totalPrice);
+            return;
+        }
+
+        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
+        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
+        order.setDiscountPrice(discountPrice);
+        order.setFinalPrice(finalPrice);
     }
 
     private OrderResponse toResponse(Order order) {

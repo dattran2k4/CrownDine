@@ -21,7 +21,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -41,6 +41,15 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash
+            temperature: 0.7
+
 
 springdoc:
   api-docs:
@@ -57,8 +66,10 @@ openapi:
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
-  access-key-expiration: 600000
-  refresh-key-expiration: 100000000
+  # 15 phút
+  access-key-expiration: 900000
+  # 7 ngày
+  refresh-key-expiration: 604800000
 
 logging:
   level:

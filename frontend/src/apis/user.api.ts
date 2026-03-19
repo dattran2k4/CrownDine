@@ -3,9 +3,8 @@ import type { ApiResponse } from '@/types/utils.type'
 import type { UpdateUserRequest, User } from '@/types/profile.type'
 
 const userApi = {
-  getProfile(token?: string) {
+  getProfile() {
     return http.get<ApiResponse<User>>('users/profile', {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined
     }).then(res => {
       if (res.data?.data && (res.data.data as any).avatarUrl) {
         res.data.data.avatar = (res.data.data as any).avatarUrl

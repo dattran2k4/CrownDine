@@ -16,7 +16,9 @@ import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-    Page<Reservation> findByCustomer_Id(Long customerId, Pageable pageable);
+    Page<Reservation> findByUser_Id(Long userId, Pageable pageable);
+
+    List<Reservation> findAllByUser_Id(Long userId);
 
     @Query("""
             select r.table.id

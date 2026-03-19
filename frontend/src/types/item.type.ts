@@ -15,7 +15,8 @@ export interface Item {
   updatedAt?: string
   /** Tên category (map từ API categories, dùng cho filter/display) */
   category?: string
-  rating?: number
+  averageRating?: number
+  feedbackCount?: number
   tags?: string[]
 }
 
@@ -23,7 +24,7 @@ export interface Item {
 export type MenuCardItem = Pick<
   Item,
   'id' | 'name' | 'description' | 'imageUrl' | 'price' | 'priceAfterDiscount' | 'status'
-> & { rating?: number; tags?: string[] }
+> & { averageRating?: number; feedbackCount?: number; tags?: string[] }
 
 export function comboToCardItem(c: Combo): MenuCardItem {
   return {
@@ -33,6 +34,8 @@ export function comboToCardItem(c: Combo): MenuCardItem {
     imageUrl: c.imageUrl ?? '',
     price: Number(c.price),
     priceAfterDiscount: c.priceAfterDiscount != null ? Number(c.priceAfterDiscount) : null,
-    status: c.status
+    status: c.status,
+    averageRating: c.averageRating,
+    feedbackCount: c.feedbackCount
   }
 }

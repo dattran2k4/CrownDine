@@ -21,6 +21,8 @@ public class ComboResponse {
     private EComboStatus status;
 
     private String imageUrl;
+    private Double averageRating;
+    private Integer feedbackCount;
 
     private List<ComboItemResponse> items;
 }

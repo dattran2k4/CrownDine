@@ -25,20 +25,20 @@ VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
        ('Đồ uống', 'do-uong', 'Nước uống', NOW(), NOW()),
        ('Tráng miệng', 'trang-mieng', 'Món tráng miệng', NOW(), NOW());
 
-INSERT INTO items (name, description, image_url, price, price_after_discount, status, category_id, created_at,
+INSERT INTO items (name, description, image_url, price, price_after_discount, sold_count, status, category_id, created_at,
                    updated_at)
-VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 'AVAILABLE', 1, NOW(), NOW()),
-       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 'AVAILABLE', 2, NOW(), NOW()),
-       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 'AVAILABLE', 3, NOW(), NOW()),
-       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 'AVAILABLE', 4, NOW(), NOW()),
-       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 'AVAILABLE', 5, NOW(), NOW()),
-       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 'AVAILABLE', 6, NOW(), NOW()),
-       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 'AVAILABLE', 7, NOW(),
+VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 48, 'AVAILABLE', 1, NOW(), NOW()),
+       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 36, 'AVAILABLE', 2, NOW(), NOW()),
+       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 92, 'AVAILABLE', 3, NOW(), NOW()),
+       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 55, 'AVAILABLE', 4, NOW(), NOW()),
+       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 24, 'AVAILABLE', 5, NOW(), NOW()),
+       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 61, 'AVAILABLE', 6, NOW(), NOW()),
+       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 32, 'AVAILABLE', 7, NOW(),
         NOW()),
-       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 'AVAILABLE', 8, NOW(), NOW()),
-       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 'AVAILABLE', 10, NOW(), NOW());
+       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 44, 'AVAILABLE', 8, NOW(), NOW()),
+       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 80, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 96, 'AVAILABLE', 9, NOW(), NOW()),
+       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 27, 'AVAILABLE', 10, NOW(), NOW());
 
 
 INSERT INTO combos (name, slug, description, image_url, price, price_after_discount, sold_count, status, created_at, updated_at)
@@ -87,11 +87,34 @@ VALUES
 INSERT INTO users (id, username, password, avatar_url, email, first_name, last_name, date_of_birth, gender, status, phone, created_at, updated_at)
 VALUES
 -- Gán cứng ID = 1
-(1, 'johndoe', '$2a$10$s3go5e.GYivSMmrJXG6jceddjfSAbg6O832Sip8XIVNRRLIjXNP6G', '/img/avatars/john.png', 'johndoe@gmail.com', 'John', 'Doe', '2002-05-10', 'MALE', 'ACTIVE', '0912345678', NOW(), NOW()),
+(1, 'johndoe', '$2a$10$s3go5e.GYivSMmrJXG6jceddjfSAbg6O832Sip8XIVNRRLIjXNP6G', 'https://i.pinimg.com/736x/49/15/d1/4915d11ef3a6a8e2e1245fa46c16a8a2.jpg', 'johndoe@gmail.com', 'John', 'Doe', '2002-05-10', 'MALE', 'ACTIVE', '0912345678', NOW(), NOW()),
 -- Gán cứng ID = 2
-(2, 'alice', '$2a$10$EeSehs49igNMz6Vuk69cDuaAGHFrWSjeOvMmNkaAr6ZwyZtltKStS', '/img/avatars/alice.png', '0901dattran@gmail.com', 'Alice', 'Nguyen', '2003-05-14', 'FEMALE', 'ACTIVE', '0913443344', NOW(), NOW()),
+(2, 'alice', '$2a$10$EeSehs49igNMz6Vuk69cDuaAGHFrWSjeOvMmNkaAr6ZwyZtltKStS', 'https://i.pinimg.com/736x/07/16/a8/0716a8e465a5a2e9a8e78f37c0b8cd9c.jpg', '0901dattran@gmail.com', 'Alice', 'Nguyen', '2003-05-14', 'FEMALE', 'ACTIVE', '0913443344', NOW(), NOW()),
 -- Gán cứng ID = 3
-(3, 'johncena', '$2a$10$llGgE5VlZzM0.pCzbOLGWev.cqdovrjSsq0lGM87wo0FVgATXsh12', '/img/avatars/cena.png', 'johncena@gmail.com', 'John', 'Cena', '1998-05-14', 'MALE', 'ACTIVE', '0913324344', NOW(), NOW());
+(3, 'johncena', '$2a$10$llGgE5VlZzM0.pCzbOLGWev.cqdovrjSsq0lGM87wo0FVgATXsh12', 'https://i.pinimg.com/736x/90/fd/19/90fd1986c9cff08c20eacbaf7045dd9c.jpg', 'johncena@gmail.com', 'John', 'Cena', '1998-05-14', 'MALE', 'ACTIVE', '0913324344', NOW(), NOW());
+
+INSERT INTO users (id, username, password, avatar_url, email, first_name, last_name, date_of_birth, gender, status, phone, verification_code, verification_expiration, created_at, updated_at)
+VALUES
+(4, 'minhanh', '$2a$10$f8K0p/rAvE9SrsZcahthQuKA79pIAqGt9APO14f3.czxnCPp9q6Iu', NULL, 'minhanh@crowndine.local', 'Minh', 'Anh', '2001-03-12', 'FEMALE', 'ACTIVE', '0901100001', NULL, NULL, NOW(), NOW()),
+(5, 'thutrang', '$2a$10$OEYH9he8BWJRnCytYVcmB.W4lk6WlwAHnAgVf9aQHZch5gJ.HUiAu', NULL, 'thutrang@crowndine.local', 'Thu', 'Trang', '2000-07-24', 'FEMALE', 'ACTIVE', '0901100002', NULL, NULL, NOW(), NOW()),
+(6, 'quochuy', '$2a$10$2XGuYngpcuowaqhZbvTLGuhlNg5n3sn9GdbzQGyWcMvKm3G/FOZbS', NULL, 'quochuy@crowndine.local', 'Quoc', 'Huy', '1999-11-08', 'MALE', 'ACTIVE', '0901100003', NULL, NULL, NOW(), NOW()),
+(7, 'ngocmai', '$2a$10$gYToj5teNH/bDuMaboswr.RCWyw3mnhxVw7fXYTRDVoeh/qy5eVdm', NULL, 'ngocmai@crowndine.local', 'Ngoc', 'Mai', '2002-01-19', 'FEMALE', 'ACTIVE', '0901100004', NULL, NULL, NOW(), NOW()),
+(8, 'thanhtung', '$2a$10$XDav3qdVlNkr58OGZZVm7uGdQs4D9kAeqw555rq0lo6q6NG7EB87C', NULL, 'thanhtung@crowndine.local', 'Thanh', 'Tung', '1998-09-03', 'MALE', 'ACTIVE', '0901100005', NULL, NULL, NOW(), NOW()),
+(9, 'baovy', '$2a$10$2/BYSYBiyru0TusrcILpHejPJXShhDUbLe4AhvAvX2Loy28hZuZzq', NULL, 'baovy@crowndine.local', 'Bao', 'Vy', '2003-06-15', 'FEMALE', 'ACTIVE', '0901100006', NULL, NULL, NOW(), NOW()),
+(10, 'hoangyen', '$2a$10$k0Pe70Q6Ng7btefKDxPI9.g6dS5L/078.eb9ykojULQHrhj6QrEaG', NULL, 'hoangyen@crowndine.local', 'Hoang', 'Yen', '2001-12-02', 'FEMALE', 'ACTIVE', '0901100007', NULL, NULL, NOW(), NOW()),
+(11, 'ductri', '$2a$10$RQhy/.FDwnIHKS7vUx6gBeFviqoEEfPe8dAQowIlwhBwUoanbtKJ.', NULL, 'ductri@crowndine.local', 'Duc', 'Tri', '1997-04-27', 'MALE', 'ACTIVE', '0901100008', NULL, NULL, NOW(), NOW()),
+(12, 'kimngan', '$2a$10$/lnvxAHZOhbb0wjfK40LYeEyd.crr3ikTYemydilZW6JlTyDdOp9e', NULL, 'kimngan@crowndine.local', 'Kim', 'Ngan', '2004-08-14', 'FEMALE', 'ACTIVE', '0901100009', NULL, NULL, NOW(), NOW()),
+(13, 'annhi', '$2a$10$V53.Yc2EmYI0byjNWMYgoOAHUCRSQrQ0D5gbwu8Kau.E8j9ajjBGG', NULL, 'annhi@crowndine.local', 'An', 'Nhi', '2002-10-09', 'FEMALE', 'INACTIVE', '0901100010', NULL, NULL, NOW(), NOW()),
+(14, 'nguyenkhoa', '$2a$10$n8Pl2zirf/Gca5l8aTKQbuEGfol/MzgtbtXXInKkINtYbn37OX0v6', NULL, 'nguyenkhoa.staff@crowndine.local', 'Nguyen', 'Khoa', '1995-05-17', 'MALE', 'ACTIVE', '0902200001', NULL, NULL, NOW(), NOW()),
+(15, 'thuyduong', '$2a$10$qPuhubmfya.dzZPjN7n8C.e7XkwhZEIs2NWc9duaRhJehMeJxbyT2', NULL, 'thuyduong.staff@crowndine.local', 'Thuy', 'Duong', '1996-02-11', 'FEMALE', 'ACTIVE', '0902200002', NULL, NULL, NOW(), NOW()),
+(16, 'hoanglong', '$2a$10$xU6pg09xUTnIaiUY3EAGAO7DArkh0gGi7VXFIH7jomraEsOo4fp5q', NULL, 'hoanglong.staff@crowndine.local', 'Hoang', 'Long', '1997-09-22', 'MALE', 'ACTIVE', '0902200003', NULL, NULL, NOW(), NOW()),
+(17, 'mylinh', '$2a$10$ER.uoSiYqEtSX.QmliHXHOMBFrCIGwYp6cgUxcgdAq7kSVgfZPohW', NULL, 'mylinh.staff@crowndine.local', 'My', 'Linh', '1998-01-30', 'FEMALE', 'ACTIVE', '0902200004', NULL, NULL, NOW(), NOW()),
+(18, 'quanghuy', '$2a$10$sCOOYR47CI8tKPz0hGRceusjfeNYVcxnRnTcKsWikFPmLPy0rYWXG', NULL, 'quanghuy.staff@crowndine.local', 'Quang', 'Huy', '1999-07-06', 'MALE', 'ACTIVE', '0902200005', NULL, NULL, NOW(), NOW()),
+(19, 'diemmy', '$2a$10$ymkp.wkR2qE8V9nlgYNKQe6xfFEpvlNhO3hwhryYnsqii0pqAaMpC', NULL, 'diemmy.staff@crowndine.local', 'Diem', 'My', '2000-03-28', 'FEMALE', 'ACTIVE', '0902200006', NULL, NULL, NOW(), NOW()),
+(20, 'phuocan', '$2a$10$DFYEE5OIHU3QWgGaiWXt7OTV6zRtY.GDeq4zTnx3HtZdAeCK0KsCe', NULL, 'phuocan.staff@crowndine.local', 'Phuoc', 'An', '2001-11-13', 'MALE', 'ACTIVE', '0902200007', NULL, NULL, NOW(), NOW()),
+(21, 'tramlam', '$2a$10$YAuhlJBlUbowaD.GhtuG3u962klwTxWWcKLthL5Xk868LXyHPepty', NULL, 'tramlam.staff@crowndine.local', 'Tram', 'Lam', '2003-04-16', 'FEMALE', 'ACTIVE', '0902200008', NULL, NULL, NOW(), NOW()),
+(22, 'anhkiet', '$2a$10$1g8VX1G3WNLT.iei7k2.IeWfAQcajgeWqfL95.4Y4KO8AXMONbzW2', NULL, 'anhkiet.staff@crowndine.local', 'Anh', 'Kiet', '2005-08-21', 'MALE', 'ACTIVE', '0902200009', NULL, NULL, NOW(), NOW()),
+(23, 'thanhha', '$2a$10$dZr/DYrilsusmew//sI45OQp0/CS.M10j82gkgVa8TdHMFTGhoKqq', NULL, 'thanhha.staff@crowndine.local', 'Thanh', 'Ha', '2006-12-05', 'FEMALE', 'INACTIVE', '0902200010', NULL, NULL, NOW(), NOW());
 
 INSERT INTO user_roles (user_id, role_id)
 VALUES (1, 1),
@@ -100,6 +123,28 @@ VALUES (1, 1),
        (2, 2),
        (2, 3),
        (3, 3);
+
+INSERT INTO user_roles (user_id, role_id)
+VALUES (4, 3),
+       (5, 3),
+       (6, 3),
+       (7, 3),
+       (8, 3),
+       (9, 3),
+       (10, 3),
+       (11, 3),
+       (12, 3),
+       (13, 3),
+       (14, 2),
+       (15, 2),
+       (16, 2),
+       (17, 2),
+       (18, 2),
+       (19, 2),
+       (20, 2),
+       (21, 2),
+       (22, 2),
+       (23, 2);
 
 INSERT INTO user_vouchers (customer_id, voucher_id, created_at, updated_at)
 VALUES (2, 1, NOW(), NOW()),

@@ -40,6 +40,7 @@ public class ReservationServiceImpl implements ReservationService {
     private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
     private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
     private static final long HOLD_TABLE_MINUTES = 10;
+    private static final long DEFAULT_RESERVATION_DURATION_HOURS = 4;
 
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
@@ -275,8 +276,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
+        LocalTime calculatedEndTime = calculateReservationEndTime(request.getStartTime());
         LocalDateTime startDateTime = LocalDateTime.of(request.getDate(), request.getStartTime());
-        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), request.getEndTime());
+        LocalDateTime endDateTime = LocalDateTime.of(request.getDate(), calculatedEndTime);
         validateReservationTime(startDateTime, endDateTime);
 
         User user = getUserByUserName(username);
@@ -294,7 +296,13 @@ public class ReservationServiceImpl implements ReservationService {
         List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
 
         LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(request.getDate(), request.getStartTime(), request.getEndTime(), blockingStatuses, now);
+        List<Long> reservedIds = reservationRepository.findReservedTableIds(
+                request.getDate(),
+                request.getStartTime(),
+                calculatedEndTime,
+                blockingStatuses,
+                now
+        );
 
         if (reservedIds.contains(table.getId())) {
             throw new InvalidDataException("Bàn đã được đặt trong khung giờ này");
@@ -303,7 +311,8 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = new Reservation();
         reservation.setDate(request.getDate());
         reservation.setStartTime(request.getStartTime());
-        reservation.setEndTime(request.getEndTime());
+        reservation.setEndTime(calculatedEndTime);
+        reservation.setCheckedOutAt(null);
         reservation.setGuestNumber(request.getGuestNumber());
         reservation.setNote(request.getNote());
         reservation.setStatus(EReservationStatus.PENDING);
@@ -334,6 +343,10 @@ public class ReservationServiceImpl implements ReservationService {
             response.setFloorNumber(table.getArea().getFloor().getFloorNumber());
         }
         return response;
+    }
+
+    private LocalTime calculateReservationEndTime(LocalTime startTime) {
+        return startTime.plusHours(DEFAULT_RESERVATION_DURATION_HOURS);
     }
 
     @Override

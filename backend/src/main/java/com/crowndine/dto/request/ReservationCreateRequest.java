@@ -24,10 +24,6 @@ public class ReservationCreateRequest {
     @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
-    @NotNull(message = "Giờ kết thúc không được để trống")
-    @JsonFormat(pattern = "HH:mm")
-    private LocalTime endTime;
-
     @NotNull(message = "Số lượng khách không được để trống")
     @Min(value = 1, message = "Số lượng khách phải >= 1")
     private Integer guestNumber;

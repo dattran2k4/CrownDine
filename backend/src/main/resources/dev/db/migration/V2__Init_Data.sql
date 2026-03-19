@@ -25,56 +25,132 @@ VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
        ('Đồ uống', 'do-uong', 'Nước uống', NOW(), NOW()),
        ('Tráng miệng', 'trang-mieng', 'Món tráng miệng', NOW(), NOW());
 
-INSERT INTO items (name, description, image_url, price, price_after_discount, sold_count, status, category_id, created_at,
-                   updated_at)
-VALUES ('Súp cua', 'Súp cua trứng', 'https://i.pinimg.com/736x/4a/2c/d1/4a2cd119b6f152413b7c10b3ae7cf459.jpg', 35000.00, NULL, 48, 'AVAILABLE', 1, NOW(), NOW()),
-       ('Salad cá ngừ', 'Salad rau + cá ngừ', 'https://i.pinimg.com/736x/f7/4c/5a/f74c5a8d2f2953e61b795ad4959d1c65.jpg', 45000.00, NULL, 36, 'AVAILABLE', 2, NOW(), NOW()),
-       ('Gà chiên mắm', 'Gà chiên mắm tỏi', 'https://i.pinimg.com/1200x/b8/4a/8c/b84a8cc788de61fed3ba499b2abd60fb.jpg', 89000.00, NULL, 92, 'AVAILABLE', 3, NOW(), NOW()),
-       ('Bò bít tết', 'Bò sốt tiêu đen', 'https://i.pinimg.com/736x/3c/b2/6e/3cb26eb0b32e52171c70c89b3eefc8c5.jpg', 189000.00, NULL, 55, 'AVAILABLE', 4, NOW(), NOW()),
-       ( 'Heo quay', 'Heo quay giòn bì', 'https://i.pinimg.com/1200x/13/79/5f/13795f112232d419a14cea773515b317.jpg', 99000.00, NULL, 24, 'AVAILABLE', 5, NOW(), NOW()),
-       ('Lẩu thái', 'Lẩu thái hải sản', 'https://i.pinimg.com/736x/06/89/5e/06895e407e2cd725e94a4f50de48e6f0.jpg', 229000.00, NULL, 61, 'AVAILABLE', 6, NOW(), NOW()),
-       ('Rau muống xào', 'Rau muống xào tỏi', 'https://i.pinimg.com/1200x/c4/8d/43/c48d4323e79b464f6d676c2273ac080f.jpg', 39000.00, NULL, 32, 'AVAILABLE', 7, NOW(),
-        NOW()),
-       ('Tôm hấp', 'Tôm hấp sả', 'https://i.pinimg.com/736x/4b/44/24/4b44242fb1de137e5a551c590b7cf05d.jpg', 159000.00, NULL, 44, 'AVAILABLE', 8, NOW(), NOW()),
-       ('Trà đào', 'Trà đào cam sả', 'https://i.pinimg.com/1200x/d5/78/e3/d578e33d582430f8705d61021da968f5.jpg', 35000.00, NULL, 80, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Coca', 'Nước ngọt', 'https://i.pinimg.com/1200x/a0/e5/a5/a0e5a566fcd9ebcf39687549489c0295.jpg', 19000.00, NULL, 96, 'AVAILABLE', 9, NOW(), NOW()),
-       ('Bánh flan', 'Flan caramel', 'https://i.pinimg.com/736x/93/af/35/93af35792cb4c4892173d0786cf95743.jpg', 25000.00, NULL, 27, 'AVAILABLE', 10, NOW(), NOW());
+INSERT INTO items (name, description, image_url, price, price_after_discount, sold_count, status, category_id, created_at, updated_at)
+VALUES 
+-- Category 1: Món súp
+('Súp hải sản', 'Súp hải sản thập cẩm', 'https://i.pinimg.com/1200x/c9/28/5f/c9285f6cea90c7d15589744e4785342b.jpg', 45000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp măng tây', 'Súp măng tây cua', 'https://i.pinimg.com/1200x/25/37/2f/25372fd3ef6b6a0f9c8075525ee1139e.jpg', 40000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp bắp cua', 'Súp bắp ngọt nấu cua', 'https://i.pinimg.com/1200x/62/67/81/62678184ece7e348cdc70e94ba7de0a7.jpg', 38000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp nấm', 'Súp nấm đông cô', 'https://i.pinimg.com/1200x/10/21/7a/10217a55916c7426846a5ef8590cfab0.jpg', 35000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp bào ngư', 'Súp bào ngư thượng hạng', 'https://i.pinimg.com/736x/12/d1/2a/12d12a8ecc5b9972dd0cd9aa3ac96a44.jpg', 150000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp vi cá', 'Súp vi cá mập', 'https://i.pinimg.com/1200x/fe/3d/a7/fe3da75d24af16a81a268b477b18702b.jpg', 250000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp lươn', 'Súp lươn Nghệ An', 'https://i.pinimg.com/1200x/ca/ef/13/caef13c04721da62d476ada41d0e1cf2.jpg', 55000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp gà', 'Súp gà xé phay', 'https://i.pinimg.com/736x/d4/dc/9d/d4dc9dcb7355d9bf7b12b094ef5d9e6d.jpg', 35000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+('Súp tôm bí đỏ', 'Súp kem bí đỏ tôm tươi', 'https://i.pinimg.com/1200x/ba/20/30/ba203044b185c6d10b838fe640c9eab9.jpg', 45000.00, NULL, 0, 'AVAILABLE', 1, NOW(), NOW()),
+
+-- Category 2: Món khai vị
+('Nem rán', 'Nem rán truyền thống', 'https://i.pinimg.com/1200x/d1/98/7a/d1987add813a9784ae9a949e36c880e6.jpg', 50000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Phở cuốn', 'Phở cuốn Hà Nội', 'https://i.pinimg.com/736x/9d/89/bf/9d89bf1de9faa62e1e5fc772cdd4340b.jpg', 60000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Gỏi ngó sen', 'Gỏi ngó sen tôm thịt', 'https://i.pinimg.com/1200x/f8/eb/b8/f8ebb880d3c815684aacb4ec14e73090.jpg', 75000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Khoai tây chiên', 'Khoai tây chiên bơ tỏi', 'https://i.pinimg.com/736x/cc/41/0c/cc410c5e28d49d1a8d7f940115f61aa0.jpg', 30000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Ngô chiên', 'Ngô ngọt chiên bơ', 'https://i.pinimg.com/736x/92/50/b7/9250b7e4c48bf4fa8d5c941801ffc4a7.jpg', 35000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Nộm sứa', 'Nộm sứa biển giòn', 'https://i.pinimg.com/736x/84/5b/d1/845bd15d473b105c2b05aa23b6cd9e94.jpg', 65000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Gỏi xoài xanh tôm khô', 'Gỏi xoài chua ngọt', 'https://i.pinimg.com/736x/84/1e/9a/841e9a160430a146489ce7a315597d18.jpg', 55000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+('Bánh gối', 'Bánh gối nhân thịt', 'https://i.pinimg.com/1200x/6c/04/48/6c0448c95271f24bc312b55e08a4168f.jpg', 45000.00, NULL, 0, 'AVAILABLE', 2, NOW(), NOW()),
+
+
+-- Category 3: Món gà
+('Gà rang muối', 'Gà ta rang muối', 'https://i.pinimg.com/1200x/7f/83/4b/7f834be50eb86d6dce49a5dd8b046023.jpg', 120000.00, NULL, 0, 'AVAILABLE', 3, NOW(), NOW()),
+('Gà luộc', 'Gà ta luộc lá chanh', 'https://i.pinimg.com/1200x/98/92/bf/9892bf62bf6d1a7532c8932cca966817.jpg', 150000.00, NULL, 0, 'AVAILABLE', 3, NOW(), NOW()),
+('Gà nướng mật ong', 'Gà nướng mật rừng', 'https://i.pinimg.com/1200x/40/e1/a4/40e1a4be26f1d292232f2efcd644c3ac.jpg', 180000.00, NULL, 0, 'AVAILABLE', 3, NOW(), NOW()),
+('Cánh gà chiên bơ', 'Cánh gà chiên bơ tỏi', 'https://i.pinimg.com/1200x/8c/86/ac/8c86acc49c0ee90108340b25f7f75bee.jpg', 85000.00, NULL, 0, 'AVAILABLE', 3, NOW(), NOW()),
+('Gà xào sả ớt', 'Gà ta xào sả ớt', 'https://i.pinimg.com/1200x/e9/9d/a0/e99da014eb1e1ab23f28f1216beac101.jpg', 110000.00, NULL, 0, 'AVAILABLE', 3, NOW(), NOW()),
+
+
+-- Category 4: Món bò
+('Bò xào cần tỏi', 'Bò thăn xào cần tỏi', 'https://i.pinimg.com/736x/3f/88/9c/3f889c6c40ddc0b23f2e16a433247488.jpg', 125000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+('Bò kho', 'Bò kho bánh mì', 'https://i.pinimg.com/1200x/ef/e2/25/efe225d8273ef8d329083032f2eb42ac.jpg', 85000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+('Bò sốt vang', 'Bò sốt vang tiêu đen', 'https://i.pinimg.com/736x/0f/b2/1e/0fb21e521317d6368ab89e5380bf4e4c.jpg', 95000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+('Bò tái chanh', 'Bò phi lê tái chanh', 'https://i.pinimg.com/736x/e6/a0/b7/e6a0b70c5421873a726cd6df5a6a701b.jpg', 115000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+('Bò lúc lắc', 'Bò khoai tây lúc lắc', 'https://i.pinimg.com/1200x/7e/71/59/7e7159e8f74e371f1d8eb08ed129135b.jpg', 145000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+('Bò né', 'Bò né bánh mì', 'https://i.pinimg.com/1200x/2f/fc/29/2ffc2938d7949d3c22bd90400caaad69.jpg', 75000.00, NULL, 0, 'AVAILABLE', 4, NOW(), NOW()),
+
+-- Category 5: Món heo
+('Thịt kho tàu', 'Thịt kho trứng cút', 'https://i.pinimg.com/1200x/b7/ca/63/b7ca63020574e612b6840228ab75df7c.jpg', 75000.00, NULL, 0, 'AVAILABLE', 5, NOW(), NOW()),
+('Sườn xào chua ngọt', 'Sườn heo xào chua ngọt', 'https://i.pinimg.com/736x/57/a2/79/57a2795b9a3daea7e6ab94fe1e710776.jpg', 95000.00, NULL, 0, 'AVAILABLE', 5, NOW(), NOW()),
+('Heo quay mắc mật', 'Lợn quay Lạng Sơn', 'https://i.pinimg.com/736x/d2/21/ab/d221abc68397445e1adb94dd957d6af6.jpg', 125000.00, NULL, 0, 'AVAILABLE', 5, NOW(), NOW()),
+('Thịt ba chỉ luộc', 'Ba chỉ luộc mắm nêm', 'https://i.pinimg.com/736x/73/75/e8/7375e88f73014db0b4e15bee47a8f51b.jpg', 65000.00, NULL, 0, 'AVAILABLE', 5, NOW(), NOW()),
+('Sườn nướng BBQ', 'Sườn tảng nướng sốt BBQ', 'https://i.pinimg.com/736x/3c/c6/02/3cc602f3711290c766c62cff34151a2c.jpg', 185000.00, NULL, 0, 'AVAILABLE', 5, NOW(), NOW()),
+
+-- Category 6: Món lẩu
+('Lẩu riêu cua bắp bò', 'Lẩu riêu cua bắp bò sườn sụn', 'https://i.pinimg.com/1200x/1e/19/62/1e19625b44f6834def46a34cef8b8343.jpg', 350000.00, NULL, 0, 'AVAILABLE', 6, NOW(), NOW()),
+('Lẩu ếch măng chua', 'Lẩu ếch măng chua cay', 'https://i.pinimg.com/736x/66/29/ae/6629ae79ea685eca27f378f92179832b.jpg', 280000.00, NULL, 0, 'AVAILABLE', 6, NOW(), NOW()),
+('Lẩu gà lá giang', 'Lẩu gà ta lá giang', 'https://i.pinimg.com/1200x/86/eb/5f/86eb5feeac92242706932f9528b1f1dc.jpg', 300000.00, NULL, 0, 'AVAILABLE', 6, NOW(), NOW()),
+
+
+-- Category 7: Món rau
+('Rau cải chíp xào nấm', 'Cải chíp xào nấm đông cô', 'https://i.pinimg.com/1200x/06/c8/fe/06c8fef2fef0e8ded09a4d7827188ad9.jpg', 45000.00, NULL, 0, 'AVAILABLE', 7, NOW(), NOW()),
+('Nộm rau muống', 'Rau muống chẻ nộm', 'https://i.pinimg.com/736x/14/8a/87/148a879327cac28c629419d6e6d8a8dc.jpg', 35000.00, NULL, 0, 'AVAILABLE', 7, NOW(), NOW()),
+('Cải thảo luộc', 'Cải thảo luộc chấm xì dầu', 'https://i.pinimg.com/736x/76/8e/c8/768ec8eddc3c214a58bf80ad40228a4f.jpg', 25000.00, NULL, 0, 'AVAILABLE', 7, NOW(), NOW()),
+('Măng trúc xào tỏi', 'Măng trúc Yên Tử xào tỏi', 'https://i.pinimg.com/1200x/c6/dc/0b/c6dc0bd282e4562e5dee958768124b5f.jpg', 55000.00, NULL, 0, 'AVAILABLE', 7, NOW(), NOW()),
+('Rau lang xào tỏi', 'Rau lang xào tỏi thơm', 'https://i.pinimg.com/736x/d1/98/d1/d198d1b85991a0eab1a01d840a4f60c6.jpg', 35000.00, NULL, 0, 'AVAILABLE', 7, NOW(), NOW()),
+
+-- Category 8: Món hải sản
+('Cua hấp bia', 'Cua thịt Cà Mau hấp bia', 'https://cdn.tgdd.vn/Files/2019/12/04/1224682/cach-hap-cua-bien-nhanh-thit-cua-ngon-ngot-khong-rung-cang-202202150958084999.jpg', 450000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+('Ghẹ rang me', 'Ghẹ xanh rang me chua ngọt', 'https://cdn.tgdd.vn/2021/03/CookProduct/1f-1200x676.jpg', 350000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+('Mực trứng chiên lá lốt', 'Mực trứng tươi chiên', 'https://cdn2.fptshop.com.vn/unsafe/muc_chien_la_lot_1_6c3796dd07.jpg', 185000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+('Hàu nướng mỡ hành', 'Hàu sữa nướng mỡ hành', 'https://sunhouse.com.vn/pic/news/images/1-mon-hau-nuong-mo-hanh-la-mon-an-duoc-rat-nhieu-nguoi-yeu-thich.jpeg', 120000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+('Cá tầm nướng', 'Cá tầm nướng muối ớt', 'https://www.nhahangquangon.com/wp-content/uploads/2014/09/ca-tam-nuong-muoi-ot-2-1.jpg', 280000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+('Bạch tuộc nướng sa tế', 'Bạch tuộc nướng cay', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTs_gU2akmlTnMGCPfljMSMSdIn4L0FTwNehQ&s', 135000.00, NULL, 0, 'AVAILABLE', 8, NOW(), NOW()),
+
+-- Category 9: Đồ uống
+('Bia Hà Nội', 'Bia lon Hà Nội', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGl155U76-Q8Zv4_1hYQR5YRrpX9MEMHmunw&s', 18000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Bia Sài Gòn', 'Bia Sài Gòn Special', 'https://product.hstatic.net/200000352097/product/8935012413321_94fa330d96f54deca13ba043e250ac94_grande.jpg', 22000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Bia Heineken', 'Bia Heineken lon', 'https://cdnv2.tgdd.vn/bhx-static/bhx/production/2025/12/image/Products/Images/2282/201265/bhx/bia-heineken-250ml_202512301337028701.jpg', 25000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Pepsi', 'Nước ngọt Pepsi lon', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJcAe6O3Ei2szlnLUU69mWWynZ5z4ih7q0sQ&s', 15000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('7Up', 'Nước ngọt 7Up lon', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTW4rW8JeyK5JkZuJrVsfQ3Q361koDYNloRDQ&s', 15000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Mirinda', 'Nước ngọt Mirinda cam lon', 'https://cdn.tgdd.vn/Products/Images/2443/79140/bhx/nuoc-ngot-mirinda-huong-cam-lon-320ml-202312252142544474.jpg', 15000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Rượu Macallan 12', 'Single Malt Scotch Whisky', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3WBZpDIPr1pSmvkRNLfDjG7Cg05o-U_hBww&s', 2500000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Rượu Chivas 18', 'Blended Scotch Whisky 18 Years', 'https://ruoungoai68.com/wp-content/uploads/2024/01/ruou-chivas-18-nam-1-lit-03.jpg', 1800000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+('Rượu Hennessy VSOP', 'Cognac Hennessy Pháp', 'https://ruouvip.vn/wp-content/uploads/2023/03/ruou-hennessy-vsop-privilege-4.jpg', 1600000.00, NULL, 0, 'AVAILABLE', 9, NOW(), NOW()),
+
+-- Category 10: Tráng miệng
+('Chè thái', 'Chè thái sầu riêng', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRakTkV9vNNJPlN2OQjSABESf0MSKAYX2f1-g&s', 35000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Chè bưởi', 'Chè bưởi An Giang', 'https://dayphache.edu.vn/wp-content/uploads/2021/05/thanh-pham-che-buoi-dep-mat.jpg', 25000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Rau câu dừa', 'Rau câu trái dừa tươi', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBKYzTjXv2lbGXoNgyh1fYARjYI2MPQrtKUg&s', 40000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Rót rượu 1', 'Sản phẩm thượng hạng', 'https://i.pinimg.com/736x/d6/04/dc/d604dcb4323fba50b4febad3cb6eca5d.jpg', 500000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Rót rượu 2', 'Sản phẩm thượng hạng', 'https://i.pinimg.com/736x/67/15/3d/67153d73a15557a1553bfb0ca7e14089.jpg', 500000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Rót rượu 3', 'Sản phẩm thượng hạng', 'https://i.pinimg.com/1200x/d1/72/53/d172538ffbb66c7be362718a279b9dc0.jpg', 500000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW()),
+('Kem bơ', 'Kem bơ Đà Lạt', 'https://eggyolk.vn/wp-content/uploads/2025/03/Cach-lam-kem-bo-bang-may-ep-cham.jpg', 45000.00, NULL, 0, 'AVAILABLE', 10, NOW(), NOW());
 
 
 INSERT INTO combos (name, slug, description, image_url, price, price_after_discount, sold_count, status, created_at, updated_at)
 VALUES
-    ('Combo Lẩu Thái 2N', 'combo-lau-thai-2n', 'Lẩu Thái + Rau muống xào + 2 Coca', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 306000.00, 289000.00, 20, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Gà Mắm Nhẹ Nhàng', 'combo-ga-mam-nhe-nhang', 'Gà chiên mắm + Salad cá ngừ + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 169000.00, 159000.00, 35, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Beef Steak Set', 'combo-beef-steak-set', 'Bò bít tết + Súp cua + Coca', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 243000.00, 229000.00, 12, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Hải Sản Healthy', 'combo-hai-san-healthy', 'Tôm hấp + Salad cá ngừ + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 239000.00, 219000.00, 18, 'AVAILABLE', NOW(), NOW()),
-    ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Bánh flan + Trà đào', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 60000.00, 55000.00, 50, 'AVAILABLE', NOW(), NOW());
+    ('Combo Tiệc Lẩu Riêu', 'combo-tiec-lau-rieu', 'Lẩu riêu cua bắp bò + Nem rán + Rau lang xào tỏi + 2 Bia Hà Nội', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 471000.00, 429000.00, 15, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Gà Ngon Hấp Dẫn', 'combo-ga-ngon-hap-dan', 'Gà rang muối + Phở cuốn + Nộm rau muống + 2 Pepsi', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 245000.00, 219000.00, 28, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Nhậu Hải Sản', 'combo-nhau-hai-san', 'Cua hấp bia + Bạch tuộc nướng sa tế + 4 Bia Sài Gòn', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 673000.00, 599000.00, 10, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Bò Cao Cấp', 'combo-bo-cao-cap', 'Bò lúc lắc + Súp bào ngư + Rượu Macallan 12', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 2795000.00, 2649000.00, 5, 'AVAILABLE', NOW(), NOW()),
+    ('Combo Tráng Miệng Chill', 'combo-trang-mieng-chill', 'Chè thái + Kem bơ + 2 Mirinda', 'https://i.pinimg.com/736x/2e/8c/86/2e8c8656396c2b471d4d8eef93585908.jpg', 110000.00, 99000.00, 45, 'AVAILABLE', NOW(), NOW());
 
 
 INSERT INTO combo_items (combo_id, item_id, quantity, created_at, updated_at)
 VALUES
--- Combo 1: Lẩu thái + rau muống + 2 coca
-(1, 6, 1, NOW(), NOW()),
-(1, 7, 1, NOW(), NOW()),
-(1, 10, 2, NOW(), NOW()),
+-- Combo 1: Lẩu riêu (34) + Nem rán (10) + Rau lang (41) + 2 Bia HN (48)
+(1, 34, 1, NOW(), NOW()),
+(1, 10, 1, NOW(), NOW()),
+(1, 41, 1, NOW(), NOW()),
+(1, 48, 2, NOW(), NOW()),
 
--- Combo 2: gà mắm + salad + trà đào
-(2, 3, 1, NOW(), NOW()),
-(2, 2, 1, NOW(), NOW()),
-(2, 9, 1, NOW(), NOW()),
+-- Combo 2: Gà rang muối (18) + Phở cuốn (11) + Nộm rau muống (38) + 2 Pepsi (51)
+(2, 18, 1, NOW(), NOW()),
+(2, 11, 1, NOW(), NOW()),
+(2, 38, 1, NOW(), NOW()),
+(2, 51, 2, NOW(), NOW()),
 
--- Combo 3: steak + súp + coca
-(3, 4, 1, NOW(), NOW()),
-(3, 1, 1, NOW(), NOW()),
-(3, 10, 1, NOW(), NOW()),
+-- Combo 3: Cua hấp bia (42) + Bạch tuộc nướng sa tế (47) + 4 Bia SG (49)
+(3, 42, 1, NOW(), NOW()),
+(3, 47, 1, NOW(), NOW()),
+(3, 49, 4, NOW(), NOW()),
 
--- Combo 4: tôm hấp + salad + trà đào
-(4, 8, 1, NOW(), NOW()),
-(4, 2, 1, NOW(), NOW()),
-(4, 9, 1, NOW(), NOW()),
+-- Combo 4: Bò lúc lắc (27) + Súp bào ngư (5) + Rượu Macallan 12 (54)
+(4, 27, 1, NOW(), NOW()),
+(4, 5, 1, NOW(), NOW()),
+(4, 54, 1, NOW(), NOW()),
 
--- Combo 5: flan + trà đào
-(5, 11, 1, NOW(), NOW()),
-(5, 9, 1, NOW(), NOW());
+-- Combo 5: Chè thái (57) + Kem bơ (63) + 2 Mirinda (53)
+(5, 57, 1, NOW(), NOW()),
+(5, 63, 1, NOW(), NOW()),
+(5, 53, 2, NOW(), NOW());
 
 INSERT INTO vouchers (name, code, description, type, discount_value, max_discount_value, created_at, updated_at)
 VALUES

@@ -247,8 +247,8 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         // Use the unified mapping to ensure response contains:
-        // itemsTotal, tableDeposit (base_deposit * hours), depositAmount (20% items + tableDeposit), remainingAmount, and items.
-        return toOrderDetailPageResponse(order, reservation.getStartTime(), reservation.getEndTime());
+        // itemsTotal, tableDeposit, depositAmount (20% items + tableDeposit), remainingAmount, and items.
+        return toOrderDetailPageResponse(order);
     }
 
     private OrderLineResponse toLineResponse(OrderDetail od, Long userId) {
@@ -310,8 +310,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation saved = reservationRepository.save(reservation);
         log.info("Reservation has been saved with id: {}", saved.getId());
 
-        // Tính tiền cọc theo giờ
-        BigDecimal tableDeposit = getTableDeposit(table, saved.getStartTime(), saved.getEndTime());
+        BigDecimal tableDeposit = getTableDeposit(table);
 
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
@@ -505,31 +504,17 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     /**
-     * Tính tiền cọc bàn theo giờ
-     *
-     * @param table     Bàn
-     * @param startTime Thời gian bắt đầu
-     * @param endTime   Thời gian kết thúc
-     * @return Tiền cọc = baseDeposit * số giờ
+     * Lấy tiền cọc cố định của bàn.
      */
-    private BigDecimal getTableDeposit(RestaurantTable table, LocalTime startTime, LocalTime endTime) {
+    private BigDecimal getTableDeposit(RestaurantTable table) {
         if (table == null || table.getBaseDeposit() == null) {
             return BigDecimal.ZERO;
         }
 
-        if (startTime == null || endTime == null) {
-            return table.getBaseDeposit();
-        }
-
-        // Tính số giờ (có thể là số thập phân)
-        long minutes = java.time.Duration.between(startTime, endTime).toMinutes();
-        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-
-        // Tiền cọc = baseDeposit * số giờ
-        return table.getBaseDeposit().multiply(hours).setScale(2, RoundingMode.HALF_UP);
+        return table.getBaseDeposit().setScale(2, RoundingMode.HALF_UP);
     }
 
-    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order, LocalTime startTime, LocalTime endTime) {
+    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order) {
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
                 .map(od -> toLineResponse(od, order.getUser() != null ? order.getUser().getId() : null))
@@ -538,7 +523,7 @@ public class ReservationServiceImpl implements ReservationService {
         BigDecimal itemsTotal = orderDetails.stream()
                 .map(OrderDetail::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable(), startTime, endTime);
+        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable());
         BigDecimal depositAmount = calculationService.calculateDepositPayment(itemsTotal, tableDeposit);
         BigDecimal remainingAmount = itemsTotal.subtract(itemsTotal.multiply(DEPOSIT_RATE))
                 .setScale(2, RoundingMode.HALF_UP);
@@ -551,7 +536,7 @@ public class ReservationServiceImpl implements ReservationService {
         resp.setDiscountPrice(order.getDiscountPrice()); // tiền giảm giá
         resp.setFinalPrice(order.getFinalPrice()); // tổng tiền sau giảm giá
         resp.setItemsTotal(itemsTotal); // tổng tiền các món
-        resp.setTableDeposit(tableDeposit); // tiền cọc bàn (theo giờ)
+        resp.setTableDeposit(tableDeposit); // tiền cọc bàn cố định
         resp.setDepositAmount(depositAmount); // tiền cọc trước = 20% món + cọc bàn
         resp.setRemainingAmount(remainingAmount); // 80% còn lại trả sau
         resp.setCreatedAt(order.getCreatedAt());

@@ -74,11 +74,15 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         Order order = orderDetail.getOrder();
 
-        if (order.getStatus().equals(EOrderStatus.CONFIRMED) || 
-            order.getStatus().equals(EOrderStatus.IN_PROGRESS) || 
-            order.getStatus().equals(EOrderStatus.COMPLETED) || 
-            order.getStatus().equals(EOrderStatus.CANCELLED)) {
-            throw new InvalidDataException("Không thể cập nhật món khi đơn hàng đang ở trạng thái này.");
+        if (order.getStatus().equals(EOrderStatus.COMPLETED) ||
+                order.getStatus().equals(EOrderStatus.CANCELLED)) {
+            throw new InvalidDataException("Đơn hàng đã kết thúc, không thể chỉnh sửa.");
+        }
+
+
+        if (orderDetail.getStatus().equals(EOrderDetailStatus.COOKING) ||
+                orderDetail.getStatus().equals(EOrderDetailStatus.SERVED)) {
+            throw new InvalidDataException("Món ăn đã được chế biến hoặc phục vụ, không thể thay đổi số lượng.");
         }
 
         BigDecimal oldOrderDetailTotalPrice = orderDetail.getTotalPrice();
@@ -105,10 +109,9 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         OrderDetail detail = findById(id);
         Order order = detail.getOrder();
 
-        if (order.getStatus().equals(EOrderStatus.CONFIRMED) || 
-            order.getStatus().equals(EOrderStatus.IN_PROGRESS) || 
-            order.getStatus().equals(EOrderStatus.COMPLETED) || 
-            order.getStatus().equals(EOrderStatus.CANCELLED)) {
+        if (detail.getStatus().equals(EOrderDetailStatus.COOKING) ||
+            detail.getStatus().equals(EOrderDetailStatus.SERVED) ||
+            detail.getStatus().equals(EOrderDetailStatus.CANCELLED)) {
             throw new InvalidDataException("Không thể xóa món khi đơn hàng đang ở trạng thái này.");
         }
 

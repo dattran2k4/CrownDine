@@ -23,7 +23,7 @@ const Header = () => {
   const { theme, setTheme } = useTheme()
 
   const navItems = [
-    { label: 'Menu', href: 'menu' },
+    { label: 'Menu', href: '#menu' },
     { label: 'Câu Chuyện', href: '#story' },
     { label: 'Đặt Bàn', href: 'reservation' },
     { label: 'Liên Hệ', href: '#contact' }

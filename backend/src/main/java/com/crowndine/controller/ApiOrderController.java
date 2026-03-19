@@ -60,8 +60,9 @@ public class ApiOrderController {
 
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{orderId}/details")
-    public ApiResponse addOrderDetails(@Min(1) @PathVariable("orderId") Long id, @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
-        orderService.appendItemsToOrder(id, request, principal.getName());
+    public ApiResponse addOrderDetails(@Min(1) @PathVariable("orderId") Long id,
+            @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
+            orderService.appendItemsToOrder(id, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Added order details successfully")
@@ -70,8 +71,8 @@ public class ApiOrderController {
 
     @PostMapping("/{orderId}/voucher/apply")
     public ApiResponse applyVoucherToOrder(@Min(1) @PathVariable Long orderId,
-                                           @Valid @RequestBody OrderApplyVoucherRequest request,
-                                           Principal principal) {
+            @Valid @RequestBody OrderApplyVoucherRequest request,
+            Principal principal) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Applied voucher to order successfully")
@@ -85,6 +86,26 @@ public class ApiOrderController {
                 .status(200)
                 .message("Removed voucher from order successfully")
                 .data(orderService.removeVoucherFromOrder(orderId, principal.getName()))
+                .build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ApiResponse updateOrderStatus(@Min(1) @PathVariable Long id, @RequestParam EOrderStatus status,
+            Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully updated order status")
+                .data(orderService.updateOrderStatus(id, status))
+                .build();
+    }
+
+    @PatchMapping("/{orderId}/customer/{customerId}")
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    public ApiResponse mapCustomerToOrder(@Min(1) @PathVariable Long orderId, @Min(1) @PathVariable Long customerId) {
+        orderService.mapCustomerToOrder(orderId, customerId);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully mapped customer to order")
                 .build();
     }
 }

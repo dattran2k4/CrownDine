@@ -21,7 +21,7 @@ public class ApiOrderDetailController {
 
     private final OrderDetailService orderDetailService;
 
-    @PreAuthorize("hasAnyAuthority('STAFF, ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PatchMapping("/{id}/upd")
     public ApiResponse updateOrderDetail(@Min(1) @PathVariable Long id, @Valid @RequestBody UpdateOrderDetailRequest request) {
         orderDetailService.updateOrderDetail(id, request);
@@ -31,7 +31,7 @@ public class ApiOrderDetailController {
                 .build();
     }
 
-    @PreAuthorize("hasAnyAuthority('STAFF, ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @DeleteMapping("/{id}/del")
     public ApiResponse deleteOrderDetail(@Min(1) @PathVariable Long id) {
         orderDetailService.deleteOrderDetail(id);

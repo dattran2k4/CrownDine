@@ -15,6 +15,7 @@ import java.time.LocalTime;
 public class ReservationTimePolicyImpl implements ReservationTimePolicy {
     private static final long DEFAULT_RESERVATION_DURATION_HOURS = 4;
     private static final LocalTime OPEN_TIME = LocalTime.of(9, 0);
+    private static final LocalTime CLOSE_TIME = LocalTime.of(22, 0);
 
     @Override
     public LocalDateTime toStartDateTime(LocalDate date, LocalTime startTime) {
@@ -48,6 +49,10 @@ public class ReservationTimePolicyImpl implements ReservationTimePolicy {
 
         if (startDateTime.toLocalTime().isBefore(OPEN_TIME)) {
             throw new InvalidDataException("Giờ bắt đầu phải sau giờ mở cửa của nhà hàng");
+        }
+
+        if (!startDateTime.toLocalTime().isBefore(CLOSE_TIME)) {
+            throw new InvalidDataException("Không thể đặt bàn vào giờ đóng cửa của nhà hàng");
         }
     }
 }

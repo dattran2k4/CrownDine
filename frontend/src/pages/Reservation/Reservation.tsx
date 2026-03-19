@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
-import { addMinutesToTime, generateTimeSlots, calculateDuration, isDateTimeInPast } from '@/utils/utils'
+import { addMinutesToTime, generateTimeSlots, isDateTimeInPast } from '@/utils/utils'
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import Step1DateTime from '@/pages/Reservation/components/step/Step1DateTime/Step1DateTime'
 import Step2TableMap from '@/pages/Reservation/components/step/Step2TableMap/Step2TableMap'
@@ -27,26 +27,8 @@ export default function Reservation() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
 
   const [startTime, setStartTime] = useState('18:00')
-  const [endTime, setEndTime] = useState('20:00') // 2 tiếng sau startTime mặc định
-
-  // Tính duration từ startTime và endTime
-  const duration = useMemo(() => calculateDuration(startTime, endTime), [startTime, endTime])
-
-  // Reset endTime khi startTime thay đổi nếu endTime hiện tại không hợp lệ
-  useEffect(() => {
-    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-    const defaultEndTime = addMinutesToTime(startTime, 120) // 2 giờ mặc định
-
-    // Reset nếu endTime không hợp lệ (nhỏ hơn hoặc bằng startTime, hoặc vượt quá giờ đóng cửa)
-    if (endTime <= startTime || endTime > closingTimeStr) {
-      // Đảm bảo defaultEndTime không vượt quá giờ đóng cửa
-      const validEndTime = defaultEndTime > closingTimeStr ? closingTimeStr : defaultEndTime
-      if (validEndTime !== endTime) {
-        setEndTime(validEndTime)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startTime])
+  const duration = 240
+  const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
 
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
 
@@ -113,12 +95,12 @@ export default function Reservation() {
       })
 
       window.location.href = checkoutUrl
-    },
+    }
   })
   const isProcessing = paymentMutation.isPending
 
   // Generated Data
-  const timeSlots = useMemo(() => generateTimeSlots(RESTAURANT_CONFIG.openHour, RESTAURANT_CONFIG.closeHour), [])
+  const timeSlots = useMemo(() => generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00'), [])
 
   // --- HANDLERS ---
   const toggleTable = async (table: Table) => {
@@ -178,7 +160,6 @@ export default function Reservation() {
             const response = await reservationApi.createReservation({
               date,
               startTime,
-              endTime,
               guestNumber: guests,
               tableId: parseInt(table.id),
               note: '' // Temporary reservation để lock bàn
@@ -242,42 +223,15 @@ export default function Reservation() {
   }
 
   const handleNext = async () => {
-    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-
     // Step 1: Validation và chuyển sang Step 2
     if (currentStep === 1) {
-      // Kiểm tra đã chọn startTime
       if (!startTime) {
         alert('Vui lòng chọn giờ bắt đầu!')
         return
       }
 
-      // Kiểm tra đã chọn endTime
-      if (!endTime) {
-        alert('Vui lòng chọn thời gian kết thúc!')
-        return
-      }
-
-      // Kiểm tra startTime < endTime
-      if (startTime >= endTime) {
-        alert('Thời gian kết thúc phải sau thời gian bắt đầu!')
-        return
-      }
-
-      // Kiểm tra thời gian không trong quá khứ
       if (isDateTimeInPast(date, startTime)) {
         alert('Thời gian bắt đầu không được trong quá khứ!')
-        return
-      }
-
-      if (isDateTimeInPast(date, endTime)) {
-        alert('Thời gian kết thúc không được trong quá khứ!')
-        return
-      }
-
-      // Kiểm tra endTime không vượt quá giờ đóng cửa
-      if (endTime > closingTimeStr) {
-        alert(`Thời gian kết thúc không được vượt quá giờ đóng cửa (${closingTimeStr})!`)
         return
       }
 
@@ -315,7 +269,6 @@ export default function Reservation() {
         const response = await reservationApi.createReservation({
           date,
           startTime,
-          endTime,
           guestNumber: guests,
           tableId: parseInt(firstTable.id),
           note: ''
@@ -438,8 +391,7 @@ export default function Reservation() {
               setDate={setDate}
               startTime={startTime}
               setStartTime={setStartTime}
-              endTime={endTime}
-              setEndTime={setEndTime}
+              plannedEndTime={plannedEndTime}
               duration={duration}
               timeSlots={timeSlots}
             />
@@ -451,7 +403,6 @@ export default function Reservation() {
               guests={guests}
               date={date}
               startTime={startTime}
-              endTime={endTime}
               isPaid={isPaid}
             />
           )}
@@ -466,7 +417,7 @@ export default function Reservation() {
           {currentStep === 4 && (
             <Step4Payment
               user={authUser}
-              bookingData={{ date, startTime, endTime, duration, guests, selectedTable }}
+              bookingData={{ date, startTime, endTime: plannedEndTime, duration, guests, selectedTable }}
               cartItems={cartItems}
               onPay={handlePayment}
               onCancel={handleCancel}

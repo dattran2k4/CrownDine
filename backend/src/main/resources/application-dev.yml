@@ -19,7 +19,7 @@ spring:
     baseline-on-migrate: true
     locations: classpath:dev/db/migration
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:

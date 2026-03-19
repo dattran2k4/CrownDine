@@ -55,11 +55,6 @@ public class CashService extends AbstractPaymentStrategy {
 
         orderService.markAsPaid(order);
         log.info("Cash payment created, code={}, amount={}", prepared.payment().getCode(), amountToPay);
-        
-        if (prepared.payment().getOrder() != null) {
-            orderService.updateOrderStatus(prepared.payment().getOrder().getId(), com.crowndine.common.enums.EOrderStatus.COMPLETED);
-        }
-
         return "Đã tạo thành công số tiền thành toán là " + amountToPay;
     }
 

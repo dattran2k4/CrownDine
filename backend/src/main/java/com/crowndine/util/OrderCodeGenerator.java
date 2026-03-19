@@ -10,6 +10,6 @@ public class OrderCodeGenerator {
     public static String generateOrderCode() {
         String timestamp = LocalDateTime.now().format(FORMATTER);
         String randomStr = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-        return String.format("RES-%s-%s", timestamp, randomStr);
+        return String.format("ORD-%s-%s", timestamp, randomStr);
     }
 }

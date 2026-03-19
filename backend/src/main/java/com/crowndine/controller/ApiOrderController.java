@@ -28,10 +28,10 @@ public class ApiOrderController {
 
     @GetMapping
     public ApiResponse getAllOrders(@RequestParam(required = false) LocalDate fromDate,
-            @RequestParam(required = false) LocalDate toDate,
-            @RequestParam(required = false) EOrderStatus status,
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "50") int size) {
+                                    @RequestParam(required = false) LocalDate toDate,
+                                    @RequestParam(required = false) EOrderStatus status,
+                                    @RequestParam(required = false, defaultValue = "0") int page,
+                                    @RequestParam(required = false, defaultValue = "50") int size) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully retrieved all Orders")
@@ -51,8 +51,7 @@ public class ApiOrderController {
 
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PutMapping("/{id}")
-    public ApiResponse updateOrder(@Min(1) @PathVariable Long id, @Valid @RequestBody OrderItemBatchRequest request,
-            Principal principal) {
+    public ApiResponse updateOrder(@Min(1) @PathVariable Long id, @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully updated order + order details")
@@ -63,7 +62,7 @@ public class ApiOrderController {
     @PostMapping("/{orderId}/details")
     public ApiResponse addOrderDetails(@Min(1) @PathVariable("orderId") Long id,
             @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
-            orderService.addDetailsToOrder(id, request, principal.getName());
+            orderService.appendItemsToOrder(id, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Added order details successfully")

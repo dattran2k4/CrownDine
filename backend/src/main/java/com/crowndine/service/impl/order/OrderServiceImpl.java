@@ -286,44 +286,14 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void createOrderByStaff(OrderRequest request, String username) {
-        log.info("Processing create new order by staff username {}", username);
-        User staff = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
-        RestaurantTable table = tableRepository.findById(request.getTableId())
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
 
-        table.setStatus(ETableStatus.OCCUPIED);
-        tableRepository.save(table);
-
-        Order order = new Order();
-        order.setCode(com.crowndine.util.OrderCodeGenerator.generateOrderCode());
-        order.setStaff(staff);
-        order.setStatus(EOrderStatus.CONFIRMED);
-        order.setRestaurantTable(table);
-        orderRepository.save(order);
-
-        // Tính lại tổng hoá đơn
-        recalculateOrderPricing(order);
-
-        Order result = orderRepository.save(order);
-        log.info("Created order with id {}", result.getId());
-
-        RestaurantTableResponse tableRes = new RestaurantTableResponse();
-        BeanUtils.copyProperties(table, tableRes);
-        tableRes.setId(table.getId());
-        messagingTemplate.convertAndSend("/topic/tables", tableRes);
-        messagingTemplate.convertAndSend("/topic/orders", toResponse(result));
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name) {
         Order order = getOrder(id);
 
-        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
 
         recalculateOrderPricing(order);
         orderRepository.save(order);
@@ -401,19 +371,6 @@ public class OrderServiceImpl implements OrderService {
                 .finalPrice(updatedOrder.getFinalPrice())
                 .build();
     }
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void addDetailsToOrder(Long id, OrderItemBatchRequest request, String name) {
-        Order order = getOrder(id);
-
-        orderDetailService.addOrderDetailsForOrder(order, request.getItems());
-
-        recalculateOrderPricing(order);
-        orderRepository.save(order);
-
-        log.info("Added details for order id {}, details size = {}", order.getId(), request.getItems().size());
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {

@@ -17,5 +17,4 @@ public interface OrderDetailService {
     void deleteOrderDetail(Long id);
 
     UpdateStatusOrderDetailResponse changeStatus(Long id, EOrderDetailStatus status);
-    void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request);
 }

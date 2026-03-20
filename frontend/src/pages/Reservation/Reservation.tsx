@@ -62,7 +62,7 @@ export default function Reservation() {
       orderId?: number
     }) => {
       if (voucherCode && orderId && voucherCode !== appliedVoucherCode) {
-        await orderApi.applyVoucherToOrder(orderId, { code: voucherCode })
+        await orderApi.applyVoucher(orderId, voucherCode)
         setAppliedVoucherCode(voucherCode)
       }
 
@@ -392,7 +392,6 @@ export default function Reservation() {
               startTime={startTime}
               setStartTime={setStartTime}
               plannedEndTime={plannedEndTime}
-              duration={duration}
               timeSlots={timeSlots}
             />
           )}
@@ -417,7 +416,7 @@ export default function Reservation() {
           {currentStep === 4 && (
             <Step4Payment
               user={authUser}
-              bookingData={{ date, startTime, endTime: plannedEndTime, duration, guests, selectedTable }}
+              bookingData={{ date, startTime, plannedEndTime, guests, selectedTable }}
               cartItems={cartItems}
               onPay={handlePayment}
               onCancel={handleCancel}

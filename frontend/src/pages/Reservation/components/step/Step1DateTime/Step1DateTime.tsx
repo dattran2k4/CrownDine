@@ -10,7 +10,6 @@ interface Props {
   startTime: string
   setStartTime: (s: string) => void
   plannedEndTime: string
-  duration: number
   timeSlots: string[]
 }
 const Step1DateTime = ({
@@ -21,7 +20,6 @@ const Step1DateTime = ({
   startTime,
   setStartTime,
   plannedEndTime,
-  duration,
   timeSlots
 }: Props) => {
   // Reset startTime nếu giờ hiện tại đã qua khi date thay đổi
@@ -79,7 +77,7 @@ const Step1DateTime = ({
       {/* 2. Chọn Giờ Bắt Đầu (Start Time) */}
       <div className='space-y-3'>
         <label className='flex items-center gap-2 text-sm font-bold'>
-          <Clock size={16} /> Giờ bắt đầu (Start Time)
+          <Clock size={16} /> Giờ bắt đầu
         </label>
         <div className='custom-scrollbar grid max-h-40 grid-cols-4 gap-3 overflow-y-auto pr-2 md:grid-cols-6 lg:grid-cols-8'>
           {timeSlots.map((slot) => {
@@ -107,11 +105,9 @@ const Step1DateTime = ({
       <div className='flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4'>
         <Clock className='shrink-0 text-blue-500' />
         <div>
-          <p className='text-sm font-bold text-blue-700'>
-            Thời gian dự kiến: {startTime} - {plannedEndTime} ({duration / 60} tiếng)
-          </p>
+          <p className='text-sm font-bold text-blue-700'>Khung giờ dự kiến: {startTime} - {plannedEndTime}</p>
           <p className='mt-1 text-xs text-blue-600'>
-            Giờ kết thúc sẽ được hệ thống tự tính theo khung 4 tiếng giữ bàn.
+            Giờ kết thúc sẽ được hệ thống tự tính theo mặc định khoảng 4 tiếng giữ bàn.
           </p>
         </div>
       </div>

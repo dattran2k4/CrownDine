@@ -315,10 +315,22 @@ VALUES
     (1, 2, '2026-02-28 08:05:00', '2026-02-28 14:00:00', 'Đúng giờ', 'ON_TIME', 'WORKING', NOW(), NOW()),
     (2, 2, '2026-02-28 14:10:00', NULL, 'Bận xử lý khách đông', 'MISSING_PUNCH', 'WORKING', NOW(), NOW());
 
-INSERT INTO feedbacks (user_id, item_id, rating, comment, created_at, updated_at) VALUES
-                                                                                          (2, 6, 5, 'Lẩu ngon, nước đậm vị', NOW(), NOW()),
-                                                                                          (3, 8, 4, 'Tôm tươi, hơi ít',      NOW(), NOW()),
-                                                                                          (2, 11, 5, 'Flan mềm, vừa ngọt',   NOW(), NOW());
+INSERT INTO feedbacks (user_id, item_id, order_id, rating, comment, is_featured, status, created_at, updated_at) VALUES
+    (2, 4, 1, 5, 'Không gian nhà hàng sang trọng, bò bít tết mềm và thơm.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 2 DAY), NOW()),
+    (3, 1, 2, 5, 'Lần đầu trải nghiệm và rất ấn tượng với món súp cua.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 5 DAY), NOW()),
+    (1, 3, 3, 4, 'Gà chiên mắm ngon, da giòn, rất đáng thử.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 7 DAY), NOW()),
+    (2, 8, 4, 5, 'Tôm hấp tươi và giữ được vị ngọt tự nhiên.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 3 DAY), NOW()),
+    (3, 11, 5, 5, 'Bánh flan là món kết thúc bữa ăn rất trọn vẹn.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 1 DAY), NOW());
+
+INSERT INTO feedbacks (guest_name, guest_email, item_id, rating, comment, is_featured, status, created_at, updated_at) VALUES
+    ('Nguyễn Văn A', 'vanna@example.com', 6, 5, 'Thực đơn đa dạng, nhiều lựa chọn hấp dẫn và phục vụ tốt.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 4 DAY), NOW());
+
+INSERT INTO feedbacks (user_id, combo_id, order_id, rating, comment, status, created_at, updated_at) VALUES
+    (2, 1, 17, 5, 'Combo rất hời cho 2 người, đủ no và hợp vị.', 'APPROVED', NOW(), NOW()),
+    (3, 2, 18, 4, 'Combo gà mắm kết hợp khá cân bằng và dễ ăn.', 'APPROVED', NOW(), NOW()),
+    (1, 3, 19, 5, 'Beef steak set ổn, món lên đẹp và đồng đều.', 'APPROVED', NOW(), NOW()),
+    (3, 4, 20, 5, 'Combo hải sản tươi, đúng chất healthy.', 'APPROVED', NOW(), NOW()),
+    (2, 5, NULL, 5, 'Combo tráng miệng nhẹ nhàng, hợp cho buổi chiều.', 'APPROVED', NOW(), NOW());
 
 INSERT INTO reviews (customer_id, comment, created_at, updated_at) VALUES
                                                               (3, 'Không gian ổn, phục vụ nhanh', NOW(), NOW()),

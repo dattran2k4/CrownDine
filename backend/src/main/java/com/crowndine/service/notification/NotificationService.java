@@ -10,4 +10,6 @@ public interface NotificationService {
     UnreadNotificationCountResponse getUnreadCount(String username);
 
     NotificationResponse markAsRead(Long notificationId, String username);
+
+    void notifyReservationConfirmed(Long reservationId);
 }

@@ -16,7 +16,6 @@ import com.crowndine.repository.UserRepository;
 import com.crowndine.service.favorite.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,16 +33,15 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final ComboRepository comboRepository;
     private final FeedbackRepository feedbackRepository;
 
-    private User getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    private User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     @Override
     @Transactional
-    public void addFavoriteItem(Long itemId) {
-        User user = getCurrentUser();
+    public void addFavoriteItem(Long itemId, String username) {
+        User user = getUserByUsername(username);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Món ăn không tồn tại"));
 
@@ -58,8 +56,8 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    public void removeFavoriteItem(Long itemId) {
-        User user = getCurrentUser();
+    public void removeFavoriteItem(Long itemId, String username) {
+        User user = getUserByUsername(username);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Món ăn không tồn tại"));
 
@@ -70,8 +68,8 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    public void addFavoriteCombo(Long comboId) {
-        User user = getCurrentUser();
+    public void addFavoriteCombo(Long comboId, String username) {
+        User user = getUserByUsername(username);
         Combo combo = comboRepository.findById(comboId)
                 .orElseThrow(() -> new ResourceNotFoundException("Combo không tồn tại"));
 
@@ -86,8 +84,8 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    public void removeFavoriteCombo(Long comboId) {
-        User user = getCurrentUser();
+    public void removeFavoriteCombo(Long comboId, String username) {
+        User user = getUserByUsername(username);
         Combo combo = comboRepository.findById(comboId)
                 .orElseThrow(() -> new ResourceNotFoundException("Combo không tồn tại"));
 
@@ -97,22 +95,22 @@ public class FavoriteServiceImpl implements FavoriteService {
     }
 
     @Override
-    public List<FavoriteResponse> getMyFavorites() {
-        User user = getCurrentUser();
+    public List<FavoriteResponse> getMyFavorites(String username) {
+        User user = getUserByUsername(username);
         List<Favorite> favorites = favoriteRepository.findAllByUser(user);
         return favorites.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
-    public boolean isFavoriteItem(Long itemId) {
-        User user = getCurrentUser();
+    public boolean isFavoriteItem(Long itemId, String username) {
+        User user = getUserByUsername(username);
         Item item = itemRepository.findById(itemId).orElse(null);
         return item != null && favoriteRepository.existsByUserAndItem(user, item);
     }
 
     @Override
-    public boolean isFavoriteCombo(Long comboId) {
-        User user = getCurrentUser();
+    public boolean isFavoriteCombo(Long comboId, String username) {
+        User user = getUserByUsername(username);
         Combo combo = comboRepository.findById(comboId).orElse(null);
         return combo != null && favoriteRepository.existsByUserAndCombo(user, combo);
     }

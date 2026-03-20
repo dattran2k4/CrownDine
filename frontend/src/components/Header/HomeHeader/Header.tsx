@@ -23,7 +23,7 @@ const Header = () => {
   const { theme, setTheme } = useTheme()
 
   const navItems = [
-    { label: 'Menu', href: '#menu' },
+    { label: 'Thực Đơn', href: '#menu' },
     { label: 'Câu Chuyện', href: '#story' },
     { label: 'Đặt Bàn', href: 'reservation' },
     { label: 'Liên Hệ', href: '#contact' }
@@ -89,7 +89,7 @@ const Header = () => {
           {/* Book Button */}
           <Link to='/#reservation'>
             <Button className='bg-primary hover:bg-primary/90 btn-lift border-primary hidden cursor-pointer rounded-full border px-6 py-2 font-semibold text-white transition-all duration-300 sm:inline-flex'>
-              Book a Table
+              Đặt Bàn
             </Button>
           </Link>
 

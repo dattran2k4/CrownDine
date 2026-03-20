@@ -283,7 +283,22 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void createWalkInOrder(OrderRequest request, String username) {
+        log.info("Processing create new walk-in order by username {}", username);
+        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+        Order order = new Order();
+        order.setCode(OrderCodeGenerator.generateOrderCode());
+        order.setStaff(staff);
+        order.setStatus(EOrderStatus.CONFIRMED);
+        order.setRestaurantTable(table);
+        orderRepository.save(order);
+
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
+        recalculateOrderPricing(order);
+
+        Order result = orderRepository.save(order);
+        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
     }
 
 

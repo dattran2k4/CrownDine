@@ -18,33 +18,35 @@ const Contact = () => {
           <div className='animate-in fade-in slide-in-from-right-8 order-1 duration-700 md:order-2'>
             <p className='text-primary mb-2 flex items-center gap-2 text-sm font-semibold tracking-widest uppercase'>
               <span className='bg-primary inline-block h-1 w-1 rounded-full'></span>
-              GET IN TOUCH
+              Liên hệ với chúng tôi
             </p>
             <h2 className='mb-6 text-4xl font-bold md:text-5xl'>
-              We'd Love to
+              Chúng tôi rất mong được
               <br />
-              <span className='text-primary'>Hear From You</span>
+              <span className='text-primary'>Nghe từ bạn</span>
             </h2>
 
             <div className='space-y-6'>
               <div>
-                <h3 className='mb-2 text-lg font-bold'>Call Us</h3>
+                <h3 className='mb-2 text-lg font-bold'>Gọi chúng tôi</h3>
                 <p className='text-foreground/70'>
-                  Call us to make a reservation or if you have any questions. We'd love to hear from you!
+                  Gọi để đặt bàn hoặc hỏi về thực đơn của chúng tôi. Chúng tôi luôn sẵn sàng hỗ trợ bạn.
                 </p>
                 <p className='text-primary mt-2 text-lg font-bold'>+1 (555) 123-4567</p>
               </div>
 
               <div>
-                <h3 className='mb-2 text-lg font-bold'>Email Us</h3>
-                <p className='text-foreground/70'>Have any questions or special requests? Send us an email.</p>
+                <h3 className='mb-2 text-lg font-bold'>Email</h3>
+                <p className='text-foreground/70'>
+                  Có bất kỳ câu hỏi hay yêu cầu đặc biệt nào không? Gửi email cho chúng tôi.
+                </p>
                 <p className='text-primary mt-2 text-lg font-bold'>reservations@lamaison.com</p>
               </div>
 
               <div>
                 <h3 className='mb-2 text-lg font-bold'>Visit Us</h3>
                 <p className='text-foreground/70'>
-                  Find us at the address below. We're open from 11am to 11pm Monday through Saturday.
+                  Chúng tôi rất mong được chào đón bạn tại nhà hàng của chúng tôi. Dưới đây là địa chỉ của chúng tôi:
                 </p>
                 <p className='text-primary mt-2 text-lg font-bold'>123 Gourmet Street, New York, NY 10001</p>
               </div>

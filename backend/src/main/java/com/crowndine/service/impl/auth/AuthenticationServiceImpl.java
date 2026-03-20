@@ -30,6 +30,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -64,21 +65,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse accessToken(LoginRequest request, HttpServletRequest httpServletRequest) {
-        List<String> authorities = new ArrayList<>();
+        List<String> roles;
 
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-            authorities.add(authentication.getAuthorities().toString());
+            roles = extractRoles(authentication.getAuthorities());
 
         } catch (BadCredentialsException e) {
             log.error("errorMessage: {}", e.getMessage());
             throw new BadCredentialsException(e.getMessage());
         }
 
-        String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
-        String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
+        String accessToken = jwtService.generateAccessToken(request.getUsername(), roles);
+        String refreshToken = jwtService.generateRefreshToken(request.getUsername(), roles);
 
         // save token to db
         tokenService.saveToken(request.getUsername(), refreshToken, httpServletRequest);
@@ -117,16 +118,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         jwtService.isTokenValid(refreshToken, ETokenType.REFRESH_TOKEN, user);
 
-        List<String> authorities = new ArrayList<>();
-        user.getAuthorities().forEach(authority -> authorities.add(authority.toString()));
+        List<String> roles = extractRoles(user.getAuthorities());
 
-        String accessToken = jwtService.generateAccessToken(username, authorities);
+        String accessToken = jwtService.generateAccessToken(username, roles);
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .username(user.getUsername())
                 .build();
+    }
+
+    private List<String> extractRoles(Collection<? extends GrantedAuthority> authorities) {
+        return authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
     }
 
     @Override

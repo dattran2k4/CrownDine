@@ -19,7 +19,7 @@ spring:
     baseline-on-migrate: true
     locations: classpath:dev/db/migration
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -49,6 +49,7 @@ spring:
           options:
             model: gemini-2.5-flash
             temperature: 0.7
+
 
 springdoc:
   api-docs:

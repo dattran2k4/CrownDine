@@ -1,5 +1,6 @@
 package com.crowndine.controller;
 
+import com.cloudinary.Cloudinary;
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
@@ -22,6 +23,7 @@ import java.security.Principal;
 public class ApiUserController {
 
     private final UserService userService;
+    private final Cloudinary cloudinary;
 
     @GetMapping
     public ApiResponse getListUsers() {
@@ -54,6 +56,17 @@ public class ApiUserController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get profile successfully")
+                .data(response)
+                .build();
+    }
+
+    @GetMapping("/customer/{phone}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+    public ApiResponse getCustomerByPhone(@org.springframework.web.bind.annotation.PathVariable String phone) {
+        ProfileResponse response = userService.getProfileByPhone(phone);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get customer profile by phone successfully")
                 .data(response)
                 .build();
     }

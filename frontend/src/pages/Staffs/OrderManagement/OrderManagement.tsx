@@ -1,254 +1,337 @@
 import orderApi from '@/apis/order.api'
-import tableApi from '@/apis/table.api'
 import { queryClient } from '@/main'
-import OrderStatusSelect from '@/pages/Staffs/OrderManagement/components/OrderStatusSelect/OrderStatusSelect'
 import type { Order } from '@/types/order.type'
-import type { ETableShape, ETableStatus, Table } from '@/types/table.type'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
-import clsx from 'clsx'
-import { CloudCog } from 'lucide-react'
-import { useMemo } from 'react'
-import { useStompClient, useSubscription } from 'react-stomp-hooks'
+import { useState, useEffect, Fragment } from 'react'
+import { useSubscription } from 'react-stomp-hooks'
 import { toast } from 'sonner'
-
-// --- Constants & Styles ---
-const STATUS_CONFIG: Record<ETableStatus, { label: string; color: string }> = {
-  AVAILABLE: { label: 'Trống', color: 'bg-[#00ff00]' }, // --online
-  RESERVED: { label: 'Đã đặt', color: 'bg-[#f5a623]' }, // --warning
-  OCCUPIED: { label: 'Đang dùng', color: 'bg-[#ff6b35]' }, // --primary
-  UNAVAILABLE: { label: 'Hỏng/Bận', color: 'bg-[#b3b3b3]' } // --offline
-}
-
-const SHAPE_STYLES: Record<ETableShape, string> = {
-  RECT: 'rounded-lg w-32 h-24',
-  SQUARE: 'rounded-md w-24 h-24',
-  CIRCLE: 'rounded-full w-24 h-24'
-}
+import { Search, Plus } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import OrderDrawer from './components/OrderDrawer'
+import PaymentModal from './components/PaymentModal'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious
+} from '@/components/ui/pagination'
 
 const OrderManagement = () => {
-  const stompClient = useStompClient()
-
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  // Fetch orders
   const { data: orders = [] } = useQuery({
     queryKey: ['orders'],
     queryFn: () => orderApi.getAllOrders({}),
     select: (response) => response?.data?.data?.data ?? []
   })
 
-  // 1. Fetch dữ liệu ban đầu bằng React Query
-  const { data: tableData, isLoading } = useQuery({
-    queryKey: ['tables'],
-    queryFn: () => tableApi.getAllTables()
-  })
-
-  const tables = tableData?.data.data || []
-
-  // 3. Hàm giả lập Staff cập nhật trạng thái
-  const updateStatus = (tableId: string, newStatus: ETableStatus) => {
-    if (stompClient) {
-      stompClient.publish({
-        destination: `/app/table/${tableId}`,
-        body: JSON.stringify(newStatus)
-      })
-    } else {
-      toast.error('Chưa kết nối được máy chủ WebSocket')
-    }
-  }
-
-  // 2. Lắng nghe Real-time cập nhật từ WebSocket
-  useSubscription('/topic/tables', (message) => {
-    const updatedTable = JSON.parse(message.body) as Table
-
-    // Cập nhật Cache mà không cần gọi lại API
-    queryClient.setQueryData(['tables'], (oldData: AxiosResponse) => {
-      if (!oldData) return oldData
-
-      return {
-        ...oldData,
-        data: {
-          ...oldData.data,
-          data: oldData.data.data.map((t: Table) => (t.id === updatedTable.id ? updatedTable : t))
-        }
-      }
-    })
-
-    toast.info(`Bàn ${updatedTable.name} vừa thay đổi trạng thái!`)
-  })
-
-  const stats = useMemo(() => {
-    const defaultStatus = { TOTAL: 0, PRE_ORDER: 0, CONFIRMED: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0 }
-    return orders.reduce((acc, order) => {
-      acc.TOTAL++
-      if (acc[order.status] !== undefined) acc[order.status]++
-      return acc
-    }, defaultStatus)
-  }, [orders])
-
-  // 2. Lắng nghe Real-time cập nhật từ WebSocket
+  // WebSocket Subscription
   useSubscription('/topic/orders', (message) => {
     const updatedOrder = JSON.parse(message.body) as Order
 
     queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
       if (!oldData) return oldData
-
       return {
-        ...oldData, // Tầng 1: AxiosResponse
+        ...oldData,
         data: {
-          ...oldData.data, //ApiResponse (success, message, data)
+          ...oldData.data,
           data: {
-            ...oldData.data.data, //PageResponse (data, ....)
+            ...oldData.data.data,
             data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
           }
         }
       }
     })
-    toast.success(`Đơn hàng #${updatedOrder.id} đã cập nhật real-time!`)
   })
 
-  if (isLoading) return <div className='p-10 text-center'>Đang tải sơ đồ nhà hàng...</div>
+  // Filter orders
+  const filteredOrders = orders.filter((order) => {
+    const q = searchQuery.toLowerCase()
+    return order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
+  })
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage)
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      if (paymentOrder) {
+        const updated = orders.find((o: Order) => o.id === paymentOrder.id)
+        if (updated) setPaymentOrder(updated)
+      }
+      if (selectedOrder) {
+        const updated = orders.find((o: Order) => o.id === selectedOrder.id)
+        if (updated) setSelectedOrder(updated)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Reset page to last possible if current page exceeds total pages due to deletions/updates
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [totalPages, currentPage])
+
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PRE_ORDER':
+        return <Badge variant='warning'>Đặt trước</Badge>
+      case 'CONFIRMED':
+        return <Badge variant='outline'>Chờ xác nhận</Badge>
+      case 'IN_PROGRESS':
+        return <Badge variant='warning'>Đang phục vụ</Badge>
+      case 'COMPLETED':
+        return <Badge variant='success'>Hoàn thành</Badge>
+      case 'CANCELLED':
+        return <Badge variant='danger'>Đã hủy</Badge>
+      default:
+        return <Badge variant='outline'>{status}</Badge>
+    }
+  }
+
+  const handleCreateOrder = () => {
+    setSelectedOrder(null)
+    setIsDrawerOpen(true)
+  }
+
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order)
+    setIsDrawerOpen(true)
+  }
+
+  const handlePayment = (order: Order) => {
+    setPaymentOrder(order)
+  }
+
+  const cancelOrderMutation = useMutation({
+    mutationFn: (orderId: number) => orderApi.updateOrderStatus(orderId, 'CANCELLED'),
+    onSuccess: () => {
+      toast.success('Hủy đơn hàng thành công')
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    onError: (err: any) => {
+      toast.error('Lỗi khi hủy đơn hàng: ' + err.message)
+    }
+  })
+
+  const handleCancelOrder = (order: Order) => {
+    if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.code}?`)) {
+      cancelOrderMutation.mutate(order.id)
+    }
+  }
 
   return (
-    <div className='bg-background min-h-screen p-8 font-sans'>
-      <header className='mb-10 flex items-center justify-between'>
-        <div>
-          <h1 className='text-foreground text-3xl font-bold tracking-tight italic'>Restaurant Floor Plan</h1>
-          <p className='text-muted-foreground'>Theo dõi và cập nhật trạng thái bàn thời gian thực</p>
-        </div>
-        <div className='flex gap-4'>
-          {Object.entries(STATUS_CONFIG).map(([key, value]) => (
-            <div key={key} className='flex items-center gap-2 text-sm'>
-              <span className={clsx('h-3 w-3 rounded-full', value.color)}></span>
-              <span>{value.label}</span>
-            </div>
-          ))}
-        </div>
+    <div className='bg-background flex min-h-screen flex-col p-6 md:p-8'>
+      {/* Header */}
+      <header className='mb-6'>
+        <h1 className='text-foreground text-3xl font-bold tracking-tight'>Đơn gọi món</h1>
+        <p className='text-muted-foreground mt-1 text-sm'>Tìm nhanh theo Mã đơn, tên bàn hoặc ghi chú ngay bên dưới.</p>
       </header>
 
-      {/* Danh sách bàn */}
-      <div className='grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
-        {tables.map((table) => (
-          <div
-            key={table.id}
-            className='btn-restaurant glass group relative flex flex-col items-center justify-center p-6'
-          >
-            {/* Hình dáng bàn */}
-            <div
-              className={clsx(
-                'smooth-transition mb-4 flex items-center justify-center border-2 border-black/5 shadow-inner',
-                SHAPE_STYLES[table.shape],
-                STATUS_CONFIG[table.status].color
-              )}
-            >
-              <span className='text-xl font-black text-white drop-shadow-md'>{table.name}</span>
-            </div>
-
-            {/* Thông tin bàn */}
-            <div className='text-center'>
-              <p className='text-secondary font-bold italic'>Sức chứa: {table.capacity} người</p>
-              <p className='text-muted-foreground text-xs tracking-widest uppercase'>
-                {STATUS_CONFIG[table.status].label}
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className='smooth-transition mt-4 flex flex-wrap justify-center gap-2 opacity-0 group-hover:opacity-100'>
-              {(['AVAILABLE', 'RESERVED', 'OCCUPIED', 'UNAVAILABLE'] as ETableStatus[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => updateStatus(table.id, s)}
-                  className={clsx(
-                    'h-8 w-8 rounded-full border border-black/10 transition-all hover:scale-110 active:scale-95',
-                    STATUS_CONFIG[s].color
-                  )}
-                  title={STATUS_CONFIG[s].label}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+      {/* Toolbar */}
+      <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
+        <div className='relative w-full max-w-md'>
+          <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
+          <Input
+            placeholder='Tìm theo Mã đơn, tên bàn...'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='bg-background pl-9 shadow-none'
+          />
+        </div>
+        <Button
+          onClick={handleCreateOrder}
+          className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
+        >
+          <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
+        </Button>
       </div>
 
-      {/* --- 4 Thẻ thống kê chuẩn màu dự án --- */}
-      <div className='mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5'>
-        <StatBox title='Tất cả' count={stats.TOTAL} color='bg-white' isMain />
-        <StatBox title='Đặt trước' count={stats.PRE_ORDER} color='bg-[#f5a623]' />
-        <StatBox title='Đã xác nhận' count={stats.CONFIRMED} color='bg-secondary' isDark />
-        <StatBox title='Đang phục vụ' count={stats.IN_PROGRESS} color='bg-primary' />
-        <StatBox title='Hoàn tất' count={stats.COMPLETED} color='bg-[#00ff00]' />
-        <StatBox title='Huỷ' count={stats.CANCELLED} color='bg-red-500' />
-      </div>
-
-      {/* --- Danh sách Đơn hàng --- */}
-      <div className='glass border-secondary border-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]'>
+      {/* Table */}
+      <div className='bg-card border-border flex-1 overflow-hidden rounded-xl border shadow-sm'>
         <div className='overflow-x-auto'>
-          <table className='w-full text-left'>
-            <thead className='bg-secondary text-white'>
-              <tr className='text-xs font-bold tracking-widest uppercase'>
-                <th className='p-4'>Code</th>
-                <th className='p-4'>Khách hàng</th>
-                <th className='p-4'>Chi tiết món ({'Qty'})</th>
-                <th className='p-4'>Tổng tiền</th>
-                <th className='p-4'>Trạng thái</th>
+          <table className='w-full text-left text-sm whitespace-nowrap'>
+            <thead className='bg-muted/50 text-muted-foreground border-border border-b text-xs font-semibold'>
+              <tr>
+                <th className='px-6 py-4'>Mã đơn</th>
+                <th className='px-6 py-4'>Ngày tạo</th>
+                <th className='px-6 py-4'>Bàn</th>
+                <th className='px-6 py-4'>Món</th>
+                <th className='px-6 py-4'>Tạm tính</th>
+                <th className='px-6 py-4'>Trạng thái</th>
+                <th className='px-6 py-4 text-right'>Thao tác</th>
               </tr>
             </thead>
             <tbody className='divide-border divide-y bg-white'>
-              {orders.map((order) => (
-                <tr key={order.id} className='hover:bg-primary/5 group transition-colors'>
-                  <td className='text-secondary p-4 font-black'>#{order.code}</td>
-                  <td className='p-4'>
-                    <div className='font-bold'>{order.guestName}</div>
-                    <div className='text-muted-foreground text-[10px] italic'>
-                      {new Date(order.createdAt).toLocaleTimeString()}
-                    </div>
-                  </td>
-                  <td className='p-4'>
-                    <div className='flex flex-wrap gap-1'>
-                      {order.orderDetails.length > 0 ? (
-                        order.orderDetails.map((detail) => {
-                          const displayName = detail.item?.name || detail.combo?.name
-                          return (
-                            <span
-                              key={detail.id}
-                              className='border-secondary bg-background border px-1 text-[10px] font-medium'
-                              title={detail.note || 'Không có ghi chú'}
-                            >
-                              {detail.quantity}x {displayName || 'Chưa xác định'}
-                            </span>
-                          )
-                        })
-                      ) : (
-                        <span className='text-destructive text-[10px] font-bold uppercase italic opacity-70'>
-                          Chưa có món ăn
+              {paginatedOrders.length > 0 ? (
+                paginatedOrders.map((order) => {
+                  const itemsCount = order.orderDetails?.reduce((acc, d) => acc + d.quantity, 0) || 0
+                  return (
+                    <tr key={order.id} className='hover:bg-muted/30 transition-colors'>
+                      <td className='px-6 py-4'>
+                        <span className='text-foreground font-bold'>#{order.code}</span>
+                      </td>
+                      <td className='text-foreground px-6 py-4'>
+                        {new Date(order.createdAt).toLocaleString('vi-VN', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                      <td className='text-foreground px-6 py-4 font-medium'>{order.tableName || '-'}</td>
+                      <td className='text-foreground px-6 py-4'>{itemsCount}</td>
+                      <td className='text-foreground px-6 py-4 font-bold'>
+                        <span title={order.voucher ? `Voucher: ${order.voucher.code} - ${order.voucher.name}` : undefined}>
+                          {(order.finalPrice ?? order.totalPrice).toLocaleString()} VND
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className='text-primary p-4 font-bold'>{order.totalPrice.toLocaleString()}đ</td>
-                  <td className='p-4'>
-                    <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+                      </td>
+                      <td className='px-6 py-4'>{getStatusBadge(order.status)}</td>
+                      <td className='px-6 py-4 text-right'>
+                        <div className='flex items-center justify-end gap-2'>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            className='rounded-lg border-orange-200 font-semibold text-orange-600 shadow-sm hover:bg-orange-50 hover:text-orange-700'
+                            onClick={() => handlePayment(order)}
+                            disabled={order.status === 'CANCELLED' || order.status === 'COMPLETED'}
+                          >
+                            Thanh toán
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            className='text-foreground hover:bg-muted rounded-lg font-medium shadow-sm'
+                            onClick={() => handleViewOrder(order)}
+                          >
+                            Xem chi tiết
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            className='rounded-lg border-red-200 text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700'
+                            onClick={() => handleCancelOrder(order)}
+                            disabled={
+                              cancelOrderMutation.isPending ||
+                              order.status === 'CANCELLED' ||
+                              order.status === 'COMPLETED'
+                            }
+                          >
+                            Hủy
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className='text-muted-foreground px-6 py-12 text-center'>
+                    Không tìm thấy đơn hàng nào khớp với tìm kiếm.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-  )
-}
 
-// --- Sub-component: StatBox ---
-function StatBox({ title, count, color, isDark, isMain }: any) {
-  return (
-    <div
-      className={clsx(
-        'border-secondary border-2 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1',
-        color,
-        isDark ? 'text-white' : 'text-secondary'
-      )}
-    >
-      <p className='mb-2 text-[10px] font-black tracking-widest uppercase opacity-80'>{title}</p>
-      <p className='text-3xl font-black italic'>{count}</p>
+        {/* Pagination UI */}
+        {totalPages > 1 && (
+          <div className='border-border flex justify-center border-t bg-gray-50/50 p-4'>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage((p) => Math.max(1, p - 1))
+                    }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: totalPages })
+                  .map((_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(currentPage - p) <= 1)
+                  .map((p, i, arr) => (
+                    <Fragment key={p}>
+                      {i > 0 && arr[i - 1] !== p - 1 && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+                      <PaginationItem>
+                        <PaginationLink
+                          isActive={currentPage === p}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setCurrentPage(p)
+                          }}
+                          className='cursor-pointer shadow-sm'
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </Fragment>
+                  ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
+
+      <OrderDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        order={selectedOrder}
+        onPaymentClick={(order) => {
+          setIsDrawerOpen(false)
+          setPaymentOrder(order)
+        }}
+        onCancelClick={(order) => {
+          setIsDrawerOpen(false)
+          handleCancelOrder(order)
+        }}
+      />
+
+      <PaymentModal
+        isOpen={!!paymentOrder}
+        onClose={() => setPaymentOrder(null)}
+        order={paymentOrder}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['orders'] })
+        }}
+      />
     </div>
   )
 }

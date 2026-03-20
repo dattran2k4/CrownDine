@@ -1,17 +1,22 @@
-import type { ApiResponse } from '@/types/utils.type'
+import type { ApiResponse, PageResponse } from '@/types/utils.type'
 import type {
   ReservationCreateRequest,
   ReservationCreateResponse,
   OrderDetailResponse,
   OrderItemRequest,
   OrderItemRemoveRequest,
-  ReservationUpdateTableRequest
+  ReservationUpdateTableRequest,
+  ReservationHistoryResponse
 } from '@/types/reservation.type'
 import http from '@/utils/http'
 
 const RESERVATION_URL = '/reservations'
 
 const reservationApi = {
+  getReservationHistory(params: { page?: number; size?: number }) {
+    return http.get<ApiResponse<PageResponse<ReservationHistoryResponse>>>(`${RESERVATION_URL}/history`, { params })
+  },
+
   getAllReservations(params: { fromDate?: string; toDate?: string; status?: string; page?: number; size?: number }) {
     return http.get<ApiResponse<any>>(`${RESERVATION_URL}/all`, { params })
   },

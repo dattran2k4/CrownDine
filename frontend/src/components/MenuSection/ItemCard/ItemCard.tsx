@@ -58,10 +58,10 @@ const ItemCard = ({ item, onViewDetails }: Props) => {
 
         {/* Rating */}
         <div className='mb-4 flex items-center gap-2'>
-          <RatingStart rating={item.rating} size={18} />
-          {item.rating != null && (
-            <span className='text-muted-foreground pt-0.5 text-xs font-medium'>({item.rating})</span>
-          )}
+          <RatingStart rating={item.averageRating || 0} size={18} />
+          <span className='text-muted-foreground pt-0.5 text-xs font-medium'>
+            {item.averageRating ? item.averageRating.toFixed(1) : '0.0'} ({item.feedbackCount || 0})
+          </span>
         </div>
 
         {/* Price & Action */}

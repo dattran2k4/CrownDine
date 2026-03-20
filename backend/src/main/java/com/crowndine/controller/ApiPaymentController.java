@@ -75,4 +75,14 @@ public class ApiPaymentController {
                 .data(paymentService.getPaymentDetail(id))
                 .build();
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/code/{code}")
+    public ApiResponse getPaymentDetailByCode(@PathVariable Long code, Principal principal) {
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Successfully retrieved payment detail by code")
+                .data(paymentService.getPaymentDetailByCode(code, principal.getName()))
+                .build();
+    }
 }

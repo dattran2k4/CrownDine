@@ -64,9 +64,7 @@ const Step4Payment = ({
   const discountedFoodDeposit = previewFinalAmount * 0.2
   const discountedRemainingAmount = previewFinalAmount - discountedFoodDeposit
   const discountedPayableNow =
-    voucherPreview && depositAmount > 0
-      ? Math.max(0, discountedFoodDeposit + tableDeposit)
-      : depositAmount
+    voucherPreview && depositAmount > 0 ? Math.max(0, discountedFoodDeposit + tableDeposit) : depositAmount
 
   // Tính cọc 20% món ăn
   const foodDeposit = itemsTotal * 0.2
@@ -259,7 +257,11 @@ const Step4Payment = ({
             </div>
           </div>
 
-          <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={onVoucherPreviewChange} />
+          <VoucherInput
+            orderId={orderDetails?.orderId}
+            disabled={isProcessing}
+            onPreviewChange={onVoucherPreviewChange}
+          />
         </div>
       </div>
 

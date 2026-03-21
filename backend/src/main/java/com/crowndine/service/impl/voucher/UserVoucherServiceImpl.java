@@ -17,8 +17,10 @@ import com.crowndine.repository.UserVoucherRepository;
 import com.crowndine.repository.VoucherRepository;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.voucher.UserVoucherService;
+import com.crowndine.service.voucher.event.VoucherGrantedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,11 +39,13 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     private final VoucherRepository voucherRepository;
     private final OrderRepository orderRepository;
     private final CalculationService calculationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<VoucherAssignmentResponse> assignUsers(Long voucherId, VoucherAssignUsersRequest request) {
         Voucher voucher = getVoucher(voucherId);
+        Set<Long> newlyAssignedUserIds = new HashSet<>();
 
         Set<Long> uniqueUserIds = new LinkedHashSet<>(request.getUserIds());
         List<User> users = userRepository.findAllById(uniqueUserIds);
@@ -76,14 +80,20 @@ public class UserVoucherServiceImpl implements UserVoucherService {
             if (isNewAssignment) {
                 userVoucher.setUsageCount(0);
                 userVoucher.setAssignedAt(LocalDateTime.now());
+                newlyAssignedUserIds.add(user.getId());
             }
 
             return userVoucher;
         }).toList();
 
-        return userVoucherRepository.saveAll(assignments).stream()
-                .map(this::toAssignmentResponse)
-                .toList();
+        List<UserVoucher> savedAssignments = userVoucherRepository.saveAll(assignments);
+
+        savedAssignments.stream()
+                .filter(userVoucher -> userVoucher.getCustomer() != null && newlyAssignedUserIds.contains(userVoucher.getCustomer().getId()))
+                .map(UserVoucher::getId)
+                .forEach(userVoucherId -> eventPublisher.publishEvent(new VoucherGrantedEvent(userVoucherId)));
+
+        return savedAssignments.stream().map(this::toAssignmentResponse).toList();
     }
 
     @Override
@@ -145,7 +155,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
 
         if (isPersonal) {
             if (username == null) {
-                 throw new InvalidDataException("Voucher này là voucher cá nhân, vui lòng thêm thông tin khách hàng vào đơn");
+                throw new InvalidDataException("Voucher này là voucher cá nhân, vui lòng thêm thông tin khách hàng vào đơn");
             }
             User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
             UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId())
@@ -188,12 +198,12 @@ public class UserVoucherServiceImpl implements UserVoucherService {
             UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId())
                     .orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
             validateUserVoucherAvailability(userVoucher);
-            
+
             int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
             userVoucher.setUsageCount(usageCount + 1);
             userVoucherRepository.save(userVoucher);
         }
-        
+
         return voucher;
     }
 

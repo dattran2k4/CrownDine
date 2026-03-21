@@ -27,6 +27,9 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "checked_out_at")
     private LocalDateTime checkedOutAt;
 
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
+
     @Column(name = "date")
     private LocalDate date;
 

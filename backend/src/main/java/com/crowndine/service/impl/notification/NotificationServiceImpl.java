@@ -7,8 +7,10 @@ import com.crowndine.dto.response.UnreadNotificationCountResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Notification;
 import com.crowndine.model.Reservation;
+import com.crowndine.model.UserVoucher;
 import com.crowndine.repository.NotificationRepository;
 import com.crowndine.repository.ReservationRepository;
+import com.crowndine.repository.UserVoucherRepository;
 import com.crowndine.service.notification.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +34,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final ReservationRepository reservationRepository;
+    private final UserVoucherRepository userVoucherRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -90,6 +93,54 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("Created reservation confirmed notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
     }
 
+    @Override
+    @Transactional
+    public void notifyVoucherGranted(Long userVoucherId) {
+        UserVoucher userVoucher = userVoucherRepository.findById(userVoucherId).orElseThrow(() -> new ResourceNotFoundException("User voucher not found"));
+
+        if (userVoucher.getCustomer() == null || userVoucher.getVoucher() == null) {
+            log.warn("UserVoucher {} is missing customer or voucher. Skip voucher granted notification.", userVoucherId);
+            return;
+        }
+
+        Notification notification = new Notification();
+        notification.setUser(userVoucher.getCustomer());
+        notification.setType(ENotificationType.VOUCHER_GRANTED);
+        notification.setTitle("Bạn nhận được voucher mới");
+        notification.setMessage(buildVoucherGrantedMessage(userVoucher));
+        notification.setPayload(buildVoucherGrantedPayload(userVoucher));
+        notificationRepository.save(notification);
+        log.info("Created voucher granted notification for userVoucher {} and user {}", userVoucherId, userVoucher.getCustomer().getUsername());
+    }
+
+    @Override
+    @Transactional
+    public void notifyReservationReminder(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (reservation.getUser() == null) {
+            log.warn("Reservation {} has no user. Skip reservation reminder notification.", reservationId);
+            return;
+        }
+
+        if (reservation.getReminderSentAt() != null) {
+            log.info("Reservation {} reminder already sent. Skip duplicate reminder.", reservationId);
+            return;
+        }
+
+        Notification notification = new Notification();
+        notification.setUser(reservation.getUser());
+        notification.setType(ENotificationType.RESERVATION_REMINDER);
+        notification.setTitle("Sắp đến giờ đặt bàn");
+        notification.setMessage(buildReservationReminderMessage(reservation));
+        notification.setPayload(buildReservationReminderPayload(reservation));
+        notificationRepository.save(notification);
+
+        reservation.setReminderSentAt(LocalDateTime.now());
+        reservationRepository.save(reservation);
+        log.info("Created reservation reminder notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
+    }
+
     private NotificationResponse toResponse(Notification notification) {
         NotificationResponse response = new NotificationResponse();
         response.setId(notification.getId());
@@ -116,7 +167,46 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    private String buildVoucherGrantedMessage(UserVoucher userVoucher) {
+        String voucherName = userVoucher.getVoucher().getName();
+        String voucherCode = userVoucher.getVoucher().getCode();
+        return "Voucher " + voucherName + " (" + voucherCode + ") đã được thêm vào tài khoản của bạn.";
+    }
+
+    private String buildVoucherGrantedPayload(UserVoucher userVoucher) {
+        try {
+            return objectMapper.writeValueAsString(new VoucherGrantedPayload(userVoucher.getId(), userVoucher.getVoucher().getId(), userVoucher.getVoucher().getCode(), userVoucher.getVoucher().getName(), userVoucher.getUsageLimit(), userVoucher.getExpiredAt()));
+        } catch (JsonProcessingException e) {
+            log.warn("Cannot serialize voucher granted payload for userVoucher {}", userVoucher.getId(), e);
+            return null;
+        }
+    }
+
+    private String buildReservationReminderMessage(Reservation reservation) {
+        String tableName = reservation.getTable() != null ? reservation.getTable().getName() : "bàn đã chọn";
+        return "Bạn có lịch đặt bàn " + tableName + " vào " + reservation.getStartTime() + " ngày " + reservation.getDate() + ".";
+    }
+
+    private String buildReservationReminderPayload(Reservation reservation) {
+        try {
+            return objectMapper.writeValueAsString(new ReservationReminderPayload(reservation.getId(), reservation.getCode(), reservation.getDate(), reservation.getStartTime(), reservation.getEndTime(), reservation.getTable() != null ? reservation.getTable().getId() : null, reservation.getTable() != null ? reservation.getTable().getName() : null));
+        } catch (JsonProcessingException e) {
+            log.warn("Cannot serialize reservation reminder payload for reservation {}", reservation.getId(), e);
+            return null;
+        }
+    }
+
     private record ReservationConfirmedPayload(
+            Long reservationId, String reservationCode, LocalDate date, LocalTime startTime, LocalTime endTime,
+            Long tableId, String tableName) {
+    }
+
+    private record VoucherGrantedPayload(
+            Long assignmentId, Long voucherId, String voucherCode, String voucherName, Integer usageLimit,
+            LocalDateTime expiredAt) {
+    }
+
+    private record ReservationReminderPayload(
             Long reservationId, String reservationCode, LocalDate date, LocalTime startTime, LocalTime endTime,
             Long tableId, String tableName) {
     }

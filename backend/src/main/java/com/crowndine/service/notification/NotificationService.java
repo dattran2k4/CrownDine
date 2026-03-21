@@ -12,4 +12,8 @@ public interface NotificationService {
     NotificationResponse markAsRead(Long notificationId, String username);
 
     void notifyReservationConfirmed(Long reservationId);
+
+    void notifyVoucherGranted(Long userVoucherId);
+
+    void notifyReservationReminder(Long reservationId);
 }

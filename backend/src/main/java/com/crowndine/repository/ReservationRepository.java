@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,12 +38,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByStatusAndExpiratedAtBefore(EReservationStatus status, LocalDateTime now);
 
+    @Query("""
+            select r from Reservation r
+            where r.status = :status
+            and r.reminderSentAt is null
+            and r.checkedOutAt is null
+            and r.date = :date
+            """)
+    List<Reservation> findReminderCandidates(EReservationStatus status, LocalDate date);
+
     Optional<Reservation> findByCode(String code);
 
     @Query("SELECT r FROM Reservation r WHERE " +
-           "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
-           "(:toDate IS NULL OR r.date <= :toDate) AND " +
-           "(:status IS NULL OR r.status = :status)")
+            "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
+            "(:toDate IS NULL OR r.date <= :toDate) AND " +
+            "(:status IS NULL OR r.status = :status)")
     Page<Reservation> findReservations(
             @org.springframework.data.repository.query.Param("fromDate") LocalDate fromDate,
             @org.springframework.data.repository.query.Param("toDate") LocalDate toDate,

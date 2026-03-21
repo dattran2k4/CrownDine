@@ -6,6 +6,7 @@ import ProfileSidebar from '@/components/Profile/sidebar'
 import ProfileInfo from '@/components/Profile/profile-info'
 import ReservationHistory from '@/components/Profile/reservation-history'
 import MyVouchers from '@/components/Profile/my-vouchers'
+import ProfileFavorites from '@/components/Profile/ProfileFavorites'
 import SecuritySettings from '@/components/Profile/security-setting'
 import userVoucherApi from '@/apis/userVoucher.api'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -16,6 +17,15 @@ import reservationApi from '@/apis/reservation.api'
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('info')
   const authUser = useAuthStore((state) => state.user)
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tabFromUrl = params.get('tab')
+    const validTabs = ['info', 'reservations', 'favorites', 'vouchers', 'security']
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [])
 
   const { data: historyData, isLoading: isHistoryLoading } = useQuery({
     queryKey: ['reservation-history'],
@@ -68,6 +78,8 @@ const Profile = () => {
             {activeTab === 'reservations' && (
               <ReservationHistory reservations={reservations as any} isLoading={isHistoryLoading} />
             )}
+
+            {activeTab === 'favorites' && <ProfileFavorites />}
 
             {activeTab === 'vouchers' && (
               <MyVouchers vouchers={vouchers} isLoading={isVouchersLoading} />

@@ -11,7 +11,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import path from '@/constants/path'
-import { ArrowLeft, ShoppingCart, Star } from 'lucide-react'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { useFavoriteStore } from '@/stores/useFavoriteStore'
+import { ArrowLeft, ShoppingCart, Star, Heart } from 'lucide-react'
+import { toast } from 'react-toastify'
 
 type TabType = 'description' | 'comboItems' | 'reviews'
 
@@ -20,6 +23,40 @@ export default function MenuDetail() {
   const location = useLocation()
   const isCombo = location.pathname.includes('/combo/')
   const [activeTab, setActiveTab] = useState<TabType>(isCombo ? 'comboItems' : 'reviews')
+
+  const {
+    isFavoriteItem,
+    isFavoriteCombo,
+    addFavoriteItem,
+    addFavoriteCombo,
+    removeFavoriteItem,
+    removeFavoriteCombo
+  } = useFavoriteStore()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const isFavorite = isCombo ? isFavoriteCombo(Number(id)) : isFavoriteItem(Number(id))
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để sử dụng tính năng này')
+      return
+    }
+
+    if (isFavorite) {
+      if (isCombo) {
+        await removeFavoriteCombo(Number(id))
+      } else {
+        await removeFavoriteItem(Number(id))
+      }
+    } else {
+      if (isCombo) {
+        await addFavoriteCombo(Number(id))
+      } else {
+        await addFavoriteItem(Number(id))
+      }
+    }
+  }
 
   const itemId = isCombo ? undefined : id
   const comboId = isCombo ? id : undefined
@@ -174,6 +211,17 @@ export default function MenuDetail() {
               >
                 Đặt bàn ngay
               </Link>
+              <button
+                onClick={handleToggleFavorite}
+                className={`flex items-center gap-2 rounded-lg px-5 py-2.5 font-medium transition-all duration-300 ${
+                  isFavorite
+                    ? 'bg-primary text-white'
+                    : 'border-border text-muted-foreground hover:border-primary/50 hover:text-red-500 border-2'
+                }`}
+              >
+                <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
+                {isFavorite ? 'Đã thích' : 'Yêu thích'}
+              </button>
             </div>
 
             <p className='text-muted-foreground mt-6 text-sm'>

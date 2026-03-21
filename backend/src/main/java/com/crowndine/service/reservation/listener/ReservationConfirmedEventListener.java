@@ -16,7 +16,10 @@ public class ReservationConfirmedEventListener {
 
     private final NotificationService notificationService;
 
-    @Async
+    /**
+     * Tạo notification sau khi reservation đã commit thành công.
+     */
+    @Async("notificationTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ReservationConfirmedEvent event) {
         log.info("Handling ReservationConfirmedEvent for reservation id {}", event.reservationId());

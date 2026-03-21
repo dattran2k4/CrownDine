@@ -16,7 +16,10 @@ public class VoucherGrantedEventListener {
 
     private final NotificationService notificationService;
 
-    @Async
+    /**
+     * Tạo notification sau khi gán voucher thành công.
+     */
+    @Async("notificationTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(VoucherGrantedEvent event) {
         log.info("Handling VoucherGrantedEvent for userVoucher id {}", event.userVoucherId());

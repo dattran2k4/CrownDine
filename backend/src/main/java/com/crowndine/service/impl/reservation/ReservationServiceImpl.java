@@ -13,9 +13,11 @@ import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.ReservationAvailabilityService;
 import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.ReservationService;
+import com.crowndine.service.reservation.event.ReservationConfirmedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +54,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final OrderService orderService;
     private final ReservationTimePolicy reservationTimePolicy;
     private final ReservationAvailabilityService reservationAvailabilityService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public PageResponse<ReservationResponse> getAllReservations(LocalDate fromDate, LocalDate toDate, EReservationStatus status, int page, int size) {
@@ -500,7 +503,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setStatus(EReservationStatus.CONFIRMED);
         reservation.setExpiratedAt(null);
         reservationRepository.save(reservation);
-        log.info("Reservation id {} status changed to {}", reservation.getId(), reservation.getStatus());
+        eventPublisher.publishEvent(new ReservationConfirmedEvent(reservation.getId()));
+        log.info("Reservation id {} status changed to {} and ReservationConfirmedEvent published", reservation.getId(), reservation.getStatus());
     }
 
     /**

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Moon, Sun, User, LogOut, Settings, Heart, Trash2 } from 'lucide-react'
+import { Menu, X, Moon, Sun, User, LogOut, Settings, Heart, Trash2, Bell } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useFavoriteStore } from '@/stores/useFavoriteStore'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import authApi from '@/apis/auth.api'
+import notificationApi from '@/apis/notification.api'
 import { toast } from 'react-toastify'
 import {
   DropdownMenu,
@@ -19,10 +20,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Logo } from '@/components/ui/logo'
 import { useEffect } from 'react'
+import type { NotificationItem } from '@/types/notification.type'
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
+  const queryClient = useQueryClient()
 
   const navItems = [
     { label: 'Thực Đơn', href: '#menu' },
@@ -45,6 +48,28 @@ const Header = () => {
   }, [isAuthenticated, fetchFavorites, clearFavorites])
   const navigate = useNavigate()
 
+  const { data: unreadNotificationCount } = useQuery({
+    queryKey: ['unread-notification-count', isAuthenticated],
+    queryFn: () => notificationApi.getUnreadCount(),
+    enabled: isAuthenticated,
+    select: (response) => response.data.data.unreadCount
+  })
+
+  const { data: notifications } = useQuery({
+    queryKey: ['my-notifications', isAuthenticated],
+    queryFn: () => notificationApi.getMyNotifications(1, 5),
+    enabled: isAuthenticated,
+    select: (response) => response.data.data.data
+  })
+
+  const markNotificationAsReadMutation = useMutation({
+    mutationFn: (id: number) => notificationApi.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['unread-notification-count'] })
+    }
+  })
+
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(refreshToken || ''),
     onSuccess: () => {
@@ -63,8 +88,23 @@ const Header = () => {
     logoutMutation.mutate()
   }
 
+  const handleNotificationClick = (notification: NotificationItem) => {
+    if (!notification.readAt) {
+      markNotificationAsReadMutation.mutate(notification.id)
+    }
+  }
+
+  const formatNotificationTime = (createdAt: string) => {
+    return new Date(createdAt).toLocaleString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit'
+    })
+  }
+
   return (
-    <header className='bg-background/95 supports-[backdrop-filter]:bg-background/60 border-border/50 sticky top-0 z-50 border-b backdrop-blur'>
+    <header className='bg-background/95 supports-backdrop-filter:bg-background/60 border-border/50 sticky top-0 z-50 border-b backdrop-blur'>
       <nav className='container mx-auto flex items-center justify-between px-4 py-3'>
         {/* Logo */}
         <Link to='/' className='flex items-center gap-2 transition-opacity hover:opacity-80'>
@@ -99,80 +139,148 @@ const Header = () => {
 
           {/* Favorites Dropdown */}
           {isAuthenticated && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='ghost' size='icon' className='hover:bg-accent/10 relative cursor-pointer'>
-                  <Heart className='h-5 w-5' />
-                  {favorites.length > 0 && (
-                    <span className='bg-primary absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white'>
-                      {favorites.length}
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='hover:bg-accent/10 relative cursor-pointer'
+                    aria-label='Thông báo'
+                  >
+                    <Bell className='h-5 w-5' />
+                    {(unreadNotificationCount ?? 0) > 0 && (
+                      <span className='bg-primary absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] text-white'>
+                        {unreadNotificationCount! > 99 ? '99+' : unreadNotificationCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className='border-border w-96 bg-white opacity-100 shadow-lg' align='end'>
+                  <DropdownMenuLabel className='flex items-center justify-between'>
+                    <span>Thông báo</span>
+                    <span className='text-muted-foreground text-xs font-normal'>
+                      {unreadNotificationCount ?? 0} chưa đọc
                     </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className='border-border w-80 bg-white opacity-100 shadow-lg' align='end'>
-                <DropdownMenuLabel className='flex items-center justify-between'>
-                  <span>Món ăn yêu thích</span>
-                  <span className='text-muted-foreground text-xs font-normal'>{favorites.length} món</span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className='max-h-[350px] overflow-y-auto'>
-                  {favorites.length === 0 ? (
-                    <div className='text-muted-foreground flex flex-col items-center justify-center py-8 text-sm'>
-                      <Heart className='mb-2 h-8 w-8 opacity-20' />
-                      <p>Chưa có món yêu thích nào</p>
-                    </div>
-                  ) : (
-                    favorites.map((fav) => {
-                      const item = fav.item || fav.combo
-                      if (!item) return null
-                      const isCombo = !!fav.combo
-                      const link = isCombo ? `/menu/combo/${item.id}` : `/menu/item/${item.id}`
-
-                      return (
-                        <div key={fav.id} className='hover:bg-accent/5 flex items-center gap-3 p-3 transition-colors'>
-                          <Link to={link} className='h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100'>
-                            <img src={item.imageUrl || ''} alt={item.name} className='h-full w-full object-cover' />
-                          </Link>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className='max-h-90 overflow-y-auto'>
+                    {!notifications || notifications.length === 0 ? (
+                      <div className='text-muted-foreground flex flex-col items-center justify-center py-8 text-sm'>
+                        <Bell className='mb-2 h-8 w-8 opacity-20' />
+                        <p>Chưa có thông báo nào</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <DropdownMenuItem
+                          key={notification.id}
+                          className={`focus:bg-accent/10 flex cursor-pointer items-start gap-3 p-3 ${
+                            !notification.readAt ? 'bg-primary/5' : ''
+                          }`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div
+                            className={`mt-1 h-2.5 w-2.5 rounded-full ${!notification.readAt ? 'bg-primary' : 'bg-zinc-200'}`}
+                          />
                           <div className='flex min-w-0 flex-1 flex-col'>
-                            <Link to={link} className='hover:text-primary truncate text-sm font-medium'>
-                              {item.name}
-                            </Link>
-                            <span className='text-primary text-xs font-semibold'>
-                              {item.priceAfterDiscount ? item.priceAfterDiscount.toLocaleString() : item.price?.toLocaleString()}đ
-                            </span>
+                            <div className='flex items-start justify-between gap-3'>
+                              <span className='truncate text-sm font-semibold'>{notification.title}</span>
+                              <span className='text-muted-foreground shrink-0 text-[11px]'>
+                                {formatNotificationTime(notification.createdAt)}
+                              </span>
+                            </div>
+                            <p className='text-muted-foreground mt-1 line-clamp-2 text-xs leading-5'>
+                              {notification.message}
+                            </p>
                           </div>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='h-8 w-8 text-zinc-400 hover:text-red-500'
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              if (isCombo) {
-                                removeFavoriteCombo(item.id)
-                              } else {
-                                removeFavoriteItem(item.id)
-                              }
-                            }}
-                          >
-                            <Trash2 className='h-4 w-4' />
-                          </Button>
-                        </div>
-                      )
-                    })
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='ghost' size='icon' className='hover:bg-accent/10 relative cursor-pointer'>
+                    <Heart className='h-5 w-5' />
+                    {favorites.length > 0 && (
+                      <span className='bg-primary absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white'>
+                        {favorites.length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className='border-border w-80 bg-white opacity-100 shadow-lg' align='end'>
+                  <DropdownMenuLabel className='flex items-center justify-between'>
+                    <span>Món ăn yêu thích</span>
+                    <span className='text-muted-foreground text-xs font-normal'>{favorites.length} món</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className='max-h-87.5 overflow-y-auto'>
+                    {favorites.length === 0 ? (
+                      <div className='text-muted-foreground flex flex-col items-center justify-center py-8 text-sm'>
+                        <Heart className='mb-2 h-8 w-8 opacity-20' />
+                        <p>Chưa có món yêu thích nào</p>
+                      </div>
+                    ) : (
+                      favorites.map((fav) => {
+                        const item = fav.item || fav.combo
+                        if (!item) return null
+                        const isCombo = !!fav.combo
+                        const link = isCombo ? `/menu/combo/${item.id}` : `/menu/item/${item.id}`
+
+                        return (
+                          <div key={fav.id} className='hover:bg-accent/5 flex items-center gap-3 p-3 transition-colors'>
+                            <Link to={link} className='h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100'>
+                              <img src={item.imageUrl || ''} alt={item.name} className='h-full w-full object-cover' />
+                            </Link>
+                            <div className='flex min-w-0 flex-1 flex-col'>
+                              <Link to={link} className='hover:text-primary truncate text-sm font-medium'>
+                                {item.name}
+                              </Link>
+                              <span className='text-primary text-xs font-semibold'>
+                                {item.priceAfterDiscount
+                                  ? item.priceAfterDiscount.toLocaleString()
+                                  : item.price?.toLocaleString()}
+                                đ
+                              </span>
+                            </div>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='h-8 w-8 text-zinc-400 hover:text-red-500'
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                if (isCombo) {
+                                  removeFavoriteCombo(item.id)
+                                } else {
+                                  removeFavoriteItem(item.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  {favorites.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <Link
+                        to='/profile?tab=favorites'
+                        className='text-primary block p-2 text-center text-xs font-medium hover:underline'
+                      >
+                        Xem tất cả yêu thích
+                      </Link>
+                    </>
                   )}
-                </div>
-                {favorites.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <Link to='/profile?tab=favorites' className='block p-2 text-center text-xs font-medium text-primary hover:underline'>
-                      Xem tất cả yêu thích
-                    </Link>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
 
           {/* Book Button */}

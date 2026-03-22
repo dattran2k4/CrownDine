@@ -444,6 +444,14 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
 
+    @Override
+    public List<OrderResponse> getKitchenOrders() {
+        List<EOrderStatus> activeStatuses = List.of(EOrderStatus.CONFIRMED, EOrderStatus.IN_PROGRESS);
+        List<Order> orders = orderRepository.findByStatusIn(activeStatuses);
+        log.info("Found {} active kitchen orders", orders.size());
+        return orders.stream().map(this::toResponse).toList();
+    }
+
     private void recalculateOrderPricing(Order order) {
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
         order.setTotalPrice(totalPrice);

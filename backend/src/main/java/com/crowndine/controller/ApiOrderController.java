@@ -108,4 +108,14 @@ public class ApiOrderController {
                 .message("Successfully mapped customer to order")
                 .build();
     }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @GetMapping("/kitchen")
+    public ApiResponse getKitchenOrders() {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully retrieved kitchen orders")
+                .data(orderService.getKitchenOrders())
+                .build();
+    }
 }

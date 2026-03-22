@@ -14,6 +14,7 @@ import com.crowndine.model.Reservation;
 import com.crowndine.model.User;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface OrderService {
     Order getOrderByCode(String code);
@@ -46,4 +47,6 @@ public interface OrderService {
     OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
 
     void markAsPaid(Order order);
+
+    List<OrderResponse> getKitchenOrders();
 }

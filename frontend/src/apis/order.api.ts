@@ -43,6 +43,10 @@ const orderApi = {
 
   mapCustomerToOrder(orderId: number, customerId: number) {
     return http.patch<ApiResponse<null>>(`${TABLE_URL}/${orderId}/customer/${customerId}`)
+  },
+
+  getKitchenOrders() {
+    return http.get<ApiResponse<Order[]>>(`${TABLE_URL}/kitchen`)
   }
 }
 

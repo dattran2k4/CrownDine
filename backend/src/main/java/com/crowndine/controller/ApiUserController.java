@@ -29,8 +29,8 @@ public class ApiUserController {
     public ApiResponse getListUsers() {
         return ApiResponse.builder()
                 .status(200)
-                .message("Get list users")
-                .data("This is data")
+                .message("Get list customers successfully")
+                .data(userService.getAllCustomers())
                 .build();
     }
 

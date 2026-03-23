@@ -2,7 +2,6 @@ package com.crowndine.service.impl.user;
 
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
-import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.User;
@@ -124,5 +123,25 @@ public class UserServiceImpl implements UserService {
     public User getUserByUserName(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Override
+    public java.util.List<ProfileResponse> getAllCustomers() {
+        return userRepository.findAllCustomers().stream()
+                .map(user -> ProfileResponse.builder()
+                        .id(user.getId())
+                        .gender(user.getGender())
+                        .username(user.getUsername())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .dateOfBirth(user.getDateOfBirth())
+                        .avatarUrl(user.getAvatarUrl())
+                        .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                        .createdAt(user.getCreatedAt().toLocalDate())
+                        .updatedAt(user.getUpdatedAt().toLocalDate())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 }

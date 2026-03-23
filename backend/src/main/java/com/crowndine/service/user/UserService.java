@@ -20,4 +20,6 @@ public interface UserService {
     User getUserById(Long id);
 
     User getUserByUserName(String username);
+
+    java.util.List<ProfileResponse> getAllCustomers();
 }

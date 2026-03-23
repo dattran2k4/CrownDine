@@ -429,6 +429,7 @@ public class OrderServiceImpl implements OrderService {
     private void recalculateOrderPricing(Order order) {
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
         order.setTotalPrice(totalPrice);
+        log.info("Total price for order with id {} is {}", order.getId(), totalPrice);
 
         if (order.getVoucher() == null) {
             order.setDiscountPrice(BigDecimal.ZERO);

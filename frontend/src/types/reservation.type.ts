@@ -12,17 +12,7 @@ export interface ReservationCreateRequest {
 
 export interface ReservationCreateResponse {
   reservationId: number
-  date: string
-  startTime: string
-  endTime: string
-  guestNumber: number
-  note?: string
-  code: string
-  status: string
-  depositAmount: number
-  expiratedAt: string
-  tableName: string
-  floorNumber?: number
+  reservationCode: string
 }
 
 export interface OrderLineResponse {
@@ -37,7 +27,7 @@ export interface OrderLineResponse {
 }
 
 export interface OrderDetailResponse {
-  orderId: number
+  orderId: number | null
   tableName: string
   status: string
   totalPrice: number
@@ -105,4 +95,21 @@ export interface ReservationHistoryResponse {
   items?: OrderLineResponse[]
   hasGeneralFeedback?: boolean
   hasFeedback?: boolean // Keep for backward compatibility or during migration
+}
+
+export interface StaffReservationResponse {
+  id: number
+  code: string
+  customerName: string
+  phone: string
+  email: string
+  date: string
+  startTime: string
+  endTime: string
+  guestNumber: number
+  tableName: string
+  note?: string
+  status: string
+  orderId: number | null
+  orderDetails: Array<any>
 }

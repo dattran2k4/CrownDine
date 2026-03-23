@@ -91,10 +91,12 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         if (r.getOrder() != null) {
+            resp.setOrderId(r.getOrder().getId());
             List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(r.getOrder().getId());
             List<OrderDetailResponse> odResponses = orderDetails.stream().map(this::toOrderDetailResponse).toList();
             resp.setOrderDetails(odResponses);
         } else {
+            resp.setOrderId(null);
             resp.setOrderDetails(List.of());
         }
 

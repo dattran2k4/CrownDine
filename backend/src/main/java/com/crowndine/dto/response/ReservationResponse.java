@@ -23,5 +23,6 @@ public class ReservationResponse {
     private String tableName;
     private String note;
     private EReservationStatus status;
+    private Long orderId;
     private List<OrderDetailResponse> orderDetails;
 }

@@ -36,7 +36,7 @@ public interface OrderService {
 
     void createWalkInOrder(OrderRequest request, String username);
 
-    OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request);
+    OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username);
 
     void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name);
 

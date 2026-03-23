@@ -259,10 +259,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request) {
-        log.info("Opening order for reservation {}", reservationId);
+    public OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username) {
+        log.info("Opening order for reservation {} by staff {}", reservationId, username);
 
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
         if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
             throw new InvalidDataException("Cần check-in trước khi tạo order cho đặt bàn này");
@@ -273,6 +274,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order order = createOrderForReservation(reservation, reservation.getUser(), EOrderStatus.CONFIRMED);
+        order.setStaff(staff);
         orderDetailService.createPendingOrderDetails(order, request.getItems());
         recalculateOrderPricing(order);
         reservation.setOrder(order);

@@ -3,9 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import reservationApi from '@/apis/reservation.api'
 import clsx from 'clsx'
+import { queryClient } from '@/main'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
+import type { StaffReservationResponse } from '@/types/reservation.type'
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-500/10 text-yellow-600 font-bold',
@@ -26,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const ReservationList = () => {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
@@ -35,8 +40,19 @@ const ReservationList = () => {
     select: (res) => res.data?.data?.data || []
   })
 
+  const checkInMutation = useMutation({
+    mutationFn: (reservationId: number) => reservationApi.checkInReservation(reservationId),
+    onSuccess: () => {
+      toast.success('Check in đặt bàn thành công')
+      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Không thể check in đặt bàn')
+    }
+  })
+
   // Tìm kiếm cục bộ theo mã hoặc tên
-  const filteredReservations = (data || []).filter((r: any) => {
+  const filteredReservations = (data || []).filter((r: StaffReservationResponse) => {
     const searchLower = searchTerm.toLowerCase()
     return (
       (r.code && r.code.toLowerCase().includes(searchLower)) ||
@@ -107,11 +123,50 @@ const ReservationList = () => {
             <p className="text-muted-foreground text-xl font-bold">Không tìm thấy đơn đặt bàn nào!</p>
           </div>
         )}
-        {filteredReservations.map((reservation: any) => {
+        {filteredReservations.map((reservation: StaffReservationResponse) => {
           const items = reservation.orderDetails?.filter((od: any) => od.item != null) || []
           const combos = reservation.orderDetails?.filter((od: any) => od.combo != null) || []
           const totalPreOrder = items.length + combos.length
           const isExpanded = expandedCards[reservation.id]
+          const hasOrder = reservation.orderId != null
+
+          const renderActionButton = () => {
+            if (reservation.status === 'CONFIRMED') {
+              return (
+                <button
+                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                  onClick={() => checkInMutation.mutate(reservation.id)}
+                  disabled={checkInMutation.isPending}
+                >
+                  Check in
+                </button>
+              )
+            }
+
+            if (reservation.status === 'CHECKED_IN' && hasOrder) {
+              return (
+                <button
+                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                  onClick={() => navigate('/staff/order-management', { state: { selectedOrderId: reservation.orderId } })}
+                >
+                  Xem món
+                </button>
+              )
+            }
+
+            if (reservation.status === 'CHECKED_IN' && !hasOrder) {
+              return (
+                <button
+                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                  onClick={() => navigate('/staff/order-management', { state: { reservationId: reservation.id, createFromReservation: true } })}
+                >
+                  Gọi món
+                </button>
+              )
+            }
+
+            return null
+          }
 
           return (
             <div key={reservation.id} className='bg-card border-border hover:border-primary/50 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md mb-6'>
@@ -129,9 +184,7 @@ const ReservationList = () => {
                       #{reservation.code?.substring(0, 8).toUpperCase()} • {reservation.phone || 'N/A'}
                     </div>
                   </div>
-                  <button className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors'>
-                    Gọi món
-                  </button>
+                  {renderActionButton()}
                 </div>
 
                 {/* Info Grid */}

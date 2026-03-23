@@ -2,18 +2,17 @@ package com.crowndine.controller;
 
 import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.ApiResponse;
-import com.crowndine.dto.validator.EnumValue;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.crowndine.common.enums.EReservationStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
-import java.util.Map;
 
 @RestController
 @Validated
@@ -71,6 +70,16 @@ public class ApiReservationController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/{reservationId}/check-in")
+    public ApiResponse checkInReservation(@PathVariable Long reservationId, Principal principal) {
+        reservationService.checkInReservation(reservationId, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Checked in reservation successfully")
+                .build();
+    }
+
     @PostMapping("/{reservationId}/add-item")
     public ApiResponse addOrderItem(@PathVariable Long reservationId,
                                     @Valid @RequestBody OrderItemRequest request,
@@ -102,17 +111,6 @@ public class ApiReservationController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Removed item successfully")
-                .build();
-    }
-
-    @PostMapping("/{reservationId}/add-items")
-    public ApiResponse addOrderItems(@PathVariable Long reservationId,
-                                     @Valid @RequestBody OrderItemBatchRequest request,
-                                     Principal principal) {
-        reservationService.addItemsToReservationOrder(reservationId, request, principal.getName());
-        return ApiResponse.builder()
-                .status(200)
-                .message("Deleted items successfully")
                 .build();
     }
 

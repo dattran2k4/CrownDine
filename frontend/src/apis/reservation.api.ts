@@ -3,10 +3,11 @@ import type {
   ReservationCreateRequest,
   ReservationCreateResponse,
   OrderDetailResponse,
-  OrderItemRequest,
-  OrderItemRemoveRequest,
+  StaffReservationResponse,
   ReservationUpdateTableRequest,
-  ReservationHistoryResponse
+  ReservationHistoryResponse,
+  OrderItemRequest,
+  OrderItemRemoveRequest
 } from '@/types/reservation.type'
 import http from '@/utils/http'
 
@@ -18,7 +19,7 @@ const reservationApi = {
   },
 
   getAllReservations(params: { fromDate?: string; toDate?: string; status?: string; page?: number; size?: number }) {
-    return http.get<ApiResponse<any>>(`${RESERVATION_URL}/all`, { params })
+    return http.get<ApiResponse<PageResponse<StaffReservationResponse>>>(`${RESERVATION_URL}/all`, { params })
   },
 
   createReservation(data: ReservationCreateRequest) {
@@ -43,6 +44,10 @@ const reservationApi = {
 
   removeItemFromReservation(reservationId: number, data: OrderItemRemoveRequest) {
     return http.delete<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/remove-item`, { data })
+  },
+
+  checkInReservation(reservationId: number) {
+    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/check-in`)
   },
 
   updateReservationTable(reservationId: number, data: ReservationUpdateTableRequest) {

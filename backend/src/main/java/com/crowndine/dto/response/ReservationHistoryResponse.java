@@ -8,7 +8,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -24,6 +23,4 @@ public class ReservationHistoryResponse {
     private Long orderId;
     private EOrderStatus orderStatus;
     private BigDecimal finalPrice;
-    private List<OrderLineResponse> items;
-    private boolean hasGeneralFeedback;
-}
+}

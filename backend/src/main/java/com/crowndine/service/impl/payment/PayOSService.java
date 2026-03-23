@@ -12,7 +12,6 @@ import com.crowndine.service.order.OrderService;
 import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
-import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.ReservationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,20 +32,21 @@ public class PayOSService extends AbstractPaymentStrategy {
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
-    private final OrderService orderService;
     private final ReservationService reservationService;
+    private final OrderService orderService;
 
     public PayOSService(PaymentPreparationService paymentPreparationService,
                         PayOSConfig payOSConfig,
                         PayOS payOS,
                         PaymentRepository paymentRepository,
-                        OrderService orderService, ReservationService reservationService) {
+                        ReservationService reservationService,
+                        OrderService orderService) {
         super(paymentPreparationService);
         this.payOSConfig = payOSConfig;
         this.payOS = payOS;
         this.paymentRepository = paymentRepository;
-        this.orderService = orderService;
         this.reservationService = reservationService;
+        this.orderService = orderService;
     }
 
     @Override
@@ -115,6 +115,7 @@ public class PayOSService extends AbstractPaymentStrategy {
             paymentRepository.save(payment);
 
             handlePaymentSuccess(payment);
+
             log.info("Payment id {} saved with status={}", payment.getId(), payment.getStatus());
         } catch (Exception e) {
             log.error("Error while handling PayOS webhook: {}", e.getMessage(), e);

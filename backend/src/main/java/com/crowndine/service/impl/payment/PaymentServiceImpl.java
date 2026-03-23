@@ -1,6 +1,5 @@
 package com.crowndine.service.impl.payment;
 
-import com.crowndine.exception.InvalidDataException;
 import com.crowndine.dto.request.PaymentFilterRequest;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.PaymentDetailResponse;
@@ -15,8 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -51,17 +48,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentDetailResponse getPaymentDetail(Long id) {
         Payment payment = paymentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-        return toDetailResponse(payment);
-    }
-
-    @Override
-    public PaymentDetailResponse getPaymentDetailByCode(Long code, String username) {
-        Payment payment = paymentRepository.findByCode(code).orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
-
-        if (!canAccessPayment(payment, username)) {
-            throw new InvalidDataException("Bạn không có quyền xem thanh toán này");
-        }
-
         return toDetailResponse(payment);
     }
 
@@ -101,14 +87,5 @@ public class PaymentServiceImpl implements PaymentService {
         response.setCreatedAt(payment.getCreatedAt());
         response.setUpdatedAt(payment.getUpdatedAt());
         return response;
-    }
-
-    private boolean canAccessPayment(Payment payment, String username) {
-        if (payment.getCreatedBy() != null && username.equals(payment.getCreatedBy().getUsername())) {
-            return true;
-        }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && authentication.getAuthorities().stream().anyMatch(authority -> "ADMIN".equals(authority.getAuthority()));
     }
 }

@@ -64,7 +64,7 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "verification_expiration")
     private LocalDateTime verificationExpiration;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "customer")
     private List<Reservation> reservations = new ArrayList<>();
 
     @OneToMany(mappedBy = "staff")

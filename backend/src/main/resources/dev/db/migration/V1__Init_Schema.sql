@@ -118,7 +118,6 @@ CREATE TABLE `items` (
                          `category_id` bigint DEFAULT NULL,
                          `created_at` datetime(6) DEFAULT NULL,
                          `id` bigint NOT NULL AUTO_INCREMENT,
-                         `sold_count` bigint DEFAULT NULL,
                          `updated_at` datetime(6) DEFAULT NULL,
                          `description` varchar(255) DEFAULT NULL,
                          `image_url` varchar(255) DEFAULT NULL,

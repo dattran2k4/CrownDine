@@ -88,6 +88,7 @@ const layoutApi = {
   getAvailableTables(params: {
     date: string
     startTime: string
+    endTime: string
     guestNumber: number
   }) {
     return http.get<ApiResponse<TableLayout[]>>('/restaurant-tables/available', {

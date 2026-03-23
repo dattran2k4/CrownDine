@@ -23,12 +23,6 @@ const userApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
-  },
-  getCustomerByPhone(phone: string) {
-    return http.get<ApiResponse<any>>(`users/customer/${phone}`)
-  },
-  getAvailableVouchers(customerId: number) {
-    return http.get<ApiResponse<any>>(`user-vouchers/customer/${customerId}`)
   }
 }
 

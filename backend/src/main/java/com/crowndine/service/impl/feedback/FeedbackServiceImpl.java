@@ -15,7 +15,6 @@ import com.crowndine.model.User;
 import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.repository.OrderDetailRepository;
 import com.crowndine.repository.UserRepository;
-import com.crowndine.repository.OrderRepository;
 import com.crowndine.service.feedback.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +35,6 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final OrderDetailRepository orderDetailRepository;
-    private final OrderRepository orderRepository;
 
     @Override
     @Transactional
@@ -44,52 +42,24 @@ public class FeedbackServiceImpl implements FeedbackService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Order order;
-        OrderDetail detail = null;
+        OrderDetail detail = orderDetailRepository.findById(request.getOrderDetailId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order detail not found"));
 
-        if (request.getOrderDetailId() != null) {
-            detail = orderDetailRepository.findById(request.getOrderDetailId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Order detail not found"));
-            order = detail.getOrder();
-            validateTarget(detail, request);
-        } else if (request.getOrderId() != null) {
-            order = orderRepository.findById(request.getOrderId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        } else {
-            throw new InvalidDataException("Cần cung cấp orderId hoặc orderDetailId");
-        }
+        validateTarget(detail, request);
 
+        Order order = detail.getOrder();
         if (order == null || order.getUser() == null) {
             throw new InvalidDataException("Order không hợp lệ");
         }
-        
         if (!order.getUser().getId().equals(user.getId())) {
             throw new InvalidDataException("Không có quyền feedback đơn này");
         }
 
-        // Each order can have ONE general feedback AND ONE feedback per order detail
-        if (detail == null) {
-            if (feedbackRepository.existsByUser_IdAndOrder_IdAndOrderDetailIsNull(user.getId(), order.getId())) {
-                throw new InvalidDataException("Bạn đã gửi feedback tổng quan cho đơn hàng này rồi");
-            }
-        } else {
-            if (feedbackRepository.existsByUser_IdAndOrderDetail_Id(user.getId(), detail.getId())) {
-                throw new InvalidDataException("Bạn đã gửi feedback cho món ăn này rồi");
-            }
+        if (feedbackRepository.findByUser_IdAndOrderDetail_Id(user.getId(), detail.getId()).isPresent()) {
+            throw new InvalidDataException("Bạn đã feedback món này rồi");
         }
 
-        LocalDateTime completedAt = (detail != null) ? resolveCompletedAt(detail) : 
-                                    (order.getStatus() == EOrderStatus.COMPLETED ? order.getUpdatedAt() : null);
-        
-        if (completedAt == null && order.getReservation() != null) {
-            Reservation res = order.getReservation();
-            if (res.getStatus() == EReservationStatus.COMPLETED) {
-                completedAt = res.getUpdatedAt() != null ? res.getUpdatedAt() : 
-                              (res.getDate() != null && res.getEndTime() != null ? 
-                              LocalDateTime.of(res.getDate(), res.getEndTime()) : null);
-            }
-        }
-
+        LocalDateTime completedAt = resolveCompletedAt(detail);
         if (completedAt == null) {
             throw new InvalidDataException("Chỉ được feedback sau khi ăn xong");
         }
@@ -106,13 +76,9 @@ public class FeedbackServiceImpl implements FeedbackService {
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
         feedback.setUser(user);
-        feedback.setOrder(order);
-        
-        if (detail != null) {
-            feedback.setItem(detail.getItem());
-            feedback.setCombo(detail.getCombo());
-            feedback.setOrderDetail(detail);
-        }
+        feedback.setItem(detail.getItem());
+        feedback.setCombo(detail.getCombo());
+        feedback.setOrderDetail(detail);
 
         return mapToResponse(feedbackRepository.save(feedback));
     }
@@ -152,13 +118,6 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getFeedbacksByCombo(Long comboId) {
         return feedbackRepository.findByCombo_IdOrderByCreatedAtDesc(comboId)
-                .stream().map(this::mapToResponse).toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<FeedbackResponse> getAllFeedbacks() {
-        return feedbackRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
                 .stream().map(this::mapToResponse).toList();
     }
 
@@ -207,16 +166,10 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .id(feedback.getId())
                 .rating(feedback.getRating())
                 .comment(feedback.getComment())
-                .orderId(feedback.getOrder() != null ? feedback.getOrder().getId() : null)
                 .itemId(feedback.getItem() != null ? feedback.getItem().getId() : null)
                 .comboId(feedback.getCombo() != null ? feedback.getCombo().getId() : null)
                 .orderDetailId(feedback.getOrderDetail() != null ? feedback.getOrderDetail().getId() : null)
                 .userId(feedback.getUser() != null ? feedback.getUser().getId() : null)
-                .fullName(feedback.getUser() != null ? feedback.getUser().getFullName() : (feedback.getGuestName() != null ? feedback.getGuestName() : "Người dùng ẩn danh"))
-                .avatarUrl(feedback.getUser() != null ? feedback.getUser().getAvatarUrl() : null)
-                .guestName(feedback.getGuestName())
-                .isFeatured(feedback.getIsFeatured())
-                .status(feedback.getStatus() != null ? feedback.getStatus().name() : null)
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();

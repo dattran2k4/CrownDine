@@ -5,6 +5,7 @@ import type { Table as BaseTable } from './table.type'
 export interface ReservationCreateRequest {
   date: string // YYYY-MM-DD
   startTime: string // HH:mm
+  endTime: string // HH:mm
   guestNumber: number
   tableId: number
   note?: string
@@ -27,13 +28,11 @@ export interface ReservationCreateResponse {
 
 export interface OrderLineResponse {
   orderDetailId: number
-  productId: number
   name: string
   type: 'ITEM' | 'COMBO'
   quantity: number
   unitPrice: number
   totalPrice: number
-  hasFeedback?: boolean
 }
 
 export interface OrderDetailResponse {
@@ -90,19 +89,3 @@ export type PreOrderCombo = ComboIdentity & {
 export type PreOrderEntry = PreOrderItem | PreOrderCombo
 
 export type PreOrderCartItem = PreOrderEntry & { quantity: number }
-
-export interface ReservationHistoryResponse {
-  reservationId?: number
-  date: string
-  startTime: string
-  endTime: string
-  guestNumber: number
-  reservationStatus: string
-  tableName: string
-  orderId?: number
-  orderStatus?: string
-  finalPrice?: number
-  items?: OrderLineResponse[]
-  hasGeneralFeedback?: boolean
-  hasFeedback?: boolean // Keep for backward compatibility or during migration
-}

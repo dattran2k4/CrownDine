@@ -10,7 +10,6 @@ import com.crowndine.model.Item;
 import com.crowndine.repository.CategoryRepository;
 import com.crowndine.repository.ComboItemRepository;
 import com.crowndine.repository.ItemRepository;
-import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.service.item.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,6 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
     private final ComboItemRepository comboItemRepository;
-    private final FeedbackRepository feedbackRepository;
 
     @Override
     public List<ItemResponse> getAlItems() {
@@ -52,8 +50,6 @@ public class ItemServiceImpl implements ItemService {
                 .priceAfterDiscount(item.getPriceAfterDiscount())
                 .status(item.getStatus())
                 .categoryId(categoryId)
-                .averageRating(feedbackRepository.getAverageRatingByItemId(item.getId()))
-                .feedbackCount((int) feedbackRepository.countByItem_Id(item.getId()))
                 .build();
     }
 

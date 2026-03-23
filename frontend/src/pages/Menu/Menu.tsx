@@ -177,7 +177,6 @@ export default function Menu() {
                 <ItemCard
                   key={key}
                   item={item}
-                  isCombo={key.startsWith('combo')}
                   onViewDetails={(i) => handleViewDetails(i, key.startsWith('combo') ? 'combo' : 'item')}
                 />
               ))}

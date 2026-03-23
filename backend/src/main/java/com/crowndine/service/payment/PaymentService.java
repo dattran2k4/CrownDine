@@ -10,6 +10,4 @@ public interface PaymentService {
     PageResponse<PaymentSummaryResponse> getPayments(PaymentFilterRequest request, int page, int size);
 
     PaymentDetailResponse getPaymentDetail(Long id);
-
-    PaymentDetailResponse getPaymentDetailByCode(Long code, String username);
 }

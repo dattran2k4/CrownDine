@@ -24,12 +24,6 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "end_time")
     private LocalTime endTime;
 
-    @Column(name = "checked_out_at")
-    private LocalDateTime checkedOutAt;
-
-    @Column(name = "reminder_sent_at")
-    private LocalDateTime reminderSentAt;
-
     @Column(name = "date")
     private LocalDate date;
 
@@ -51,7 +45,7 @@ public class Reservation extends AbstractEntity<Long> {
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    private User user;
+    private User customer;
 
     @ManyToOne
     @JoinColumn(name = "restaurant_table_id")

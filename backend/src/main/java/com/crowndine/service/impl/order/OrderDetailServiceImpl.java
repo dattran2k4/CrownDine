@@ -38,14 +38,14 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createPendingOrderDetails(Order order, List<OrderItemRequest> request) {
+    public void addOrderDetailsForOrder(Order order, List<OrderItemRequest> request) {
         log.info("Processing {} items for order {}", request.size(), order.getId());
 
-        List<OrderDetail> newOrderDetails = new ArrayList<>();
+        List<OrderDetail> orderDetails = new ArrayList<>();
 
         request.forEach(item -> {
             OrderDetail orderDetailItem = new OrderDetail();
-            order.addOrderDetail(orderDetailItem);
+            orderDetailItem.setOrder(order);
             if (item.getItemId() != null) {
                 orderDetailItem.setItem(itemRepository.findById(item.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item Not Found")));
             }
@@ -57,12 +57,11 @@ public class OrderDetailServiceImpl implements OrderDetailService {
             orderDetailItem.setNote(item.getNote());
             orderDetailItem.setStatus(EOrderDetailStatus.PENDING);
             orderDetailItem.calculateAndSetTotalPrice();
-            order.addOrderDetail(orderDetailItem);
-            newOrderDetails.add(orderDetailItem);
+            orderDetails.add(orderDetailItem);
             log.info("Added order detail for order {}", order.getId());
         });
 
-        orderDetailRepository.saveAll(newOrderDetails);
+        orderDetailRepository.saveAll(orderDetails);
 
         log.info("Added successfully order detail for order {}", order.getId());
     }
@@ -74,15 +73,8 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         Order order = orderDetail.getOrder();
 
-        if (order.getStatus().equals(EOrderStatus.COMPLETED) ||
-                order.getStatus().equals(EOrderStatus.CANCELLED)) {
-            throw new InvalidDataException("Đơn hàng đã kết thúc, không thể chỉnh sửa.");
-        }
-
-
-        if (orderDetail.getStatus().equals(EOrderDetailStatus.COOKING) ||
-                orderDetail.getStatus().equals(EOrderDetailStatus.SERVED)) {
-            throw new InvalidDataException("Món ăn đã được chế biến hoặc phục vụ, không thể thay đổi số lượng.");
+        if (order.getStatus().equals(EOrderStatus.COMPLETED) || order.getStatus().equals(EOrderStatus.CANCELLED)) {
+            throw new InvalidDataException("Không thể cập nhật món cho hóa đơn đã đóng.");
         }
 
         BigDecimal oldOrderDetailTotalPrice = orderDetail.getTotalPrice();
@@ -106,20 +98,10 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteOrderDetail(Long id) {
-        OrderDetail detail = findById(id);
-        Order order = detail.getOrder();
+        orderDetailRepository.delete(findById(id));
 
-        if (detail.getStatus().equals(EOrderDetailStatus.COOKING) ||
-            detail.getStatus().equals(EOrderDetailStatus.SERVED) ||
-            detail.getStatus().equals(EOrderDetailStatus.CANCELLED)) {
-            throw new InvalidDataException("Không thể xóa món khi đơn hàng đang ở trạng thái này.");
-        }
-
-        order.getOrderDetails().remove(detail);
-        orderDetailRepository.delete(detail);
-        
+        Order order = findById(id).getOrder();
         order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
-        order.setFinalPrice(order.getTotalPrice());
         log.info("Deleted successfully order detail id {}", id);
     }
 
@@ -133,7 +115,6 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         return UpdateStatusOrderDetailResponse.builder().id(id).status(status).build();
     }
-
 
     private OrderDetail findById(Long id) {
         return orderDetailRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn trong đơn hàng"));

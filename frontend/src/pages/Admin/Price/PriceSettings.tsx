@@ -154,6 +154,10 @@ export default function PriceSettings() {
               : 'Bảng giá chung'}
           </h1>
           <div className='flex items-center gap-2'>
+            <Button size='sm' className='bg-green-600 border-none text-white hover:bg-green-700 gap-2'>
+              <FileText className='h-4 w-4' />
+              Xuất file
+            </Button>
           </div>
         </div>
 

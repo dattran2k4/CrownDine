@@ -5,7 +5,6 @@ import type { Table as BaseTable } from './table.type'
 export interface ReservationCreateRequest {
   date: string // YYYY-MM-DD
   startTime: string // HH:mm
-  endTime: string // HH:mm
   guestNumber: number
   tableId: number
   note?: string
@@ -15,7 +14,6 @@ export interface ReservationCreateResponse {
   reservationId: number
   date: string
   startTime: string
-  endTime: string
   guestNumber: number
   note?: string
   code: string

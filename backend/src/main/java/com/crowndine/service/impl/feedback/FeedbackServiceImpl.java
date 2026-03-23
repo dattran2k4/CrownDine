@@ -153,8 +153,8 @@ public class FeedbackServiceImpl implements FeedbackService {
             if (reservation.getUpdatedAt() != null) {
                 return reservation.getUpdatedAt();
             }
-            if (reservation.getDate() != null && reservation.getEndTime() != null) {
-                return LocalDateTime.of(reservation.getDate(), reservation.getEndTime());
+            if (reservation.getDate() != null && reservation.getStartTime() != null) {
+                return LocalDateTime.of(reservation.getDate(), reservation.getStartTime());
             }
         }
 

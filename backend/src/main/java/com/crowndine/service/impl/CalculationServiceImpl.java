@@ -28,17 +28,11 @@ public class CalculationServiceImpl implements CalculationService {
     }
 
     @Override
-    public BigDecimal calculateTableDeposit(BigDecimal baseDeposit, LocalTime start, LocalTime end) {
-        if (start == null || end == null) {
+    public BigDecimal calculateTableDeposit(BigDecimal baseDeposit) {
+        if (baseDeposit == null) {
             return BigDecimal.ZERO;
         }
-        baseDeposit = (baseDeposit != null) ? baseDeposit : BigDecimal.ZERO;
-        long minutes = java.time.Duration.between(start, end).toMinutes();
-        if (minutes <= 0) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        return baseDeposit.multiply(hours).setScale(2, RoundingMode.HALF_UP);
+        return baseDeposit.setScale(2, RoundingMode.HALF_UP);
     }
 
     @Override

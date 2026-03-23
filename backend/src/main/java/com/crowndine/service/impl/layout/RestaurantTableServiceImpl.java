@@ -79,10 +79,9 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
     }
 
     @Override
-    public List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber) {
+    public List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, Integer guestNumber) {
         LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
-        LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
-        validateReservationTime(startDateTime, endDateTime);
+        validateReservationTime(startDateTime);
 
         List<RestaurantTable> candidates = tableRepository.findByCapacityGreaterThanEqualAndStatusOrderByCapacityAsc(guestNumber, ETableStatus.AVAILABLE);
 
@@ -93,7 +92,12 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         List<EReservationStatus> blockingStatuses = List.of(EReservationStatus.PENDING, EReservationStatus.CONFIRMED, EReservationStatus.CHECKED_IN);
 
         LocalDateTime now = LocalDateTime.now();
-        List<Long> reservedIds = reservationRepository.findReservedTableIds(date, startTime, endTime, blockingStatuses, now);
+        List<Long> reservedIds = reservationRepository.findReservedTableIds(
+                date,
+                startTime,
+                blockingStatuses,
+                now
+        );
 
         Set<Long> reservedSet = new HashSet<>(reservedIds);
 
@@ -126,7 +130,17 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         return response;
     }
 
-    private void validateReservationTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+    private void validateReservationTime(LocalDateTime startDateTime) {
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new com.crowndine.exception.InvalidDataException("Ngày giờ bắt đầu phải sau hiện tại");
+        }
+
+        LocalTime startTime = startDateTime.toLocalTime();
+        LocalTime openTime = LocalTime.of(9, 0);
+        LocalTime closeTime = LocalTime.of(22, 0);
+        if (startTime.isBefore(openTime) || startTime.isAfter(closeTime)) {
+            throw new com.crowndine.exception.InvalidDataException("Nhà hàng chỉ mở cửa từ 09:00 đến 22:00");
+        }
     }
 
     private TableLayoutResponse map(RestaurantTable table) {

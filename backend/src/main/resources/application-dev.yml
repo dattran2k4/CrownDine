@@ -21,7 +21,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -66,10 +66,8 @@ openapi:
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
-  # 15 phút
-  access-key-expiration: 900000
-  # 7 ngày
-  refresh-key-expiration: 604800000
+  access-key-expiration: 600000
+  refresh-key-expiration: 100000000
 
 logging:
   level:
@@ -81,7 +79,7 @@ cloudinary:
   api_key: 654243287352318
   api_secret: IJAoDwzp8EaLRI7KJKYwYHqXqbo
 
-#PayOS
+#PayOSx
 payos:
   client-id: 02745e9c-7c5a-4a1e-81d0-bb50281bec1f
   api-key: a189d0aa-4443-4b62-b1ff-ae64b057a0eb
@@ -90,3 +88,14 @@ payos:
   cancel-url: http://localhost:5173/thanh-toan/that-bai
 
 
+#Gemini AI
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS:AIzaSyCAL3kehGqWSkIx-JaNRv9X_58qsNql8JE,AIzaSyDEbJ5pomuZN8N-DZ1upB14XC4In-RERds,AIzaSyBux-QgHbKe7_qIZGmdduHOOOjgsn91K1Y,AIzaSyAacDMqzyEYlAGTI6SwPOyT-ZBcbfiWl3w}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
+  model: models/gemini-2.0-flash-001
+
+#OpenRouter
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY: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}

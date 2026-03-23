@@ -31,26 +31,6 @@ export default function Reservation() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
 
   const [startTime, setStartTime] = useState('18:00')
-  const [endTime, setEndTime] = useState('20:00') // 2 tiếng sau startTime mặc định
-
-  // Tính duration từ startTime và endTime
-  const duration = useMemo(() => calculateDuration(startTime, endTime), [startTime, endTime])
-
-  // Reset endTime khi startTime thay đổi nếu endTime hiện tại không hợp lệ
-  useEffect(() => {
-    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-    const defaultEndTime = addMinutesToTime(startTime, 120) // 2 giờ mặc định
-
-    // Reset nếu endTime không hợp lệ (nhỏ hơn hoặc bằng startTime, hoặc vượt quá giờ đóng cửa)
-    if (endTime <= startTime || endTime > closingTimeStr) {
-      // Đảm bảo defaultEndTime không vượt quá giờ đóng cửa
-      const validEndTime = defaultEndTime > closingTimeStr ? closingTimeStr : defaultEndTime
-      if (validEndTime !== endTime) {
-        setEndTime(validEndTime)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startTime])
 
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
 
@@ -138,21 +118,34 @@ export default function Reservation() {
     const tableName = searchParams.get('tableName')
     const targetDate = searchParams.get('date')
     const targetStartTime = searchParams.get('startTime')
-    const targetEndTime = searchParams.get('endTime')
     const targetGuests = searchParams.get('guests')
 
     // Create a unique key for these params
-    const paramsKey = `${targetStep}-${tableName}-${targetDate}-${targetStartTime}-${targetEndTime}-${targetGuests}`
+    const paramsKey = `${targetStep}-${tableName}-${targetDate}-${targetStartTime}-${targetGuests}`
 
     // If we have chatbot parameters and haven't processed them yet, auto-fill form and navigate
-    if (targetStep && (targetStep === '3' || targetStep === '4') && tableName && targetDate && targetStartTime && targetEndTime && targetGuests && processedParamsRef.current !== paramsKey) {
+    // QUAN TRỌNG: Validate tất cả thông tin trước khi xử lý
+    const hasValidParams = 
+      targetStep && 
+      (targetStep === '3' || targetStep === '4') && 
+      tableName && 
+      tableName.trim().length > 0 &&
+      targetDate && 
+      targetDate.match(/^\d{4}-\d{2}-\d{2}$/) && // Validate date format
+      targetStartTime && 
+      targetStartTime.match(/^\d{2}:\d{2}$/) && // Validate time format
+      targetGuests && 
+      !isNaN(parseInt(targetGuests)) &&
+      parseInt(targetGuests) > 0 &&
+      processedParamsRef.current !== paramsKey
+    
+    if (hasValidParams) {
       processedParamsRef.current = paramsKey
       setIsProcessingChatbotParams(true)
       
       // Set form values first
       setDate(targetDate)
       setStartTime(targetStartTime)
-      setEndTime(targetEndTime)
       setGuests(parseInt(targetGuests))
 
       // Find and select table by name
@@ -162,7 +155,6 @@ export default function Reservation() {
           const res = await layoutApi.getAvailableTables({
             date: targetDate,
             startTime: targetStartTime,
-            endTime: targetEndTime,
             guestNumber: parseInt(targetGuests)
           })
 
@@ -245,14 +237,12 @@ export default function Reservation() {
               tableId: foundTable.id,
               date: targetDate,
               startTime: targetStartTime,
-              endTime: targetEndTime,
               guests: targetGuests
             })
             try {
               const reservationRes = await reservationApi.createReservation({
                 date: targetDate,
                 startTime: targetStartTime,
-                endTime: targetEndTime,
                 guestNumber: parseInt(targetGuests),
                 tableId: foundTable.id,
                 note: ''
@@ -265,7 +255,7 @@ export default function Reservation() {
 
                 // Show success message
                 toast.success('Đặt bàn thành công!', {
-                  description: `Bàn ${foundTable.name} đã được đặt cho ${targetGuests} khách vào ${targetDate} từ ${targetStartTime} đến ${targetEndTime}`
+                  description: `Bàn ${foundTable.name} đã được đặt cho ${targetGuests} khách vào ${targetDate} lúc ${targetStartTime}`
                 })
 
                 // Navigate to target step
@@ -394,7 +384,6 @@ export default function Reservation() {
             const response = await reservationApi.createReservation({
               date,
               startTime,
-              endTime,
               guestNumber: guests,
               tableId: parseInt(table.id),
               note: '' // Temporary reservation để lock bàn
@@ -458,42 +447,17 @@ export default function Reservation() {
   }
 
   const handleNext = async () => {
-    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-
     // Step 1: Validation và chuyển sang Step 2
     if (currentStep === 1) {
       // Kiểm tra đã chọn startTime
       if (!startTime) {
-        alert('Vui lòng chọn giờ bắt đầu!')
-        return
-      }
-
-      // Kiểm tra đã chọn endTime
-      if (!endTime) {
-        alert('Vui lòng chọn thời gian kết thúc!')
-        return
-      }
-
-      // Kiểm tra startTime < endTime
-      if (startTime >= endTime) {
-        alert('Thời gian kết thúc phải sau thời gian bắt đầu!')
+        alert('Vui lòng chọn giờ đến!')
         return
       }
 
       // Kiểm tra thời gian không trong quá khứ
       if (isDateTimeInPast(date, startTime)) {
-        alert('Thời gian bắt đầu không được trong quá khứ!')
-        return
-      }
-
-      if (isDateTimeInPast(date, endTime)) {
-        alert('Thời gian kết thúc không được trong quá khứ!')
-        return
-      }
-
-      // Kiểm tra endTime không vượt quá giờ đóng cửa
-      if (endTime > closingTimeStr) {
-        alert(`Thời gian kết thúc không được vượt quá giờ đóng cửa (${closingTimeStr})!`)
+        alert('Thời gian đến không được trong quá khứ!')
         return
       }
 
@@ -531,7 +495,6 @@ export default function Reservation() {
         const response = await reservationApi.createReservation({
           date,
           startTime,
-          endTime,
           guestNumber: guests,
           tableId: parseInt(firstTable.id),
           note: ''
@@ -663,9 +626,6 @@ export default function Reservation() {
               setDate={setDate}
               startTime={startTime}
               setStartTime={setStartTime}
-              endTime={endTime}
-              setEndTime={setEndTime}
-              duration={duration}
               timeSlots={timeSlots}
             />
           )}
@@ -676,7 +636,6 @@ export default function Reservation() {
               guests={guests}
               date={date}
               startTime={startTime}
-              endTime={endTime}
               isPaid={isPaid}
             />
           )}
@@ -691,7 +650,7 @@ export default function Reservation() {
           {currentStep === 4 && (
             <Step4Payment
               user={authUser}
-              bookingData={{ date, startTime, endTime, duration, guests, selectedTable }}
+              bookingData={{ date, startTime, guests, selectedTable }}
               cartItems={cartItems}
               onPay={handlePayment}
               onCancel={handleCancel}

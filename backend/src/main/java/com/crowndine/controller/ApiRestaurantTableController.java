@@ -24,14 +24,13 @@ public class ApiRestaurantTableController {
     @GetMapping("/available")
     public ApiResponse getAvailableTablesForReservation(@RequestParam LocalDate date,
                                                         @RequestParam LocalTime startTime,
-                                                        @RequestParam LocalTime endTime,
                                                         @Min(1) @RequestParam Integer guestNumber) {
         log.info("Get available tables for guest number: {}", guestNumber);
 
         return ApiResponse.builder()
                 .status(200)
                 .message("Get available tables successfully")
-                .data(restaurantTableService.getAvailableTablesForReservation(date, startTime, endTime, guestNumber))
+                .data(restaurantTableService.getAvailableTablesForReservation(date, startTime, guestNumber))
                 .build();
     }
 

@@ -18,20 +18,18 @@ import java.util.Optional;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     Page<Reservation> findByCustomer_Id(Long customerId, Pageable pageable);
 
-    @Query("""
-            select r.table.id
-            from Reservation r
-            where r.table is not null
+    @Query(value = """
+            select r.restaurant_table_id
+            from reservations r
+            where r.restaurant_table_id is not null
               and r.date = :date
-              and r.status in :statuses
-              and r.startTime < :endTime
-              and r.endTime > :startTime
-              and (r.status <> 'PENDING' or (r.expiratedAt is not null and r.expiratedAt > :now))
-            """)
+              and r.status in (:statuses)
+              and abs(timestampdiff(minute, r.start_time, :requestStartTime)) < 240
+              and (r.status <> 'PENDING' or (r.expirated_at is not null and r.expirated_at > :now))
+            """, nativeQuery = true)
     List<Long> findReservedTableIds(
             LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
+            LocalTime requestStartTime,
             List<EReservationStatus> statuses,
             LocalDateTime now
     );

@@ -26,6 +26,8 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     List<Order> findAllByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    List<Order> findByStatusIn(List<EOrderStatus> statuses);
+
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId")
     Page<Order> findByUser_Id(@org.springframework.data.repository.query.Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
 

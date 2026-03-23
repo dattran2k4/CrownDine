@@ -26,22 +26,22 @@ const Hero = () => {
 
             {/* Heading */}
             <h1 className='text-foreground mb-4 text-5xl leading-tight font-bold lg:text-6xl'>
-              Trải Nghiệm
+              EXPERIENCE
               <br />
-              <span className='text-primary'>Nghệ Thuật Ẩm Thực</span>
+              <span className='text-primary'>CULINARY ART</span>
             </h1>
 
             {/* Description */}
             <p className='text-foreground/70 mb-8 max-w-lg text-lg leading-relaxed'>
-              Khám phá những hương vị tinh tế được chế biến với tình yêu. Nguyên liệu tươi ngon, công thức truyền thống,
-              và trải nghiệm ẩm thực không thể quên đang chờ đợi bạn.
+              Discover the finest flavors crafted with passion. Fresh ingredients, timeless recipes, and an
+              unforgettable dining experience await you.
             </p>
 
             {/* Buttons */}
             <div className='mb-12 flex flex-col gap-4 sm:flex-row'>
               <a href='#reservation'>
                 <Button className='bg-primary hover:bg-primary/90 btn-lift border-primary rounded-full border-2 px-8 py-6 text-base font-semibold text-white'>
-                  Đặt Bàn
+                  Reserve a Table
                 </Button>
               </a>
               <a href='#menu'>
@@ -49,7 +49,7 @@ const Hero = () => {
                   variant='outline'
                   className='btn-lift border-foreground/20 hover:border-primary hover:bg-primary/5 rounded-full border-2 bg-transparent px-8 py-6 text-base font-semibold'
                 >
-                  Xem Thực Đơn
+                  View Menu
                 </Button>
               </a>
             </div>
@@ -60,8 +60,8 @@ const Hero = () => {
               <div className='flex items-start gap-3'>
                 <Clock className='text-primary mt-1 h-6 w-6 flex-shrink-0' />
                 <div>
-                  <p className='text-foreground/60 text-sm'>Mở cửa hàng ngày</p>
-                  <p className='text-foreground font-semibold'>9AM - 10PM</p>
+                  <p className='text-foreground/60 text-sm'>Open Daily</p>
+                  <p className='text-foreground font-semibold'>11AM - 11PM</p>
                 </div>
               </div>
 
@@ -69,8 +69,8 @@ const Hero = () => {
               <div className='flex items-start gap-3'>
                 <MapPin className='text-primary mt-1 h-6 w-6 flex-shrink-0' />
                 <div>
-                  <p className='text-foreground/60 text-sm'>Địa chỉ</p>
-                  <p className='text-foreground font-semibold'>123 Gourmet Street, Da Nang</p>
+                  <p className='text-foreground/60 text-sm'>Address</p>
+                  <p className='text-foreground font-semibold'>123 Gourmet Street, NYC</p>
                 </div>
               </div>
             </div>
@@ -109,7 +109,7 @@ const Hero = () => {
             {/* Badge Overlay */}
             <div className='bg-primary absolute right-4 bottom-4 z-20 rounded-lg px-6 py-3 font-bold text-white'>
               <div className='text-xl'>15+</div>
-              <div className='text-xs tracking-wide uppercase'>Nhiều năm xuất sắc</div>
+              <div className='text-xs tracking-wide uppercase'>Years of Excellence</div>
             </div>
           </div>
         </div>

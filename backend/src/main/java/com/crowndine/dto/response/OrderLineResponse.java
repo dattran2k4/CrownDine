@@ -9,11 +9,9 @@ import java.math.BigDecimal;
 @Setter
 public class OrderLineResponse {
     private Long orderDetailId;
-    private Long productId;
     private String name;
     private String type; // "ITEM" hoặc "COMBO"
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
-    private boolean hasFeedback;
 }

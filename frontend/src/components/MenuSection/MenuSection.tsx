@@ -77,18 +77,16 @@ const MenuSection = () => {
   return (
     <section id='menu' className='min-h-screen w-full bg-transparent px-4 py-16 md:px-8'>
       <div className='mx-auto max-w-7xl'>
-        <p className='text-primary mb-2 text-center text-sm font-bold tracking-widest uppercase'>
-          • Thực Đơn của chúng tôi
-        </p>
+        <p className='text-primary mb-2 text-center text-sm font-bold tracking-widest uppercase'>• Our Menu</p>
         {/* --- Header --- */}
         <div className='mb-12 space-y-4 text-center'>
           <h2 className='text-foreground text-4xl font-bold tracking-tight md:text-5xl'>
-            Nguyên liệu theo mùa, <br />
-            <span className='text-primary'>Kỹ thuật vượt thời gian</span>
+            Seasonal Ingredients, <br />
+            <span className='text-primary'>Timeless Techniques</span>
           </h2>
           <p className='text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed'>
-            Khám phá những hương vị tinh tế được chế biến với tình yêu. Nguyên liệu tươi ngon, công thức truyền thống,
-            và trải nghiệm ẩm thực không thể quên đang chờ đợi bạn.
+            Discover the finest flavors crafted with passion. Fresh ingredients, timeless recipes, and an unforgettable
+            dining experience.
           </p>
         </div>
 
@@ -118,7 +116,6 @@ const MenuSection = () => {
             <ItemCard
               key={key}
               item={item}
-              isCombo={key.startsWith('combo')}
               onViewDetails={(i) => handleViewDetails(i, key.startsWith('combo') ? 'combo' : 'item')}
             />
           ))}
@@ -132,7 +129,7 @@ const MenuSection = () => {
               variant='outline'
               className='border-primary text-primary hover:bg-primary hover:text-primary-foreground btn-lift cursor-pointer rounded-full border-2 bg-transparent px-8 py-6 text-lg font-semibold transition-all duration-300'
             >
-              Toàn bộ thực đơn →
+              View Full Menu →
             </Button>
           </a>
         </div>

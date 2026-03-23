@@ -13,8 +13,6 @@ public interface UserService {
 
     ProfileResponse getProfile(String name);
 
-    ProfileResponse getProfileByPhone(String phone);
-
     void updateProfile(UpdateProfileRequest request, String name);
 
     User getUserById(Long id);

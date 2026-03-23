@@ -14,5 +14,4 @@ public interface FeedbackService {
     List<FeedbackResponse> getFeedbacksByItem(Long itemId);
 
     List<FeedbackResponse> getFeedbacksByCombo(Long comboId);
-    List<FeedbackResponse> getAllFeedbacks();
 }

@@ -17,9 +17,16 @@ interface AuthState {
 
 const extractRolesFromAccessToken = (accessToken: string): string[] => {
   try {
-    const decoded = jwtDecode<{ role?: string[] }>(accessToken)
-    if (decoded.role && Array.isArray(decoded.role)) {
-      return decoded.role
+    const decoded = jwtDecode<{ authorities?: string[]; role?: string[] }>(accessToken)
+    if (decoded.authorities && Array.isArray(decoded.authorities)) {
+      return decoded.authorities
+    }
+    if (decoded.role && Array.isArray(decoded.role) && decoded.role.length > 0) {
+      const roleStr = String(decoded.role[0])
+      const extractedRoles: string[] = []
+      if (roleStr.includes('ADMIN')) extractedRoles.push('ADMIN')
+      if (roleStr.includes('STAFF')) extractedRoles.push('STAFF')
+      return extractedRoles
     }
   } catch {
     return []

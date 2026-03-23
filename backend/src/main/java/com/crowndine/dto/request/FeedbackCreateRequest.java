@@ -20,7 +20,6 @@ public class FeedbackCreateRequest {
     private Long itemId;
     private Long comboId;
 
-    private Long orderId;
-
+    @NotNull(message = "OrderDetailId không được để trống")
     private Long orderDetailId;
 }

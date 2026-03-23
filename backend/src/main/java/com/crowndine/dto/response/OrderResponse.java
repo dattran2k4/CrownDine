@@ -19,10 +19,6 @@ public class OrderResponse {
 
     private BigDecimal totalPrice;
 
-    private BigDecimal discountPrice;
-
-    private BigDecimal finalPrice;
-
     private EOrderStatus status;
 
     private String code;
@@ -36,14 +32,4 @@ public class OrderResponse {
     private LocalDateTime updatedAt;
 
     private List<OrderDetailResponse> orderDetails = new ArrayList<>();
-
-    private VoucherSlimResponse voucher;
-
-    @Getter
-    @Setter
-    public static class VoucherSlimResponse {
-        private Long id;
-        private String code;
-        private String name;
-    }
 }

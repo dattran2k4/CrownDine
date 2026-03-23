@@ -1,46 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
-import { mockCurrentUser } from '@/lib/mock-user'
+import { mockCurrentUser, mockReservations } from '@/lib/mock-user'
 import ProfileSidebar from '@/components/Profile/sidebar'
 import ProfileInfo from '@/components/Profile/profile-info'
 import ReservationHistory from '@/components/Profile/reservation-history'
-import MyVouchers from '@/components/Profile/my-vouchers'
-import ProfileFavorites from '@/components/Profile/ProfileFavorites'
 import SecuritySettings from '@/components/Profile/security-setting'
-import userVoucherApi from '@/apis/userVoucher.api'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { User } from '@/types/profile.type'
-import { useQuery } from '@tanstack/react-query'
-import reservationApi from '@/apis/reservation.api'
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('info')
   const authUser = useAuthStore((state) => state.user)
-
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const tabFromUrl = params.get('tab')
-    const validTabs = ['info', 'reservations', 'favorites', 'vouchers', 'security']
-    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
-      setActiveTab(tabFromUrl)
-    }
-  }, [])
-
-  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ['reservation-history'],
-    queryFn: () => reservationApi.getReservationHistory({ page: 0, size: 100 }),
-    enabled: activeTab === 'reservations'
-  })
-
-  const { data: vouchersData, isLoading: isVouchersLoading } = useQuery({
-    queryKey: ['my-vouchers'],
-    queryFn: () => userVoucherApi.getMyVouchers(),
-    enabled: activeTab === 'vouchers'
-  })
-
-  const reservations = historyData?.data?.data?.data || []
-  const vouchers = vouchersData?.data?.data || []
 
   // Use local state, initialize with authUser, but also update if authUser changes
   const [user, setUser] = useState<User>((authUser as any) || mockCurrentUser)
@@ -75,15 +46,7 @@ const Profile = () => {
           <div className='md:col-span-3'>
             {activeTab === 'info' && <ProfileInfo user={user} onSave={handleSaveProfile} />}
 
-            {activeTab === 'reservations' && (
-              <ReservationHistory reservations={reservations as any} isLoading={isHistoryLoading} />
-            )}
-
-            {activeTab === 'favorites' && <ProfileFavorites />}
-
-            {activeTab === 'vouchers' && (
-              <MyVouchers vouchers={vouchers} isLoading={isVouchersLoading} />
-            )}
+            {activeTab === 'reservations' && <ReservationHistory reservations={mockReservations} />}
 
             {activeTab === 'security' && <SecuritySettings />}
           </div>

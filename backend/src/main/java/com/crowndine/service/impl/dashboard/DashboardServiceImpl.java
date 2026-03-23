@@ -212,40 +212,26 @@ public class DashboardServiceImpl implements DashboardService {
                                 start,
                                 end);
                 Map<String, BigDecimal> productRevenue = new HashMap<>();
-                Map<String, Long> productQuantity = new HashMap<>();
 
                 for (Order order : completedOrders) {
                         for (OrderDetail detail : order.getOrderDetails()) {
                                 String name = detail.getProductName();
                                 BigDecimal revenue = detail.getTotalPrice();
-                                Integer quantity = detail.getQuantity();
-
                                 if (revenue != null) {
                                         productRevenue.put(name, productRevenue.getOrDefault(name, BigDecimal.ZERO)
                                                         .add(revenue));
                                 }
-                                if (quantity != null) {
-                                        productQuantity.put(name, productQuantity.getOrDefault(name, 0L) + quantity);
-                                }
                         }
                 }
 
-                List<ChartDataResponse> topProductsRevenue = productRevenue.entrySet().stream()
+                List<ChartDataResponse> topProducts = productRevenue.entrySet().stream()
                                 .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
                                 .limit(10)
                                 .map(entry -> new ChartDataResponse(entry.getKey(),
                                                 entry.getValue().doubleValue() / 1000000.0))
                                 .collect(Collectors.toList());
 
-                List<ChartDataResponse> topProductsQuantity = productQuantity.entrySet().stream()
-                                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                                .limit(10)
-                                .map(entry -> new ChartDataResponse(entry.getKey(),
-                                                entry.getValue().doubleValue()))
-                                .collect(Collectors.toList());
-
-                response.setTopProducts(topProductsRevenue);
-                response.setTopProductsQuantity(topProductsQuantity);
+                response.setTopProducts(topProducts);
         }
 
         private double calculateGrowth(long current, long previous) {

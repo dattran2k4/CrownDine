@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableAsync
 @EnableScheduling
+@EnableAsync
 public class CrownDineApplication {
 
     public static void main(String[] args) {

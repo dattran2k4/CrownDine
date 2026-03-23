@@ -13,10 +13,11 @@ interface Props {
   guests: number
   date: string
   startTime: string
+  endTime: string
   isPaid?: boolean // Nếu đã thanh toán, không cho chọn bàn mới
 }
 
-const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, isPaid = false }: Props) => {
+const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, endTime, isPaid = false }: Props) => {
   const [floors, setFloors] = useState<{ id: number; name: string }[]>([])
   const [activeFloorId, setActiveFloorId] = useState<number | null>(null)
   const [activeAreaId, setActiveAreaId] = useState<number | null>(null)
@@ -61,13 +62,14 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
 
   // 3. Fetch available tables for the selected time slot
   useEffect(() => {
-    if (!date || !startTime) return
+    if (!date || !startTime || !endTime) return
 
     const fetchAvailableTables = async () => {
       try {
         const res = await layoutApi.getAvailableTables({
           date,
           startTime,
+          endTime,
           guestNumber: guests
         })
         const availableIds = new Set(res.data.data.map((t: TableLayout) => t.id))
@@ -86,7 +88,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
       }
     }
     fetchAvailableTables()
-  }, [date, startTime, guests, selectedTable])
+  }, [date, startTime, endTime, guests, selectedTable])
 
   const handleSelectArea = (area: AreaLayout) => {
     setActiveAreaId(area.areaId)

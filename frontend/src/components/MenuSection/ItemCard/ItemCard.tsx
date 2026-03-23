@@ -1,48 +1,14 @@
 import RatingStart from '@/components/RatingStart'
-import { useAuthStore } from '@/stores/useAuthStore'
-import { useFavoriteStore } from '@/stores/useFavoriteStore'
 import type { MenuCardItem } from '@/types/item.type'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
 import { Eye, Heart } from 'lucide-react'
-import { toast } from 'react-toastify'
 
 interface Props {
   item: MenuCardItem
-  isCombo?: boolean
   onViewDetails?: (item: MenuCardItem) => void
 }
 
-const ItemCard = ({ item, isCombo = false, onViewDetails }: Props) => {
-  const { isFavoriteItem, isFavoriteCombo, addFavoriteItem, addFavoriteCombo, removeFavoriteItem, removeFavoriteCombo } =
-    useFavoriteStore()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-
-  const isFavorite = isCombo ? isFavoriteCombo(item.id) : isFavoriteItem(item.id)
-
-  const handleToggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (!isAuthenticated) {
-      toast.info('Vui lòng đăng nhập để sử dụng tính năng này')
-      return
-    }
-
-    if (isFavorite) {
-      if (isCombo) {
-        await removeFavoriteCombo(item.id)
-      } else {
-        await removeFavoriteItem(item.id)
-      }
-    } else {
-      if (isCombo) {
-        await addFavoriteCombo(item.id)
-      } else {
-        await addFavoriteItem(item.id)
-      }
-    }
-  }
-
+const ItemCard = ({ item, onViewDetails }: Props) => {
   const discountPercent = item.priceAfterDiscount
     ? Math.round(((item.price - item.priceAfterDiscount) / item.price) * 100)
     : 0
@@ -63,14 +29,9 @@ const ItemCard = ({ item, isCombo = false, onViewDetails }: Props) => {
         )}
       </div>
 
-      {/* Button Like */}
-      <button
-        onClick={handleToggleFavorite}
-        className={`absolute top-3 right-3 z-10 rounded-full p-2 shadow-sm backdrop-blur-sm transition-all duration-300 ${
-          isFavorite ? 'bg-primary text-white scale-110' : 'bg-white/80 text-muted-foreground hover:text-red-500 hover:scale-110'
-        }`}
-      >
-        <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+      {/* Button Like (Optional) */}
+      <button className='text-muted-foreground absolute top-3 right-3 z-10 rounded-full bg-white/80 p-2 shadow-sm backdrop-blur-sm transition-colors hover:text-red-500'>
+        <Heart size={18} />
       </button>
       {/* Image Area */}
       <div className='relative h-56 overflow-hidden'>
@@ -97,10 +58,10 @@ const ItemCard = ({ item, isCombo = false, onViewDetails }: Props) => {
 
         {/* Rating */}
         <div className='mb-4 flex items-center gap-2'>
-          <RatingStart rating={item.averageRating || 0} size={18} />
-          <span className='text-muted-foreground pt-0.5 text-xs font-medium'>
-            {item.averageRating ? item.averageRating.toFixed(1) : '0.0'} ({item.feedbackCount || 0})
-          </span>
+          <RatingStart rating={item.rating} size={18} />
+          {item.rating != null && (
+            <span className='text-muted-foreground pt-0.5 text-xs font-medium'>({item.rating})</span>
+          )}
         </div>
 
         {/* Price & Action */}

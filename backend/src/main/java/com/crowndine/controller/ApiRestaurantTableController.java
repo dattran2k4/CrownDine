@@ -22,15 +22,16 @@ public class ApiRestaurantTableController {
     private final RestaurantTableService restaurantTableService;
 
     @GetMapping("/available")
-    public ApiResponse getTablesForReservation(@RequestParam LocalDate date,
-                                               @RequestParam LocalTime startTime,
-                                               @Min(1) @RequestParam Integer guestNumber) {
-        log.info("Get tables for reservation with guest number: {}", guestNumber);
+    public ApiResponse getAvailableTablesForReservation(@RequestParam LocalDate date,
+                                                        @RequestParam LocalTime startTime,
+                                                        @RequestParam LocalTime endTime,
+                                                        @Min(1) @RequestParam Integer guestNumber) {
+        log.info("Get available tables for guest number: {}", guestNumber);
 
         return ApiResponse.builder()
                 .status(200)
-                .message("Get tables for reservation successfully")
-                .data(restaurantTableService.getTablesForReservation(date, startTime, guestNumber))
+                .message("Get available tables successfully")
+                .data(restaurantTableService.getAvailableTablesForReservation(date, startTime, endTime, guestNumber))
                 .build();
     }
 

@@ -6,6 +6,7 @@ import Menu from '@/pages/Menu'
 import MenuDetail from '@/pages/MenuDetail'
 import Register from '@/pages/Register'
 import Reservation from '@/pages/Reservation'
+import Chat from '@/pages/Chat/Chat'
 import PaymentResult from '@/pages/PaymentResult'
 import AdminLayout from '@/layouts/AdminLayout/AdminLayout'
 import CategoryList from '@/pages/Admin/Category/CategoryList'
@@ -43,7 +44,8 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: path.profile, element: <Profile /> },
-          { path: path.reservation, element: <Reservation /> }
+          { path: path.reservation, element: <Reservation /> },
+          { path: path.chat, element: <Chat /> }
         ]
       }
     ]

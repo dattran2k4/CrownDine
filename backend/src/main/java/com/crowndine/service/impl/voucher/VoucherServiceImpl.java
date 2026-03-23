@@ -129,6 +129,7 @@ public class VoucherServiceImpl implements VoucherService {
                 .discountValue(voucher.getDiscountValue())
                 .maxDiscountValue(voucher.getMaxDiscountValue())
                 .description(voucher.getDescription())
+                .pointsRequired(voucher.getPointsRequired())
                 .createdAt(voucher.getCreatedAt())
                 .updatedAt(voucher.getUpdatedAt())
                 .build();

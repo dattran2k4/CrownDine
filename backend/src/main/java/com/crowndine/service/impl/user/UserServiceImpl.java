@@ -61,6 +61,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
                 // Only getting the first role's name as a string for simplicity
@@ -88,6 +89,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
                 // Only getting the first role's name as a string for simplicity

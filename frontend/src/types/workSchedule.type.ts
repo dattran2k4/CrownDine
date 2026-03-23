@@ -44,3 +44,8 @@ export type ShiftsResponse = {
   startTime: string
   endTime: string
 }
+export type createShiftRequest = {
+  name: string
+  startTime: string
+  endTime: string
+}

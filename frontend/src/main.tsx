@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
+import { ThemeProvider } from 'next-themes'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from 'sonner'
 import { StompSessionProvider } from 'react-stomp-hooks'
@@ -32,8 +33,10 @@ createRoot(document.getElementById('root')!).render(
           // Một số phiên bản dùng debug thay vì debugConfig
           debug={(str) => console.log(str)}
         >
-          <RouterProvider router={router} />
-          <Toaster richColors position='top-right' />
+          <ThemeProvider attribute='class' defaultTheme='light' disableTransitionOnChange>
+            <RouterProvider router={router} />
+            <Toaster richColors position='top-right' />
+          </ThemeProvider>
         </StompSessionProvider>
       </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import OrderDrawer from './components/OrderDrawer'
 import PaymentModal from './components/PaymentModal'
+import { CancelModal } from './components/CancelModal'
 import {
   Pagination,
   PaginationContent,
@@ -32,6 +33,7 @@ const OrderManagement = () => {
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
+  const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -173,8 +175,14 @@ const OrderManagement = () => {
   })
 
   const handleCancelOrder = (order: Order) => {
-    if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.code}?`)) {
-      cancelOrderMutation.mutate(order.id)
+    setCancelingOrder(order)
+  }
+
+  const confirmCancelOrder = () => {
+    if (cancelingOrder) {
+      cancelOrderMutation.mutate(cancelingOrder.id, {
+        onSuccess: () => setCancelingOrder(null)
+      })
     }
   }
 
@@ -439,6 +447,16 @@ const OrderManagement = () => {
           queryClient.invalidateQueries({ queryKey: ['orders'] })
         }}
       />
+
+      {/* Cancel Modal */}
+      {cancelingOrder && (
+        <CancelModal
+          orderCode={cancelingOrder.code}
+          isPending={cancelOrderMutation.isPending}
+          onClose={() => setCancelingOrder(null)}
+          onConfirm={confirmCancelOrder}
+        />
+      )}
     </div>
   )
 }

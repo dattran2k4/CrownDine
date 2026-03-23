@@ -156,7 +156,7 @@ const Header = () => {
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className='border-border w-96 bg-white opacity-100 shadow-lg' align='end'>
+                <DropdownMenuContent className='border-border w-96 bg-card opacity-100 shadow-lg' align='end'>
                   <DropdownMenuLabel className='flex items-center justify-between'>
                     <span>Thông báo</span>
                     <span className='text-muted-foreground text-xs font-normal'>
@@ -180,7 +180,7 @@ const Header = () => {
                           onClick={() => handleNotificationClick(notification)}
                         >
                           <div
-                            className={`mt-1 h-2.5 w-2.5 rounded-full ${!notification.readAt ? 'bg-primary' : 'bg-zinc-200'}`}
+                            className={`mt-1 h-2.5 w-2.5 rounded-full ${!notification.readAt ? 'bg-primary' : 'bg-muted'}`}
                           />
                           <div className='flex min-w-0 flex-1 flex-col'>
                             <div className='flex items-start justify-between gap-3'>
@@ -211,7 +211,7 @@ const Header = () => {
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className='border-border w-80 bg-white opacity-100 shadow-lg' align='end'>
+                <DropdownMenuContent className='border-border w-80 bg-card opacity-100 shadow-lg' align='end'>
                   <DropdownMenuLabel className='flex items-center justify-between'>
                     <span>Món ăn yêu thích</span>
                     <span className='text-muted-foreground text-xs font-normal'>{favorites.length} món</span>
@@ -232,7 +232,7 @@ const Header = () => {
 
                         return (
                           <div key={fav.id} className='hover:bg-accent/5 flex items-center gap-3 p-3 transition-colors'>
-                            <Link to={link} className='h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100'>
+                            <Link to={link} className='h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted'>
                               <img src={item.imageUrl || ''} alt={item.name} className='h-full w-full object-cover' />
                             </Link>
                             <div className='flex min-w-0 flex-1 flex-col'>
@@ -249,7 +249,7 @@ const Header = () => {
                             <Button
                               variant='ghost'
                               size='icon'
-                              className='h-8 w-8 text-zinc-400 hover:text-red-500'
+                              className='h-8 w-8 text-muted-foreground hover:text-destructive'
                               onClick={(e) => {
                                 e.preventDefault()
                                 e.stopPropagation()
@@ -302,7 +302,7 @@ const Header = () => {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className='border-border w-56 bg-white opacity-100 shadow-md' align='end' forceMount>
+              <DropdownMenuContent className='border-border w-56 bg-card opacity-100 shadow-md' align='end' forceMount>
                 <DropdownMenuLabel className='font-normal'>
                   <div className='flex flex-col space-y-1'>
                     <p className='text-sm leading-none font-medium'>
@@ -325,7 +325,7 @@ const Header = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className='cursor-pointer text-red-600 focus:text-red-600' onClick={handleLogout}>
+                <DropdownMenuItem className='cursor-pointer text-destructive focus:text-destructive' onClick={handleLogout}>
                   <LogOut className='mr-2 h-4 w-4' />
                   <span>Đăng xuất</span>
                 </DropdownMenuItem>

@@ -6,6 +6,7 @@ import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.OrderApplyVoucherResponse;
+import com.crowndine.dto.response.OrderDetailHistoryResponse;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.UpdateStatusOrderResponse;
@@ -18,9 +19,9 @@ import java.time.LocalDate;
 public interface OrderService {
     Order getOrderByCode(String code);
 
-    void addOrderForReservation(Reservation res, OrderItemBatchRequest request, User user);
+    Order createOrderForReservation(Reservation reservation, User user, EOrderStatus initialStatus);
 
-    Order createOrderForReservation(Reservation reservation, User user);
+    Order confirmReservationOrder(Order order);
 
     void addOrUpdateItemToOrder(Long orderId, OrderItemRequest request);
 
@@ -29,11 +30,13 @@ public interface OrderService {
     void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request);
 
     PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
-            int size);
+                                             int size);
 
     UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
 
     void createWalkInOrder(OrderRequest request, String username);
+
+    OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request);
 
     void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name);
 

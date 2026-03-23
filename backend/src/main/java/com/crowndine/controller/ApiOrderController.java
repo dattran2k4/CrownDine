@@ -50,6 +50,17 @@ public class ApiOrderController {
     }
 
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/reservation/{reservationId}")
+    public ApiResponse openOrderForReservation(@Min(1) @PathVariable Long reservationId,
+                                               @Valid @RequestBody OrderItemBatchRequest request) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Opened order for reservation successfully")
+                .data(orderService.openOrderForReservation(reservationId, request))
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse updateOrder(@Min(1) @PathVariable Long id, @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
         return ApiResponse.builder()

@@ -319,7 +319,7 @@ const KitchenDisplay = () => {
                   {/* All-served indicator */}
                   {allServed && order.orderDetails.length > 0 && (
                     <div className='mt-2 rounded-lg border border-green-200 bg-green-50 p-3 text-center'>
-                      <p className='text-sm font-semibold text-green-700'>✅ Tất cả món đã sẵn sàng để mang ra</p>
+                      <p className='text-sm font-semibold text-green-700'>Tất cả món đã sẵn sàng để mang ra</p>
                       <p className='mt-0.5 text-xs text-green-600'>Đơn sẽ tự ẩn sau khi thanh toán</p>
                     </div>
                   )}

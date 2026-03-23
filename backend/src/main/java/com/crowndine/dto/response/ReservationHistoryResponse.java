@@ -15,6 +15,7 @@ public class ReservationHistoryResponse {
     private Long reservationId;
     private LocalDate date;
     private LocalTime startTime;
+    private LocalTime endTime;
     private Integer guestNumber;
     private EReservationStatus reservationStatus;
     private String tableName;

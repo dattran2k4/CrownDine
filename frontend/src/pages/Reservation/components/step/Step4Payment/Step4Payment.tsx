@@ -20,6 +20,8 @@ interface Props {
   bookingData: {
     date: string
     startTime: string
+    endTime: string
+    duration: number
     guests: number
     selectedTable: Table | null
   }
@@ -143,9 +145,9 @@ const Step4Payment = ({
                 <span className='font-semibold text-gray-900'>{bookingData.date}</span>
               </div>
               <div className='rounded-lg bg-orange-50 p-3'>
-                <span className='mb-1 block text-xs text-gray-600'>Giờ đến</span>
+                <span className='mb-1 block text-xs text-gray-600'>Thời gian ({bookingData.duration}p)</span>
                 <span className='font-semibold text-orange-600'>
-                  {bookingData.startTime}
+                  {bookingData.startTime} - {bookingData.endTime}
                 </span>
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>

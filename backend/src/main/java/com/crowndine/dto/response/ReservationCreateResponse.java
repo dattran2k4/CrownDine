@@ -15,6 +15,7 @@ public class ReservationCreateResponse {
     private Long reservationId;
     private LocalDate date;
     private LocalTime startTime;
+    private LocalTime endTime;
     private Integer guestNumber;
     private String note;
     private String code;

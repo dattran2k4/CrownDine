@@ -18,7 +18,7 @@ public interface RestaurantTableService {
 
     void delete(Long id);
 
-    List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, Integer guestNumber);
+    List<TableLayoutResponse> getAvailableTablesForReservation(LocalDate date, LocalTime startTime, LocalTime endTime, Integer guestNumber);
 
     List<RestaurantTableResponse> getAllTables();
 

@@ -144,7 +144,7 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
 
     private BigDecimal calculateTableDeposit(Reservation reservation) {
         RestaurantTable table = reservation.getTable();
-        return calculationService.calculateTableDeposit(table != null ? table.getBaseDeposit() : null);
+        return calculationService.calculateTableDeposit(table != null ? table.getBaseDeposit() : null, reservation.getStartTime(), reservation.getEndTime());
     }
 
     private BigDecimal calculateOrderDepositPaid(Order order) {

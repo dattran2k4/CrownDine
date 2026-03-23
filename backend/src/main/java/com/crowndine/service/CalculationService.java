@@ -11,7 +11,7 @@ public interface CalculationService {
 
     BigDecimal calculateTotalOrder(List<OrderDetail> details);
 
-    BigDecimal calculateTableDeposit(BigDecimal baseDeposit);
+    BigDecimal calculateTableDeposit(BigDecimal baseDeposit, LocalTime start, LocalTime end);
 
     BigDecimal calculateDepositPayment(BigDecimal itemsTotal, BigDecimal tableDeposit);
 

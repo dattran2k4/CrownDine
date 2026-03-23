@@ -21,6 +21,9 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "start_time")
     private LocalTime startTime;
 
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
     @Column(name = "date")
     private LocalDate date;
 

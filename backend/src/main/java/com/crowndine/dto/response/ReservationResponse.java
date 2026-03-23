@@ -18,6 +18,7 @@ public class ReservationResponse {
     private String email;
     private LocalDate date;
     private LocalTime startTime;
+    private LocalTime endTime;
     private Integer guestNumber;
     private String tableName;
     private String note;

@@ -28,7 +28,7 @@ export default function ChatWidget() {
     // Match: /reservation?step=X&tableName=... or just reservation?step=X&... or any variation
     const reservationLinkRegex = /\/?reservation\?[^\s\n]*/gi
     // Also match partial links that might appear (like "T2-01&date=..." if AI cuts off the beginning)
-    const partialLinkRegex = /(?:tableName|step|date|startTime|guests)=[^\s\n]*/gi
+    const partialLinkRegex = /(?:tableName|step|date|startTime|endTime|guests)=[^\s\n]*/gi
     
     let displayContent = content
     // Remove full reservation links
@@ -187,11 +187,12 @@ export default function ChatWidget() {
             const tableNameMatch = content.match(/tableName=([^&\s\n]+)/i)
             const dateMatch = content.match(/date=([^&\s\n]+)/i)
             const startTimeMatch = content.match(/startTime=([^&\s\n]+)/i)
+            const endTimeMatch = content.match(/endTime=([^&\s\n]+)/i)
             const guestsMatch = content.match(/guests=([^&\s\n]+)/i)
             
-            if (stepMatch && tableNameMatch && dateMatch && startTimeMatch && guestsMatch) {
+            if (stepMatch && tableNameMatch && dateMatch && startTimeMatch && endTimeMatch && guestsMatch) {
               // Reconstruct the link
-              const reconstructedLink = `/reservation?step=${stepMatch[1]}&tableName=${tableNameMatch[1]}&date=${dateMatch[1]}&startTime=${startTimeMatch[1]}&guests=${guestsMatch[1]}`
+              const reconstructedLink = `/reservation?step=${stepMatch[1]}&tableName=${tableNameMatch[1]}&date=${dateMatch[1]}&startTime=${startTimeMatch[1]}&endTime=${endTimeMatch[1]}&guests=${guestsMatch[1]}`
               matches = [reconstructedLink]
             }
           }
@@ -199,29 +200,11 @@ export default function ChatWidget() {
           // If still no link found, try to extract from conversation history when AI confirms reservation
           if ((!matches || matches.length === 0) && updatedConversation.messages.length > 0) {
             // Check if this is a confirmation message (contains keywords like "chuyển", "đặt món", "thanh toán")
-            let isConfirmation = /(chuyển|đặt món|thanh toán|đặt cọc|bước 3|bước 4|tuyệt vời.*chuyển)/i.test(content)
-            let mentionsStep3 = /(đặt món|chọn món|bước 3|chuyển đến bước 3|hoàn tất đặt món)/i.test(content)
+            const isConfirmation = /(chuyển|đặt món|thanh toán|đặt cọc|bước 3|bước 4|tuyệt vời.*chuyển)/i.test(content)
+            const mentionsStep3 = /(đặt món|chọn món|bước 3)/i.test(content)
             const mentionsStep4 = /(thanh toán|đặt cọc|bước 4)/i.test(content)
             
-            // Check if AI is asking about going to step 3 after user has selected food items
-            const isAskingAboutStep3 = /(bạn có muốn chuyển đến bước 3|chuyển đến bước 3 để|hoàn tất đặt món|đã chọn món trong chat)/i.test(content)
-            
-            // Check if user confirms going to step 3 (after AI asked)
-            // Look for user's confirmation in recent messages (check last user message)
-            const lastUserMessage = updatedConversation.messages
-              .filter(m => m.role === 'user')
-              .slice(-1)[0]?.content || ''
-            
-            const userConfirmsStep3 = isAskingAboutStep3 && 
-              /(có|ok|được|đồng ý|xác nhận|chuyển|muốn)/i.test(lastUserMessage)
-            
-            // If AI asked about step 3 and user confirmed, treat as confirmation for step 3
-            if (userConfirmsStep3) {
-              mentionsStep3 = true
-              isConfirmation = true
-            }
-            
-            if (isConfirmation || userConfirmsStep3) {
+            if (isConfirmation) {
               // Extract information from conversation history
               const allMessages = updatedConversation.messages
                 .filter(m => m.role !== 'system')
@@ -322,8 +305,12 @@ export default function ChatWidget() {
                 }
               }
               
-              // KHÔNG dùng default date - phải có date từ conversation
-              // Nếu không tìm thấy date, sẽ không tạo link (xử lý ở cuối)
+              // If no date found, use tomorrow as default
+              if (!extractedDate) {
+                const tomorrow = new Date()
+                tomorrow.setDate(tomorrow.getDate() + 1)
+                extractedDate = tomorrow.toISOString().split('T')[0]
+              }
               
               // Validate: KHÔNG được đặt bàn vào ngày trong quá khứ
               const now = new Date()
@@ -373,8 +360,65 @@ export default function ChatWidget() {
                 }
               }
               
-              // Validate: không được đặt giờ trong quá khứ và phải trong giờ mở cửa (09:00 - 22:00)
-              if (extractedDate && extractedStartTime) {
+              // Extract duration (thời lượng đặt bàn: 1 tiếng, 2 tiếng, 3 tiếng, ...)
+              const durationPatterns = [
+                /(\d+)\s*(?:tiếng|giờ|h)/i,  // "1 tiếng", "2 giờ", "3h"
+                /đặt\s+(\d+)\s*(?:tiếng|giờ)/i,  // "đặt 2 tiếng"
+                /(\d+)\s*(?:tiếng|giờ)\s+đặt/i,  // "2 tiếng đặt"
+                /(\d+)\s*(?:tiếng|giờ)\s+bàn/i,  // "2 tiếng bàn"
+                /bàn\s+(\d+)\s*(?:tiếng|giờ)/i  // "bàn 2 tiếng"
+              ]
+              
+              let durationHours = 2 // Default 2 hours
+              for (const pattern of durationPatterns) {
+                const match = allMessages.match(pattern)
+                if (match && match[1]) {
+                  const hours = parseInt(match[1])
+                  if (hours >= 1 && hours <= 12) { // Reasonable range: 1-12 hours
+                    durationHours = hours
+                    break
+                  }
+                }
+              }
+              
+              // Calculate end time based on start time + duration
+              let extractedEndTime = ''
+              if (extractedStartTime) {
+                const [startHours, startMinutes] = extractedStartTime.split(':').map(Number)
+                const startDate = new Date()
+                startDate.setHours(startHours, startMinutes, 0, 0)
+                startDate.setHours(startDate.getHours() + durationHours)
+                
+                const calculatedEndHours = startDate.getHours()
+                const calculatedEndMinutes = startDate.getMinutes()
+                
+                // Validate: endTime không được vượt quá giờ đóng cửa (22:00)
+                if (calculatedEndHours > RESTAURANT_CLOSE_HOUR || (calculatedEndHours === RESTAURANT_CLOSE_HOUR && calculatedEndMinutes > 0)) {
+                  // Nếu vượt quá, điều chỉnh về 22:00
+                  extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                  console.log(`Calculated end time ${calculatedEndHours}:${calculatedEndMinutes} exceeds closing hour, adjusted to ${RESTAURANT_CLOSE_HOUR}:00`)
+                } else {
+                  extractedEndTime = `${String(calculatedEndHours).padStart(2, '0')}:${String(calculatedEndMinutes).padStart(2, '0')}`
+                }
+              } else {
+                // If no time found, use default 18:00-20:00 (trong giờ mở cửa)
+                extractedStartTime = '18:00'
+                const defaultEndDate = new Date()
+                defaultEndDate.setHours(18, 0, 0, 0)
+                defaultEndDate.setHours(defaultEndDate.getHours() + durationHours)
+                const defaultEndHours = defaultEndDate.getHours()
+                const defaultEndMinutes = defaultEndDate.getMinutes()
+                
+                // Ensure default end time doesn't exceed closing hour
+                if (defaultEndHours > RESTAURANT_CLOSE_HOUR || (defaultEndHours === RESTAURANT_CLOSE_HOUR && defaultEndMinutes > 0)) {
+                  extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                } else {
+                  extractedEndTime = `${String(defaultEndHours).padStart(2, '0')}:${String(defaultEndMinutes).padStart(2, '0')}`
+                }
+              }
+              
+              // Validate: không được đặt giờ trong quá khứ và phải trong giờ mở cửa (10:00 - 22:00)
+              if (extractedDate && extractedStartTime && extractedEndTime) {
                 const selectedStartDateTime = new Date(`${extractedDate}T${extractedStartTime}`)
                 const now = new Date()
                 
@@ -387,82 +431,110 @@ export default function ChatWidget() {
                   console.log('Time was in past, adjusted to tomorrow:', extractedDate)
                 }
                 
-                // Validate startTime: phải >= 09:00 và < 22:00
+                // Final validation: đảm bảo startTime và endTime đều trong giờ mở cửa
                 const startHours = parseInt(extractedStartTime.split(':')[0])
+                const endHours = parseInt(extractedEndTime.split(':')[0])
+                const endMinutes = parseInt(extractedEndTime.split(':')[1] || '0')
+                
+                // Validate startTime: phải >= 09:00 và < 22:00
                 if (startHours < RESTAURANT_OPEN_HOUR || startHours >= RESTAURANT_CLOSE_HOUR) {
                   console.log(`Start time ${extractedStartTime} is outside opening hours, adjusting to ${RESTAURANT_OPEN_HOUR}:00`)
                   extractedStartTime = `${String(RESTAURANT_OPEN_HOUR).padStart(2, '0')}:00`
+                  // Recalculate endTime
+                  const recalcEndDate = new Date()
+                  recalcEndDate.setHours(RESTAURANT_OPEN_HOUR, 0, 0, 0)
+                  recalcEndDate.setHours(recalcEndDate.getHours() + durationHours)
+                  const recalcEndHours = recalcEndDate.getHours()
+                  const recalcEndMinutes = recalcEndDate.getMinutes()
+                  
+                  if (recalcEndHours > RESTAURANT_CLOSE_HOUR || (recalcEndHours === RESTAURANT_CLOSE_HOUR && recalcEndMinutes > 0)) {
+                    extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                  } else {
+                    extractedEndTime = `${String(recalcEndHours).padStart(2, '0')}:${String(recalcEndMinutes).padStart(2, '0')}`
+                  }
                 }
-              } else if (!extractedStartTime) {
-                // KHÔNG dùng default time - phải có time từ conversation
-                // Nếu không tìm thấy time, sẽ không tạo link (xử lý ở cuối)
-                extractedStartTime = ''
+                
+                // Validate endTime: phải <= 22:00
+                if (endHours > RESTAURANT_CLOSE_HOUR || (endHours === RESTAURANT_CLOSE_HOUR && endMinutes > 0)) {
+                  console.log(`End time ${extractedEndTime} exceeds closing hour, adjusting to ${RESTAURANT_CLOSE_HOUR}:00`)
+                  extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                  
+                  // Recalculate startTime backwards (endTime - duration)
+                  const recalcStartDate = new Date()
+                  recalcStartDate.setHours(RESTAURANT_CLOSE_HOUR, 0, 0, 0)
+                  recalcStartDate.setHours(recalcStartDate.getHours() - durationHours)
+                  const recalcStartHours = recalcStartDate.getHours()
+                  const recalcStartMinutes = recalcStartDate.getMinutes()
+                  
+                  // Ensure recalculated startTime is not before opening hour
+                  if (recalcStartHours < RESTAURANT_OPEN_HOUR) {
+                    extractedStartTime = `${String(RESTAURANT_OPEN_HOUR).padStart(2, '0')}:00`
+                    // Recalculate endTime again
+                    const finalEndDate = new Date()
+                    finalEndDate.setHours(RESTAURANT_OPEN_HOUR, 0, 0, 0)
+                    finalEndDate.setHours(finalEndDate.getHours() + durationHours)
+                    const finalEndHours = finalEndDate.getHours()
+                    const finalEndMinutes = finalEndDate.getMinutes()
+                    
+                    if (finalEndHours > RESTAURANT_CLOSE_HOUR || (finalEndHours === RESTAURANT_CLOSE_HOUR && finalEndMinutes > 0)) {
+                      extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                    } else {
+                      extractedEndTime = `${String(finalEndHours).padStart(2, '0')}:${String(finalEndMinutes).padStart(2, '0')}`
+                    }
+                  } else {
+                    extractedStartTime = `${String(recalcStartHours).padStart(2, '0')}:${String(recalcStartMinutes).padStart(2, '0')}`
+                  }
+                }
+                
+                // Final check: đảm bảo cả startTime và endTime đều hợp lệ
+                const finalStartHours = parseInt(extractedStartTime.split(':')[0])
+                const finalEndHours = parseInt(extractedEndTime.split(':')[0])
+                const finalEndMinutes = parseInt(extractedEndTime.split(':')[1] || '0')
+                
+                if (finalStartHours < RESTAURANT_OPEN_HOUR || finalStartHours >= RESTAURANT_CLOSE_HOUR) {
+                  console.log('Final validation failed for startTime, using default')
+                  extractedStartTime = '18:00'
+                  extractedEndTime = '20:00'
+                }
+                
+                if (finalEndHours > RESTAURANT_CLOSE_HOUR || (finalEndHours === RESTAURANT_CLOSE_HOUR && finalEndMinutes > 0)) {
+                  console.log('Final validation failed for endTime, capping to closing hour')
+                  extractedEndTime = `${String(RESTAURANT_CLOSE_HOUR).padStart(2, '0')}:00`
+                }
               }
               
               // Extract guests (look for number + "người" or "khách")
               const guestsPattern = /(\d+)\s*(?:người|khách)/i
               const guestsMatch = allMessages.match(guestsPattern)
-              const extractedGuests = guestsMatch ? guestsMatch[1] : null // KHÔNG dùng default
+              const extractedGuests = guestsMatch ? guestsMatch[1] : '2' // Default to 2
               
               // Determine step (3 for food menu, 4 for payment)
-              const step = mentionsStep4 ? '4' : mentionsStep3 ? '3' : null // KHÔNG default
+              const step = mentionsStep4 ? '4' : mentionsStep3 ? '3' : '3' // Default to step 3
               
-              // QUAN TRỌNG: Chỉ tạo link khi có ĐẦY ĐỦ thông tin được xác nhận
-              // KHÔNG dùng default values - phải có thông tin thực sự từ conversation
-              const hasAllRequiredInfo = 
-                extractedTableName && 
-                extractedTableName.length > 0 &&
-                extractedDate && 
-                extractedDate.length > 0 &&
-                extractedStartTime && 
-                extractedStartTime.length > 0 &&
-                extractedGuests && 
-                extractedGuests.length > 0 &&
-                step // Phải có step rõ ràng
-              
-              // Kiểm tra thêm: date không được là default (tomorrow)
-              // Nếu date là tomorrow và không tìm thấy date trong conversation, không tạo link
-              const hasExplicitDate = allMessages.match(/(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}\/\d{4})|(?:ngày|ngay)\s+\d+|(?:mai|hôm nay)/i)
-              
-              // Kiểm tra: time không được là default (18:00-20:00)
-              // Nếu time là default và không tìm thấy time trong conversation, không tạo link
-              const hasExplicitTime = allMessages.match(/(\d{1,2}):(\d{2})|(\d{1,2})h|(\d{1,2})\s+giờ|(?:lúc|vào)\s+\d+/i)
-              
-              // Kiểm tra: table name phải được đề cập rõ ràng
-              const hasExplicitTable = extractedTableName && extractedTableName.length > 0 && !extractedTableName.includes('undefined')
-              
-              // Kiểm tra: guests phải được đề cập rõ ràng
-              const hasExplicitGuests = extractedGuests && extractedGuests.length > 0
-              
-              // Chỉ tạo link nếu:
-              // 1. Có đầy đủ thông tin
-              // 2. Date và time được đề cập rõ ràng (không phải default)
-              // 3. Table name và guests được đề cập rõ ràng
-              if (hasAllRequiredInfo && hasExplicitDate && hasExplicitTime && hasExplicitTable && hasExplicitGuests) {
-                const autoLink = `/reservation?step=${step}&tableName=${encodeURIComponent(extractedTableName)}&date=${extractedDate}&startTime=${extractedStartTime}&guests=${extractedGuests}`
+              // Try to construct link if we have enough information
+              if (extractedTableName && extractedDate && extractedStartTime && extractedEndTime) {
+                const autoLink = `/reservation?step=${step}&tableName=${encodeURIComponent(extractedTableName)}&date=${extractedDate}&startTime=${extractedStartTime}&endTime=${extractedEndTime}&guests=${extractedGuests}`
                 matches = [autoLink]
-                console.log('✅ Auto-extracted reservation info from conversation (all info confirmed):', {
+                console.log(' Auto-extracted reservation info from conversation:', {
                   tableName: extractedTableName,
                   date: extractedDate,
                   startTime: extractedStartTime,
+                  endTime: extractedEndTime,
                   guests: extractedGuests,
                   step: step,
                   link: autoLink
                 })
               } else {
-                console.warn('⚠️ Missing or incomplete information for auto-navigation:', {
-                  hasAllRequiredInfo,
-                  hasExplicitDate: !!hasExplicitDate,
-                  hasExplicitTime: !!hasExplicitTime,
-                  hasExplicitTable,
-                  hasExplicitGuests,
-                  extractedTableName: extractedTableName || 'MISSING',
-                  extractedDate: extractedDate || 'MISSING',
-                  extractedStartTime: extractedStartTime || 'MISSING',
-                  extractedGuests: extractedGuests || 'MISSING',
-                  step: step || 'MISSING'
+                console.warn('⚠️ Missing information for auto-navigation:', {
+                  hasTableName: !!extractedTableName,
+                  hasDate: !!extractedDate,
+                  hasStartTime: !!extractedStartTime,
+                  hasEndTime: !!extractedEndTime,
+                  extractedTableName,
+                  extractedDate,
+                  extractedStartTime,
+                  extractedEndTime
                 })
-                // KHÔNG tạo link nếu thiếu thông tin
               }
             }
           }

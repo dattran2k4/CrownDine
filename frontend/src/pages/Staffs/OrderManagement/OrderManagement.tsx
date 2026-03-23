@@ -24,15 +24,48 @@ import {
 
 const OrderManagement = () => {
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [dateFilterType, setDateFilterType] = useState<string>('ALL')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL')
+  
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  const getDateRange = () => {
+    const today = new Date()
+    // Local timezone offset hack to get YYYY-MM-DD reliably
+    const offset = today.getTimezoneOffset()
+    today.setMinutes(today.getMinutes() - offset)
+    
+    if (dateFilterType === 'TODAY') {
+      const dateStr = today.toISOString().split('T')[0]
+      return { fromDate: dateStr, toDate: dateStr }
+    } else if (dateFilterType === 'YESTERDAY') {
+      const yesterday = new Date(today)
+      yesterday.setDate(today.getDate() - 1)
+      const dateStr = yesterday.toISOString().split('T')[0]
+      return { fromDate: dateStr, toDate: dateStr }
+    } else if (dateFilterType === 'CUSTOM') {
+      return { fromDate: customStartDate || undefined, toDate: customEndDate || undefined }
+    }
+    return { fromDate: undefined, toDate: undefined }
+  }
+
+  const { fromDate, toDate } = getDateRange()
+
   // Fetch orders
   const { data: orders = [] } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => orderApi.getAllOrders({}),
+    queryKey: ['orders', statusFilter, fromDate, toDate],
+    queryFn: () => orderApi.getAllOrders({
+      status: statusFilter !== 'ALL' ? (statusFilter as any) : undefined,
+      fromDate,
+      toDate
+    }),
     select: (response) => response?.data?.data?.data ?? []
   })
 
@@ -58,7 +91,13 @@ const OrderManagement = () => {
   // Filter orders
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase()
-    return order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
+    const matchesSearch = order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
+    
+    let matchesType = true
+    if (orderTypeFilter === 'RES') matchesType = order.code.startsWith('RES')
+    else if (orderTypeFilter === 'ORD') matchesType = order.code.startsWith('ORD')
+
+    return matchesSearch && matchesType
   })
 
   // Pagination logic
@@ -80,7 +119,7 @@ const OrderManagement = () => {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery])
+  }, [searchQuery, statusFilter, dateFilterType, customStartDate, customEndDate, orderTypeFilter])
 
   // Reset page to last possible if current page exceeds total pages due to deletions/updates
   useEffect(() => {
@@ -147,23 +186,91 @@ const OrderManagement = () => {
         <p className='text-muted-foreground mt-1 text-sm'>Tìm nhanh theo Mã đơn, tên bàn hoặc ghi chú ngay bên dưới.</p>
       </header>
 
-      {/* Toolbar */}
-      <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
-        <div className='relative w-full max-w-md'>
-          <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-          <Input
-            placeholder='Tìm theo Mã đơn, tên bàn...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className='bg-background pl-9 shadow-none'
-          />
+      {/* Toolbar & Filters */}
+      <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+           <div className='relative w-full sm:max-w-xs'>
+             <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
+             <Input
+               placeholder='Tìm theo Mã đơn, tên bàn...'
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className='bg-background pl-9 shadow-none'
+             />
+           </div>
+           <Button
+             onClick={handleCreateOrder}
+             className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
+           >
+             <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
+           </Button>
         </div>
-        <Button
-          onClick={handleCreateOrder}
-          className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
-        >
-          <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
-        </Button>
+
+        {/* Filters Row */}
+        <div className='flex flex-wrap items-end gap-4 mt-2 md:mt-0 pt-3 border-t border-border'>
+          <div className='flex flex-col gap-1.5 w-full sm:w-auto'>
+            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Trạng thái</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[150px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+            >
+              <option value='ALL'>Tất cả</option>
+              <option value='PRE_ORDER'>Đặt trước</option>
+              <option value='CONFIRMED'>Chờ xác nhận</option>
+              <option value='IN_PROGRESS'>Đang phục vụ</option>
+              <option value='COMPLETED'>Hoàn thành</option>
+              <option value='CANCELLED'>Đã hủy</option>
+            </select>
+          </div>
+
+          <div className='flex flex-col gap-1.5 w-full sm:w-auto'>
+            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Loại đơn</label>
+            <select
+              value={orderTypeFilter}
+              onChange={(e) => setOrderTypeFilter(e.target.value)}
+              className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[170px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+            >
+              <option value='ALL'>Tất cả</option>
+              <option value='RES'>Đặt bàn trước (RES)</option>
+              <option value='ORD'>Khách vãng lai (ORD)</option>
+            </select>
+          </div>
+
+          <div className='flex flex-col gap-1.5 w-full sm:w-auto flex-1'>
+            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Thời gian</label>
+            <div className='flex flex-wrap sm:flex-nowrap items-center gap-2'>
+              <select
+                value={dateFilterType}
+                onChange={(e) => setDateFilterType(e.target.value)}
+                className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[150px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+              >
+                <option value='ALL'>Mọi lúc</option>
+                <option value='TODAY'>Hôm nay</option>
+                <option value='YESTERDAY'>Hôm qua</option>
+                <option value='CUSTOM'>Khoảng thời gian...</option>
+              </select>
+
+              {dateFilterType === 'CUSTOM' && (
+                <div className='flex flex-1 items-center gap-2'>
+                  <input
+                    type='date'
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className='bg-background border-border rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-auto transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+                  />
+                  <span className='text-muted-foreground font-medium'>-</span>
+                  <input
+                    type='date'
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className='bg-background border-border rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-auto transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table */}

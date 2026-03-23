@@ -1,16 +1,53 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Moon, Sun, LogOut } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, X, Moon, Sun, LogOut, User, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/logo'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { useMutation } from '@tanstack/react-query'
+import authApi from '@/apis/auth.api'
+import { toast } from 'react-toastify'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function AdminHeader() {
   const [isOpen, setIsOpen] = useState(false)
   const [expandedMobileMenu, setExpandedMobileMenu] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const refreshToken = useAuthStore((state) => state.refreshToken)
+
+  const logoutMutation = useMutation({
+    mutationFn: () => authApi.logout(refreshToken || ''),
+    onSuccess: () => {
+      logout()
+      toast.success('Đăng xuất thành công')
+      navigate('/login')
+    },
+    onError: () => {
+      logout()
+      toast.error('Có lỗi xảy ra khi đăng xuất')
+      navigate('/login')
+    }
+  })
+
+  const handleLogout = () => {
+    logoutMutation.mutate()
+  }
 
   const navItems = [
     { label: 'Tổng quan', href: '/admin/dashboard' },
@@ -31,7 +68,6 @@ export default function AdminHeader() {
       ]
     },
     { label: 'Quản lý phòng bàn', href: '/admin/layout' },
-    { label: 'Báo Cáo doanh thu', href: '/admin/reports' },
     { label: 'Trợ lý AI', href: '/admin/ai-assistant' }
   ]
 
@@ -127,10 +163,48 @@ export default function AdminHeader() {
           </Button>
 
           {/* Logout Button */}
-          <Button variant='ghost' size='sm' className='text-muted-foreground hover:text-destructive gap-2'>
-            <LogOut className='h-4 w-4' />
-            <span className='hidden sm:inline'>Logout</span>
-          </Button>
+          {isAuthenticated && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='ghost' className='relative h-10 w-10 rounded-full'>
+                  <Avatar className='border-primary/20 h-10 w-10 cursor-pointer border'>
+                    <AvatarImage src={user?.avatar} alt={user?.firstName} />
+                    <AvatarFallback className='bg-primary/10 text-primary'>
+                      {user?.firstName?.charAt(0) || <User className='h-5 w-5' />}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className='border-border w-56 bg-white opacity-100 shadow-md' align='end' forceMount>
+                <DropdownMenuLabel className='font-normal'>
+                  <div className='flex flex-col space-y-1'>
+                    <p className='text-sm leading-none font-medium'>
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className='text-muted-foreground text-xs leading-none'>{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to='/profile' className='cursor-pointer'>
+                    <User className='mr-2 h-4 w-4' />
+                    <span>Hồ sơ của tôi</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to='/settings' className='cursor-pointer'>
+                    <Settings className='mr-2 h-4 w-4' />
+                    <span>Cài đặt</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className='cursor-pointer text-red-600 focus:text-red-600' onClick={handleLogout}>
+                  <LogOut className='mr-2 h-4 w-4' />
+                  <span>Đăng xuất</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Mobile Menu Toggle */}
           <Button variant='ghost' size='icon' onClick={() => setIsOpen(!isOpen)} className='xl:hidden'>

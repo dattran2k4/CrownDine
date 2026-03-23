@@ -19,7 +19,7 @@ spring:
     baseline-on-migrate: true
     locations: classpath:dev/db/migration
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -88,5 +88,3 @@ payos:
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
-
-

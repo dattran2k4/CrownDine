@@ -15,6 +15,8 @@ public interface UserVoucherService {
 
     List<MyVoucherResponse> getMyAvailableVouchers(String username);
 
+    List<MyVoucherResponse> getAvailableVouchersByCustomerId(Long customerId);
+
     VoucherValidateResponse validateVoucher(String code, Long orderId, String username);
 
     Voucher consumeVoucher(String code, String username);

@@ -33,6 +33,9 @@ public class Item extends AbstractEntity<Long> {
     @Column(name = "price_after_discount")
     private BigDecimal priceAfterDiscount;
 
+    @Column(name = "sold_count")
+    private Long soldCount;
+
     @Column(name = "image_url")
     private String imageUrl;
 

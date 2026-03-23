@@ -20,8 +20,7 @@ interface Props {
   bookingData: {
     date: string
     startTime: string
-    endTime: string
-    duration: number
+    plannedEndTime: string
     guests: number
     selectedTable: Table | null
   }
@@ -65,9 +64,7 @@ const Step4Payment = ({
   const discountedFoodDeposit = previewFinalAmount * 0.2
   const discountedRemainingAmount = previewFinalAmount - discountedFoodDeposit
   const discountedPayableNow =
-    voucherPreview && depositAmount > 0
-      ? Math.max(0, discountedFoodDeposit + tableDeposit)
-      : depositAmount
+    voucherPreview && depositAmount > 0 ? Math.max(0, discountedFoodDeposit + tableDeposit) : depositAmount
 
   // Tính cọc 20% món ăn
   const foodDeposit = itemsTotal * 0.2
@@ -145,9 +142,9 @@ const Step4Payment = ({
                 <span className='font-semibold text-gray-900'>{bookingData.date}</span>
               </div>
               <div className='rounded-lg bg-orange-50 p-3'>
-                <span className='mb-1 block text-xs text-gray-600'>Thời gian ({bookingData.duration}p)</span>
+                <span className='mb-1 block text-xs text-gray-600'>Khung giờ dự kiến</span>
                 <span className='font-semibold text-orange-600'>
-                  {bookingData.startTime} - {bookingData.endTime}
+                  {bookingData.startTime} - {bookingData.plannedEndTime}
                 </span>
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>
@@ -260,7 +257,11 @@ const Step4Payment = ({
             </div>
           </div>
 
-          <VoucherInput orderId={orderDetails?.orderId} disabled={isProcessing} onPreviewChange={onVoucherPreviewChange} />
+          <VoucherInput
+            orderId={orderDetails?.orderId}
+            disabled={isProcessing}
+            onPreviewChange={onVoucherPreviewChange}
+          />
         </div>
       </div>
 

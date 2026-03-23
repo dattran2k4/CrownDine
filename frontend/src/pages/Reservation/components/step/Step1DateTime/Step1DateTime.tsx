@@ -1,7 +1,6 @@
-import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
-import { addMinutesToTime, isDateTimeInPast } from '@/utils/utils'
-import { AlertCircle, Calendar, Clock, Hourglass, Users } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { isDateTimeInPast } from '@/utils/utils'
+import { Calendar, Clock, Users } from 'lucide-react'
+import { useEffect } from 'react'
 
 interface Props {
   guests: number
@@ -10,9 +9,7 @@ interface Props {
   setDate: (s: string) => void
   startTime: string
   setStartTime: (s: string) => void
-  endTime: string
-  setEndTime: (s: string) => void
-  duration: number
+  plannedEndTime: string
   timeSlots: string[]
 }
 const Step1DateTime = ({
@@ -22,51 +19,20 @@ const Step1DateTime = ({
   setDate,
   startTime,
   setStartTime,
-  endTime,
-  setEndTime,
-  duration,
+  plannedEndTime,
   timeSlots
 }: Props) => {
-  // Reset startTime và endTime nếu chúng trong quá khứ khi date thay đổi
+  // Reset startTime nếu giờ hiện tại đã qua khi date thay đổi
   useEffect(() => {
     if (isDateTimeInPast(date, startTime)) {
-      // Tìm giờ hợp lệ đầu tiên trong tương lai từ timeSlots
       const nextValidTime = timeSlots.find((slot) => !isDateTimeInPast(date, slot))
 
       if (nextValidTime) {
         setStartTime(nextValidTime)
-        const defaultEndTime = addMinutesToTime(nextValidTime, 120) // 2 giờ mặc định
-        const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-        const validEndTime = defaultEndTime > closingTimeStr ? closingTimeStr : defaultEndTime
-        if (!isDateTimeInPast(date, validEndTime)) {
-          setEndTime(validEndTime)
-        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, timeSlots])
-
-  // Tạo danh sách các giờ kết thúc có thể (30 phút một lần, từ startTime + 30 phút đến closeHour)
-  const endTimeOptions = useMemo(() => {
-    const options: string[] = []
-    const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-    let currentTime = addMinutesToTime(startTime, 30) // Bắt đầu từ 30 phút sau startTime
-
-    while (currentTime <= closingTimeStr) {
-      options.push(currentTime)
-      currentTime = addMinutesToTime(currentTime, 30)
-
-      // Giới hạn tối đa 6 giờ (12 options)
-      if (options.length >= 12) break
-    }
-
-    return options
-  }, [startTime])
-
-  // Validate: Kiểm tra nếu giờ kết thúc vượt quá giờ đóng cửa
-  const closingTimeStr = `${RESTAURANT_CONFIG.closeHour}:00`
-  const isOverTime = endTime > closingTimeStr && parseInt(endTime.split(':')[0]) < RESTAURANT_CONFIG.openHour
-  // Note: Logic so sánh chuỗi thời gian đơn giản, thực tế nên dùng Date object nếu qua ngày mới
 
   return (
     <div className='animate-fade-in m-4 space-y-8 p-4'>
@@ -111,7 +77,7 @@ const Step1DateTime = ({
       {/* 2. Chọn Giờ Bắt Đầu (Start Time) */}
       <div className='space-y-3'>
         <label className='flex items-center gap-2 text-sm font-bold'>
-          <Clock size={16} /> Giờ bắt đầu (Start Time)
+          <Clock size={16} /> Giờ bắt đầu
         </label>
         <div className='custom-scrollbar grid max-h-40 grid-cols-4 gap-3 overflow-y-auto pr-2 md:grid-cols-6 lg:grid-cols-8'>
           {timeSlots.map((slot) => {
@@ -136,52 +102,22 @@ const Step1DateTime = ({
         </div>
       </div>
 
-      {/* 3. Chọn Thời gian kết thúc */}
-      <div className='space-y-3'>
-        <label className='flex items-center gap-2 text-sm font-bold'>
-          <Hourglass size={16} /> Thời gian kết thúc
-        </label>
-        <div className='custom-scrollbar grid max-h-40 grid-cols-4 gap-3 overflow-y-auto pr-2 md:grid-cols-6 lg:grid-cols-8'>
-          {endTimeOptions.map((time) => {
-            const isPast = isDateTimeInPast(date, time)
-            return (
-              <button
-                key={time}
-                onClick={() => !isPast && setEndTime(time)}
-                disabled={isPast}
-                className={`rounded border px-1 py-2 text-sm transition-all ${
-                  isPast
-                    ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
-                    : endTime === time
-                      ? 'border-orange-500 bg-orange-500 text-white shadow-md ring-2 ring-orange-500/30'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-500'
-                }`}
-              >
-                {time}
-              </button>
-            )
-          })}
+      <div className='flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4'>
+        <Clock className='shrink-0 text-blue-500' />
+        <div>
+          <p className='text-sm font-bold text-blue-700'>Khung giờ dự kiến: {startTime} - {plannedEndTime}</p>
+          <p className='mt-1 text-xs text-blue-600'>
+            Giờ kết thúc sẽ được hệ thống tự tính theo mặc định khoảng 4 tiếng giữ bàn.
+          </p>
         </div>
       </div>
 
-      {/* 4. Tổng kết thời gian (Preview) */}
-      <div
-        className={`flex items-start gap-3 rounded-lg p-4 ${isOverTime ? 'border border-red-200 bg-red-50' : 'border border-blue-200 bg-blue-50'}`}
-      >
-        {isOverTime ? <AlertCircle className='shrink-0 text-red-500' /> : <Clock className='shrink-0 text-blue-500' />}
-        <div>
-          <p className={`text-sm font-bold ${isOverTime ? 'text-red-700' : 'text-blue-700'}`}>
-            Thời gian đặt: {startTime} - {endTime} ({duration / 60} tiếng)
-          </p>
-          {isOverTime ? (
-            <p className='mt-1 text-xs text-red-600'>
-              Lưu ý: Thời gian kết thúc vượt quá giờ đóng cửa ({RESTAURANT_CONFIG.closeHour}:00). Vui lòng chọn giờ đến
-              sớm hơn hoặc giảm thời lượng.
-            </p>
-          ) : (
-            <p className='mt-1 text-xs text-blue-600'>Bàn của bạn sẽ được giữ trong khoảng thời gian này.</p>
-          )}
-        </div>
+      <div className='rounded-lg border border-amber-200 bg-amber-50 p-4'>
+        <p className='text-sm font-semibold text-amber-800'>Lưu ý về thời gian giữ bàn</p>
+        <p className='mt-1 text-xs leading-5 text-amber-700'>
+          Mỗi lượt đặt bàn sẽ được giữ mặc định khoảng 4 tiếng. Nếu bàn trước đã hoàn tất sớm, hệ thống vẫn có thể
+          cho phép khách khác tiếp tục đặt bàn trong khung giờ gần nhất.
+        </p>
       </div>
     </div>
   )

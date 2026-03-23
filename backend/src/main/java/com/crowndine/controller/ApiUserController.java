@@ -60,6 +60,17 @@ public class ApiUserController {
                 .build();
     }
 
+    @GetMapping("/customer/{phone}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+    public ApiResponse getCustomerByPhone(@org.springframework.web.bind.annotation.PathVariable String phone) {
+        ProfileResponse response = userService.getProfileByPhone(phone);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get customer profile by phone successfully")
+                .data(response)
+                .build();
+    }
+
     @PutMapping
     public ApiResponse updateProfile(@RequestBody UpdateProfileRequest request, Principal principal) {
         log.info("Request update profile for user {}", principal.getName());

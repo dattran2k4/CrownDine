@@ -10,40 +10,49 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-    Page<Reservation> findByCustomer_Id(Long customerId, Pageable pageable);
+    Page<Reservation> findByUser_Id(Long userId, Pageable pageable);
+
+    List<Reservation> findAllByUser_Id(Long userId);
 
     @Query("""
-            select r.table.id
+            select r
             from Reservation r
             where r.table is not null
               and r.date = :date
+              and r.table.id in :tableIds
               and r.status in :statuses
-              and r.startTime < :endTime
-              and r.endTime > :startTime
+              and r.checkedOutAt is null
               and (r.status <> 'PENDING' or (r.expiratedAt is not null and r.expiratedAt > :now))
             """)
-    List<Long> findReservedTableIds(
+    List<Reservation> findBlockingReservations(
             LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
+            List<Long> tableIds,
             List<EReservationStatus> statuses,
             LocalDateTime now
     );
 
     List<Reservation> findByStatusAndExpiratedAtBefore(EReservationStatus status, LocalDateTime now);
 
+    @Query("""
+            select r from Reservation r
+            where r.status = :status
+            and r.reminderSentAt is null
+            and r.checkedOutAt is null
+            and r.date = :date
+            """)
+    List<Reservation> findReminderCandidates(EReservationStatus status, LocalDate date);
+
     Optional<Reservation> findByCode(String code);
 
     @Query("SELECT r FROM Reservation r WHERE " +
-           "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
-           "(:toDate IS NULL OR r.date <= :toDate) AND " +
-           "(:status IS NULL OR r.status = :status)")
+            "(:fromDate IS NULL OR r.date >= :fromDate) AND " +
+            "(:toDate IS NULL OR r.date <= :toDate) AND " +
+            "(:status IS NULL OR r.status = :status)")
     Page<Reservation> findReservations(
             @org.springframework.data.repository.query.Param("fromDate") LocalDate fromDate,
             @org.springframework.data.repository.query.Param("toDate") LocalDate toDate,

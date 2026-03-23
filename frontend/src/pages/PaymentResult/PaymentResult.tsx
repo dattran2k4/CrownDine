@@ -1,4 +1,5 @@
 import path from '@/constants/path'
+import paymentApi from '@/apis/payment.api'
 import { formatCurrency } from '@/utils/utils'
 import {
   getPaymentResultFromSession,
@@ -6,6 +7,7 @@ import {
   type PaymentResultStorageData
 } from '@/utils/paymentResultStorage'
 import { CheckCircle2, Home, Receipt, RefreshCw, XCircle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -35,13 +37,25 @@ export default function PaymentResult() {
 
   const stateResult = (location.state as PaymentResultStorageData | null) ?? null
   const storedResult = typeof window !== 'undefined' ? getPaymentResultFromSession() : null
-  const paymentResult = callbackResult
-    ? {
+  const paymentResult = useMemo<PaymentResultStorageData | null>(() => {
+    if (callbackResult) {
+      return {
         ...storedResult,
         ...stateResult,
         ...callbackResult
       }
-    : stateResult ?? storedResult
+    }
+
+    return stateResult ?? storedResult
+  }, [callbackResult, stateResult, storedResult])
+
+  const paymentCode = paymentResult?.orderCode
+  const { data: paymentDetail } = useQuery({
+    queryKey: ['payment-detail-by-code', paymentCode],
+    queryFn: () => paymentApi.getPaymentByCode(paymentCode!),
+    enabled: Boolean(paymentCode),
+    select: (response) => response.data.data
+  })
 
   useEffect(() => {
     if (!callbackResult) return
@@ -61,21 +75,42 @@ export default function PaymentResult() {
     })
   }, [callbackResult, location.pathname, navigate, stateResult, storedResult])
 
+  const mergedPaymentResult = useMemo(() => {
+    if (!paymentDetail) {
+      return paymentResult
+    }
+
+    return {
+      ...paymentResult,
+      amount: paymentDetail.amount,
+      paidAt: paymentDetail.createdAt,
+      reservationCode: paymentDetail.reservationCode ?? paymentResult?.reservationCode,
+      orderCode: String(paymentDetail.code),
+      paymentId: paymentDetail.transactionCode ?? paymentResult?.paymentId,
+      status: paymentDetail.status
+    }
+  }, [paymentDetail, paymentResult])
+
+  useEffect(() => {
+    if (!paymentDetail || !mergedPaymentResult) return
+
+    setPaymentResultToSession(mergedPaymentResult)
+  }, [mergedPaymentResult, paymentDetail])
+
   const isSuccessPath = location.pathname === path.paymentSuccess
-  const isPaid = paymentResult?.status === 'PAID' && paymentResult?.cancel !== true && paymentResult?.code === '00'
-  const isSuccess = isSuccessPath && isPaid
+  const isSuccess = isSuccessPath && mergedPaymentResult?.status === 'SUCCESS' && mergedPaymentResult?.cancel !== true
 
   const title = isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa hoàn tất'
   const description = isSuccess
     ? 'Cảm ơn bạn đã hoàn tất thanh toán tiền cọc. CrownDine đã ghi nhận giao dịch của bạn và sẽ chuẩn bị trải nghiệm tốt nhất cho buổi đặt bàn này.'
     : 'Thanh toán chưa hoàn tất hoặc đã bị hủy. Bạn có thể quay lại để thử lại hoặc chọn phương thức khác.'
 
-  const displayStatus = isSuccess ? 'Đã thanh toán' : paymentResult?.cancel ? 'Đã hủy' : 'Chưa hoàn tất'
-  const transactionDate = paymentResult?.paidAt
+  const displayStatus = isSuccess ? 'Đã thanh toán' : mergedPaymentResult?.cancel ? 'Đã hủy' : 'Chưa hoàn tất'
+  const transactionDate = mergedPaymentResult?.paidAt
     ? new Intl.DateTimeFormat('vi-VN', {
         dateStyle: 'full',
         timeStyle: 'short'
-      }).format(new Date(paymentResult.paidAt))
+      }).format(new Date(mergedPaymentResult.paidAt))
     : new Intl.DateTimeFormat('vi-VN', {
         dateStyle: 'full',
         timeStyle: 'short'
@@ -95,7 +130,9 @@ export default function PaymentResult() {
               <div>
                 <h1 className='text-2xl font-bold text-neutral-900'>{title}</h1>
                 <p className='mt-1 text-sm text-neutral-600'>{description}</p>
-                {isSuccess && <p className='mt-3 text-sm font-medium text-emerald-700'>Cảm ơn bạn đã lựa chọn CrownDine.</p>}
+                {isSuccess && (
+                  <p className='mt-3 text-sm font-medium text-emerald-700'>Cảm ơn bạn đã lựa chọn CrownDine.</p>
+                )}
               </div>
             </div>
           </div>
@@ -108,34 +145,38 @@ export default function PaymentResult() {
               </div>
 
               <div className='rounded-2xl border border-neutral-200 bg-neutral-50 p-4'>
-                <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>Số tiền đã thanh toán</span>
+                <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
+                  Số tiền đã thanh toán
+                </span>
                 <p className='mt-2 text-lg font-semibold text-neutral-900'>
-                  {paymentResult?.amount != null ? formatCurrency(paymentResult.amount) : 'Chưa có dữ liệu'}
+                  {mergedPaymentResult?.amount != null ? formatCurrency(mergedPaymentResult.amount) : 'Chưa có dữ liệu'}
                 </p>
               </div>
 
               <div className='rounded-2xl border border-neutral-200 bg-neutral-50 p-4'>
                 <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>Mã giao dịch</span>
                 <p className='mt-2 text-sm font-medium break-all text-neutral-900'>
-                  {paymentResult?.paymentId ?? 'Chưa có'}
+                  {mergedPaymentResult?.paymentId ?? 'Chưa có'}
                 </p>
               </div>
 
               <div className='rounded-2xl border border-neutral-200 bg-neutral-50 p-4'>
                 <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>Mã thanh toán</span>
-                <p className='mt-2 text-lg font-semibold text-neutral-900'>{paymentResult?.orderCode ?? 'N/A'}</p>
+                <p className='mt-2 text-lg font-semibold text-neutral-900'>{mergedPaymentResult?.orderCode ?? 'N/A'}</p>
               </div>
             </div>
 
             <div className='rounded-2xl border border-neutral-200 bg-neutral-50 p-4'>
-              <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>Thời gian giao dịch</span>
+              <span className='text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
+                Thời gian giao dịch
+              </span>
               <p className='mt-2 text-base font-semibold text-neutral-900'>{transactionDate}</p>
             </div>
 
             {!isSuccess && (
               <div className='rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800'>
-                Nếu bạn đã thanh toán nhưng chưa thấy cập nhật, hãy chờ thêm trong giây lát rồi kiểm tra lại lịch sử
-                đặt bàn của bạn.
+                Nếu bạn đã thanh toán nhưng chưa thấy cập nhật, hãy chờ thêm trong giây lát rồi kiểm tra lại lịch sử đặt
+                bàn của bạn.
               </div>
             )}
 

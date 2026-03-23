@@ -98,6 +98,7 @@ export default function Dashboard() {
   const [revenueTimeRange, setRevenueTimeRange] = useState('Hôm nay')
   const [customerTimeRange, setCustomerTimeRange] = useState('Hôm nay')
   const [topProductsTimeRange, setTopProductsTimeRange] = useState('Hôm nay')
+  const [topProductsViewMode, setTopProductsViewMode] = useState<'revenue' | 'quantity'>('revenue')
 
   const revenueViewMode = (revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
   const customerViewMode = (customerTimeRange === 'Hôm nay' || customerTimeRange === 'Hôm qua') ? 'Theo giờ' : 'Theo ngày'
@@ -135,7 +136,7 @@ export default function Dashboard() {
     value: item.value
   })) || []
 
-  const displayTopProductsData = topProductsData?.topProducts?.map(item => ({
+  const displayTopProductsData = (topProductsViewMode === 'revenue' ? topProductsData?.topProducts : topProductsData?.topProductsQuantity)?.map(item => ({
     name: item.label,
     value: item.value
   })) || []
@@ -338,8 +339,19 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
                 Top 10 hàng hóa bán chạy {topProductsTimeRange.toLowerCase()}
               </CardTitle>
-              <div className="flex items-center gap-1 text-xs text-blue-600 font-bold uppercase cursor-pointer">
-                Theo doanh thu <ChevronRight size={14} />
+              <div className="flex items-center gap-4">
+                <div 
+                  className={`flex items-center gap-1 text-xs font-bold uppercase cursor-pointer transition-colors ${topProductsViewMode === 'revenue' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  onClick={() => setTopProductsViewMode('revenue')}
+                >
+                  Theo doanh thu {topProductsViewMode === 'revenue' && <Check size={12} strokeWidth={3} />}
+                </div>
+                <div 
+                  className={`flex items-center gap-1 text-xs font-bold uppercase cursor-pointer transition-colors ${topProductsViewMode === 'quantity' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  onClick={() => setTopProductsViewMode('quantity')}
+                >
+                  Theo số lượng {topProductsViewMode === 'quantity' && <Check size={12} strokeWidth={3} />}
+                </div>
               </div>
             </div>
             <TimeRangeDropdown 
@@ -360,6 +372,7 @@ export default function Dashboard() {
                   tickLine={false}
                   tick={{ fontSize: 10, fill: '#9CA3AF', textAnchor: 'start' }}
                   tickFormatter={(value) => {
+                    if (topProductsViewMode === 'quantity') return value.toString();
                     if (value === 0) return '0'
                     if (value < 1) return `${(value * 1000).toFixed(0)}k`
                     return `${value} tr`
@@ -380,7 +393,12 @@ export default function Dashboard() {
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
-                  formatter={(value: any) => [`${(Number(value) * 1000000).toLocaleString('vi-VN')} VNĐ`, 'Doanh thu']}
+                  formatter={(value: any) => {
+                    if (topProductsViewMode === 'quantity') {
+                      return [`${Number(value).toLocaleString('vi-VN')} món`, 'Số lượng bán']
+                    }
+                    return [`${(Number(value) * 1000000).toLocaleString('vi-VN')} VNĐ`, 'Doanh thu']
+                  }}
                 />
                 <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} barSize={32} />
               </BarChart>

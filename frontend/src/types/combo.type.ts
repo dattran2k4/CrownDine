@@ -12,5 +12,7 @@ export interface Combo {
   priceAfterDiscount: number | null
   status: string
   imageUrl: string | null
+  averageRating?: number
+  feedbackCount?: number
   items?: ComboItem[]
 }

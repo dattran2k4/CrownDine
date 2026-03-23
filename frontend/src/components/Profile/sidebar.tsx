@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import type { User } from '@/types/profile.type'
-import { User as UserIcon, Clock, Lock, Camera, Loader2 } from 'lucide-react'
+import { User as UserIcon, Clock, Lock, Camera, Loader2, Ticket, Heart } from 'lucide-react'
 import { calculateMembershipTier, getMembershipTierConfig } from '@/lib/membership_tier'
 import userApi from '@/apis/user.api'
 import { useMutation } from '@tanstack/react-query'
@@ -44,6 +44,8 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
   const tabs = [
     { id: 'info', label: 'My Information', icon: UserIcon },
     { id: 'reservations', label: 'Reservation History', icon: Clock },
+    { id: 'favorites', label: 'My Favorites', icon: Heart },
+    { id: 'vouchers', label: 'My Vouchers', icon: Ticket },
     { id: 'security', label: 'Password & Security', icon: Lock }
   ]
   const getInitials = () => {

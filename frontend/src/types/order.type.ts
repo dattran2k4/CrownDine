@@ -10,10 +10,17 @@ export interface Order {
   code: string
   guestName: string
   orderDetails: OrderDetail[]
-  staffName: null
+  staffName: string | null
   status: OrderStatus
-  tableName: null
+  tableName: string | null
   totalPrice: number
+  discountPrice: number
+  finalPrice: number
+  voucher?: {
+    id: number
+    code: string
+    name: string
+  }
   updatedAt: string
   createdAt: string
 }
@@ -28,16 +35,24 @@ export interface OrderDetail {
   totalPrice: number
 }
 
-export interface OrderApplyVoucherRequest {
-  code: string
+// Request Types
+export interface OrderItemRequest {
+  itemId?: number
+  comboId?: number
+  quantity: number
+  note?: string
 }
 
-export interface OrderApplyVoucherResponse {
-  orderId: number
-  orderCode: string
-  voucherId: number
-  voucherCode: string
-  totalPrice: number
-  discountPrice: number
-  finalPrice: number
+export interface OrderRequest {
+  tableId?: number | null
+  items: OrderItemRequest[]
+}
+
+export interface OrderItemBatchRequest {
+  items: OrderItemRequest[]
+}
+
+export interface UpdateOrderDetailRequest {
+  quantity?: number
+  note?: string
 }

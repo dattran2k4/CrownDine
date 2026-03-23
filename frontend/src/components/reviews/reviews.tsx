@@ -1,4 +1,8 @@
 import { Star } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import feedbackApi from '@/apis/feedback.api'
+import { formatDistanceToNow } from 'date-fns'
+import { vi } from 'date-fns/locale'
 
 interface Review {
   id: string
@@ -7,57 +11,8 @@ interface Review {
   rating: number
   text: string
   date: string
+  avatarUrl?: string
 }
-const reviews: Review[] = [
-  {
-    id: '1',
-    author: 'Sarah Mitchell',
-    role: 'Food Critic, NY Times',
-    rating: 5,
-    text: 'An extraordinary culinary journey. Every dish tells a story, and the attention to detail is incomparable. A must-visit for anyone who loves fine dining.',
-    date: '2 weeks ago'
-  },
-  {
-    id: '2',
-    author: 'James Rodriguez',
-    role: 'Regular Guest',
-    rating: 5,
-    text: "We've celebrated every anniversary here for the past 5 years. The ambiance, service, and food never disappoint. Simply the best in the city.",
-    date: '1 month ago'
-  },
-  {
-    id: '3',
-    author: 'Emily Chen',
-    role: 'Food Blogger',
-    rating: 5,
-    text: "The Wagyu ribeye here is better than anything I've ever had. Chef Marco truly has a gift for creating culinary masterpieces!",
-    date: '3 weeks ago'
-  },
-  {
-    id: '4',
-    author: 'Michael Johnson',
-    role: 'Tourist',
-    rating: 5,
-    text: "An exceptional experience. I will definitely return when I'm back in the city. This is what I envision a fine dining restaurant should be.",
-    date: '1 week ago'
-  },
-  {
-    id: '5',
-    author: 'Jessica Williams',
-    role: 'Customer',
-    rating: 5,
-    text: 'Perfect for special occasions. Elegant ambiance, attentive service, and exquisite food. Beyond five stars!',
-    date: 'Yesterday'
-  },
-  {
-    id: '6',
-    author: 'David Anderson',
-    role: 'Restaurant Critic',
-    rating: 5,
-    text: 'The highest marks. Every aspect—from the preparation to the service—is executed flawlessly. CrownDine deserves every one of its Michelin stars.',
-    date: '5 days ago'
-  }
-]
 function RatingStars({ rating }: { rating: number }) {
   return (
     <div className='flex gap-1'>
@@ -69,52 +24,106 @@ function RatingStars({ rating }: { rating: number }) {
 }
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <div className='bg-card border-border hover:border-primary animate-in fade-in slide-in-from-bottom-4 rounded-lg border-2 p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg'>
+    <div className='bg-card border-border hover:border-primary animate-in fade-in slide-in-from-bottom-4 flex flex-col rounded-lg border-2 p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg'>
       {/* Rating */}
       <div className='mb-4'>
         <RatingStars rating={review.rating} />
       </div>
 
       {/* Quote */}
-      <blockquote className='text-foreground mb-6 leading-relaxed'>"{review.text}"</blockquote>
+      <blockquote className='text-foreground mb-6 flex-grow leading-relaxed'>"{review.text}"</blockquote>
 
       {/* Author */}
       <div className='border-border border-t pt-4'>
-        <p className='text-foreground font-bold'>{review.author}</p>
-        <p className='text-foreground/60 text-sm'>{review.role}</p>
-        <p className='text-foreground/50 mt-2 text-xs'>{review.date}</p>
+        <div className='flex items-center gap-3'>
+          {review.avatarUrl && (
+            <img src={review.avatarUrl} alt={review.author} className='h-10 w-10 rounded-full object-cover' />
+          )}
+          <div>
+            <p className='text-foreground font-bold'>{review.author}</p>
+            <p className='text-foreground/60 text-sm'>{review.role}</p>
+            <p className='text-foreground/50 mt-1 text-xs'>{review.date}</p>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
 const Reviews = () => {
+  const { data: feedbacksData, isPending } = useQuery({
+    queryKey: ['feedbacks'],
+    queryFn: () => feedbackApi.getAllFeedbacks()
+  })
+
+  const reviews: Review[] =
+    feedbacksData?.data?.data?.map((f) => ({
+      id: f.id.toString(),
+      author: f.fullName || 'Khách hàng',
+      role: 'Thành viên',
+      rating: f.rating,
+      text: f.comment,
+      date: formatDistanceToNow(new Date(f.createdAt), { addSuffix: true, locale: vi }),
+      avatarUrl: f.avatarUrl
+    })) || []
+
+  const row1 = reviews.filter((_, i) => i % 2 === 0)
+  const row2 = reviews.filter((_, i) => i % 2 !== 0)
+
   return (
-    <section className='bg-background py-20'>
+    <section className='bg-background overflow-hidden py-20'>
       <div className='container mx-auto px-4'>
         {/* Header */}
-        <div className='mb-12 text-center'>
+        <div className='mb-16 text-center'>
           <p className='text-primary mb-2 flex items-center justify-center gap-2 text-sm font-semibold tracking-widest uppercase'>
             <span className='bg-primary inline-block h-1 w-1 rounded-full'></span>
-            TESTIMONIALS
+            NHẬN XÉT CỦA KHÁCH HÀNG
           </p>
           <h2 className='mb-4 text-4xl font-bold md:text-5xl'>
-            What Our Guests
+            Khách Hàng Nói Gì
             <br />
-            <span className='text-primary'>Say</span>
+            <span className='text-primary'>Về Chúng Tôi</span>
           </h2>
           <p className='text-foreground/70 mx-auto max-w-2xl'>
-            Don't just take our word for it—hear from our valued guests
+            Đừng chỉ nghe lời chúng tôi kể—hãy lắng nghe những chia sẻ từ những vị khách quý
           </p>
         </div>
-
-        {/* Reviews Grid */}
-        <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </div>
       </div>
+
+      {/* Reviews Marquee */}
+      {isPending ? (
+        <div className='text-center py-10'>
+          <p className='text-muted-foreground italic animate-pulse'>Đang tải đánh giá...</p>
+        </div>
+      ) : reviews.length > 0 ? (
+        <div className='space-y-10'>
+          {/* Row 1: Left to Right */}
+          <div className='mask-edge flex overflow-hidden'>
+            <div className='animate-marquee-right flex gap-6 px-3'>
+              {[...row1, ...row1, ...row1].map((review, index) => (
+                <div key={`${review.id}-r1-${index}`} className='w-[400px] flex-shrink-0'>
+                  <ReviewCard review={review} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 2: Right to Left */}
+          <div className='mask-edge flex overflow-hidden'>
+            <div className='animate-marquee-left flex gap-6 px-3'>
+              {[...row2, ...row2, ...row2].map((review, index) => (
+                <div key={`${review.id}-r2-${index}`} className='w-[400px] flex-shrink-0'>
+                  <ReviewCard review={review} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className='text-center py-10'>
+          <p className='text-muted-foreground'>Chưa có đánh giá nào.</p>
+        </div>
+      )}
     </section>
   )
 }

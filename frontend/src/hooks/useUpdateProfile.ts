@@ -16,7 +16,7 @@ const useUpdateProfile = () => {
         setUser({ ...currentUser, ...variables, gender: variables.gender?.toLowerCase() as any })
       }
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      toast.success('Profile updated successfully')
+      toast.success('Thay đổi thông tin cá nhân thành công!')
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Có lỗi xảy ra'

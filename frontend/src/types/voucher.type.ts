@@ -56,3 +56,18 @@ export interface VoucherValidateResponse {
   usageCount: number
   usageLimit: number
 }
+
+export interface MyVoucherResponse {
+  assignmentId: number
+  voucherId: number
+  voucherCode: string
+  voucherName: string
+  voucherType: VoucherType
+  discountValue: number
+  maxDiscountValue: number | null
+  description: string | null
+  usageCount: number
+  usageLimit: number | null
+  assignedAt: string
+  expiredAt: string
+}

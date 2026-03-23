@@ -1,5 +1,5 @@
 export const RESTAURANT_CONFIG = {
-  openHour: 9,
+  openHour: 10,
   closeHour: 22,
   depositAmount: 200000,
   currency: 'đ'

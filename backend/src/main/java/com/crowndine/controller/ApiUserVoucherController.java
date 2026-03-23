@@ -31,4 +31,14 @@ public class ApiUserVoucherController {
                 .data(userVoucherService.getMyAvailableVouchers(principal.getName()))
                 .build();
     }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+    @GetMapping("/customer/{customerId}")
+    public ApiResponse getAvailableVouchersByCustomerId(@org.springframework.web.bind.annotation.PathVariable Long customerId) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get available vouchers by customer id successfully")
+                .data(userVoucherService.getAvailableVouchersByCustomerId(customerId))
+                .build();
+    }
 }

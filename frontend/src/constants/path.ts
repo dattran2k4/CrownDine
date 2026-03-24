@@ -7,6 +7,7 @@ const path = {
   reservation: '/reservation',
   paymentSuccess: '/thanh-toan/thanh-cong',
   paymentFailure: '/thanh-toan/that-bai',
-  dashboard: '/admin/dashboard'
+  dashboard: '/admin/dashboard',
+  chat: '/chat'
 } as const
 export default path

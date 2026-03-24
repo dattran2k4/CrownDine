@@ -1,16 +1,17 @@
 package com.crowndine.ai.service;
 
+import com.crowndine.ai.intent.AIIntent;
 import com.crowndine.ai.intent.AnalyzedIntent;
 import com.crowndine.ai.tool.AIToolNames;
-import com.crowndine.ai.tool.method.AdminProductMethodTools;
+import com.crowndine.ai.tool.method.ReservationMethodTools;
 import com.crowndine.exception.AiRateLimitException;
 import com.crowndine.exception.AiServiceException;
 import com.google.genai.errors.ApiException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
@@ -20,30 +21,31 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @Service
-public class AIAdminChatService {
+public class AIReservationChatService implements AIIntentHandler {
 
     private final ChatClient chatClient;
-    private final AIIntentClassifier aiIntentClassifier;
 
-    public AIAdminChatService(ChatClient.Builder builder,
-                              ChatMemory chatMemory,
-                              AIIntentClassifier aiIntentClassifier,
-                              AdminProductMethodTools adminProductMethodTools,
-                              @Value("classpath:prompts/admin-chatbot-system.st") Resource systemPromptResource) {
-        this.aiIntentClassifier = aiIntentClassifier;
-
+    public AIReservationChatService(ChatClient.Builder builder,
+                                    ChatMemory chatMemory,
+                                    ReservationMethodTools reservationMethodTools,
+                                    @Value("classpath:prompts/admin-reservation-chat-system.st") Resource systemPromptResource) {
         this.chatClient = builder
                 .defaultSystem(loadSystemPrompt(systemPromptResource))
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         new SimpleLoggerAdvisor())
-                .defaultToolNames(AIToolNames.REVENUE_REPORT_TOOL)
-                .defaultTools(adminProductMethodTools)
+                .defaultToolNames(AIToolNames.RESERVATION_LIST_TOOL)
+                .defaultTools(reservationMethodTools)
                 .build();
     }
 
-    public Flux<String> chatStream(String username, String message) {
-        AnalyzedIntent analyzedIntent = aiIntentClassifier.analyze(message);
+    @Override
+    public AIIntent getSupportedIntent() {
+        return AIIntent.RESERVATION_MANAGEMENT;
+    }
+
+    @Override
+    public Flux<String> chatStream(String username, String message, AnalyzedIntent analyzedIntent) {
         return this.chatClient.prompt()
                 .system(system -> system.text("""
                         Ngu canh intent da phan tich:
@@ -64,11 +66,15 @@ public class AIAdminChatService {
                 .onErrorMap(this::mapAiException);
     }
 
+    public String getReservationHandlerInfo() {
+        return "Reservation handler dang xu ly cac cau hoi ve dat ban, tinh trang reservation va thao tac quan ly dat ban.";
+    }
+
     private String loadSystemPrompt(Resource resource) {
         try {
             return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot load AI system prompt", e);
+            throw new IllegalStateException("Cannot load AI reservation system prompt", e);
         }
     }
 

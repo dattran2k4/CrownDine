@@ -1,7 +1,7 @@
 package com.crowndine.ai.controller;
 
 import com.crowndine.ai.dto.request.AIChatRequest;
-import com.crowndine.ai.service.AIAdminChatService;
+import com.crowndine.ai.service.AIChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,10 +22,10 @@ import java.security.Principal;
 @Slf4j(topic = "API-AI-CHAT-BOT-CONTROLLER")
 public class ApiAIChatBotController {
 
-    private final AIAdminChatService aiAdminChatService;
+    private final AIChatService aiChatService;
 
     @PostMapping(value = "/chat", produces = MediaType.APPLICATION_JSON_VALUE)
     public Flux<String> chat(@Valid @RequestBody AIChatRequest request, Principal principal) {
-        return aiAdminChatService.chatStream(principal.getName(), request.getMessage());
+        return aiChatService.chatStream(principal.getName(), request.getMessage());
     }
 }

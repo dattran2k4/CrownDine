@@ -118,7 +118,9 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
       name: tableLayout.name || `Bàn ${tableLayout.id}`,
       capacity: tableLayout.capacity || 2,
       status: tableLayout.status as 'AVAILABLE' | 'OCCUPIED' | 'RESERVED',
-      type: 'STANDARD' // Backend might not store type yet, fallback to STANDARD
+      type: 'STANDARD', // Backend might not store type yet, fallback to STANDARD
+      areaName: tableLayout.areaName || activeLayout?.areas.find((a) => a.tables.some((t) => t.id === tableLayout.id))?.areaName,
+      floorName: tableLayout.floorName || activeFloor?.name
     }
 
     toggleTable(mappedTable)

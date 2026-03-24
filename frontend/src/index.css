@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Karla:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -97,7 +97,7 @@
   }
 }
 @theme {
-  --font-sans: 'Karla', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   /* --- Breakpoints & Container --- */
   --breakpoint-2xl: 1400px;

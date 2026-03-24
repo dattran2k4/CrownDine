@@ -70,6 +70,8 @@ export interface ReservationUpdateTableRequest {
 export type ReservationTable = Omit<BaseTable, 'shape' | 'status'> & {
   status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'
   type: 'STANDARD' | 'VIP' | 'WINDOW'
+  areaName?: string
+  floorName?: string
 }
 
 type MenuItemIdentity = Pick<Item, 'id' | 'name'>

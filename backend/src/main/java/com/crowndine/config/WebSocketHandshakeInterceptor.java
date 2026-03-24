@@ -1,14 +1,17 @@
 package com.crowndine.config;
 
 import com.crowndine.common.enums.ETokenType;
+import com.crowndine.exception.JwtAuthenticationException;
 import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -33,26 +36,35 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
                                    @NotNull Map<String, Object> attributes) {
         String token = extractAccessToken(request.getURI());
         if (StringUtils.isBlank(token)) {
-            log.warn("WebSocket handshake missing access_token query param");
+            log.debug("WebSocket handshake missing access_token query param. Source={}", describeRequestSource(request));
             return true;
         }
 
-        String username = jwtService.extractUsername(token, ETokenType.ACCESS_TOKEN);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        try {
+            String username = jwtService.extractUsername(token, ETokenType.ACCESS_TOKEN);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        if (!jwtService.isTokenValid(token, ETokenType.ACCESS_TOKEN, userDetails)) {
-            log.warn("WebSocket handshake token invalid for user {}", username);
+            if (!jwtService.isTokenValid(token, ETokenType.ACCESS_TOKEN, userDetails)) {
+                log.warn("WebSocket handshake token invalid for user {}", username);
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                return false;
+            }
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+            );
+            attributes.put("authenticatedUser", authentication);
+            log.info("WebSocket handshake authenticated for user {}. Source={}", username, describeRequestSource(request));
             return true;
+        } catch (JwtAuthenticationException exception) {
+            log.debug("WebSocket handshake authentication failed: {}. Source={}",
+                    exception.getMessage(),
+                    describeRequestSource(request));
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
         }
-
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                userDetails.getAuthorities()
-        );
-        attributes.put("authenticatedUser", authentication);
-        log.info("WebSocket handshake authenticated for user {}", username);
-        return true;
     }
 
     @Override
@@ -77,5 +89,17 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
             return URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
         }
         return null;
+    }
+
+    private String describeRequestSource(ServerHttpRequest request) {
+        String origin = request.getHeaders().getOrigin();
+        String userAgent = request.getHeaders().getFirst("User-Agent");
+
+        if (request instanceof ServletServerHttpRequest servletRequest) {
+            String remoteAddress = servletRequest.getServletRequest().getRemoteAddr();
+            return "remoteAddr=" + remoteAddress + ", origin=" + origin + ", userAgent=" + userAgent;
+        }
+
+        return "origin=" + origin + ", userAgent=" + userAgent;
     }
 }

@@ -32,7 +32,7 @@ const OrderManagement = () => {
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL')
-  
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [reservationIdForNewOrder, setReservationIdForNewOrder] = useState<number | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
@@ -46,7 +46,7 @@ const OrderManagement = () => {
     // Local timezone offset hack to get YYYY-MM-DD reliably
     const offset = today.getTimezoneOffset()
     today.setMinutes(today.getMinutes() - offset)
-    
+
     if (dateFilterType === 'TODAY') {
       const dateStr = today.toISOString().split('T')[0]
       return { fromDate: dateStr, toDate: dateStr }
@@ -66,11 +66,12 @@ const OrderManagement = () => {
   // Fetch orders
   const { data: orders = [] } = useQuery({
     queryKey: ['orders', statusFilter, fromDate, toDate],
-    queryFn: () => orderApi.getAllOrders({
-      status: statusFilter !== 'ALL' ? (statusFilter as any) : undefined,
-      fromDate,
-      toDate
-    }),
+    queryFn: () =>
+      orderApi.getAllOrders({
+        status: statusFilter !== 'ALL' ? (statusFilter as any) : undefined,
+        fromDate,
+        toDate
+      }),
     select: (response) => response?.data?.data?.data ?? []
   })
 
@@ -97,7 +98,7 @@ const OrderManagement = () => {
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase()
     const matchesSearch = order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
-    
+
     let matchesType = true
     if (orderTypeFilter === 'RES') matchesType = order.code.startsWith('RES')
     else if (orderTypeFilter === 'ORD') matchesType = order.code.startsWith('ORD')
@@ -119,13 +120,15 @@ const OrderManagement = () => {
         if (updated) setSelectedOrder(updated)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders])
 
   useEffect(() => {
     const selectedOrderId = (location.state as { selectedOrderId?: number } | null)?.selectedOrderId
-    const reservationId = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)?.reservationId
-    const createFromReservation = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)?.createFromReservation
+    const reservationId = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)
+      ?.reservationId
+    const createFromReservation = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)
+      ?.createFromReservation
 
     if (createFromReservation && reservationId) {
       setSelectedOrder(null)
@@ -225,32 +228,34 @@ const OrderManagement = () => {
 
       {/* Toolbar & Filters */}
       <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm'>
-        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-           <div className='relative w-full sm:max-w-xs'>
-             <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-             <Input
-               placeholder='Tìm theo Mã đơn, tên bàn...'
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-               className='bg-background pl-9 shadow-none'
-             />
-           </div>
-           <Button
-             onClick={handleCreateOrder}
-             className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
-           >
-             <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
-           </Button>
+        <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-center'>
+          <div className='relative w-full sm:max-w-xs'>
+            <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
+            <Input
+              placeholder='Tìm theo Mã đơn, tên bàn...'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className='bg-background pl-9 shadow-none'
+            />
+          </div>
+          <Button
+            onClick={handleCreateOrder}
+            className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
+          >
+            <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
+          </Button>
         </div>
 
         {/* Filters Row */}
-        <div className='flex flex-wrap items-end gap-4 mt-2 md:mt-0 pt-3 border-t border-border'>
-          <div className='flex flex-col gap-1.5 w-full sm:w-auto'>
-            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Trạng thái</label>
+        <div className='border-border mt-2 flex flex-wrap items-end gap-4 border-t pt-3 md:mt-0'>
+          <div className='flex w-full flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
+              Trạng thái
+            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[150px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+              className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[150px]'
             >
               <option value='ALL'>Tất cả</option>
               <option value='PRE_ORDER'>Đặt trước</option>
@@ -261,12 +266,12 @@ const OrderManagement = () => {
             </select>
           </div>
 
-          <div className='flex flex-col gap-1.5 w-full sm:w-auto'>
-            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Loại đơn</label>
+          <div className='flex w-full flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>Loại đơn</label>
             <select
               value={orderTypeFilter}
               onChange={(e) => setOrderTypeFilter(e.target.value)}
-              className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[170px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+              className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[170px]'
             >
               <option value='ALL'>Tất cả</option>
               <option value='RES'>Đặt bàn trước (RES)</option>
@@ -274,13 +279,13 @@ const OrderManagement = () => {
             </select>
           </div>
 
-          <div className='flex flex-col gap-1.5 w-full sm:w-auto flex-1'>
-            <label className='text-[11px] font-semibold tracking-wide text-muted-foreground uppercase'>Thời gian</label>
-            <div className='flex flex-wrap sm:flex-nowrap items-center gap-2'>
+          <div className='flex w-full flex-1 flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>Thời gian</label>
+            <div className='flex flex-wrap items-center gap-2 sm:flex-nowrap'>
               <select
                 value={dateFilterType}
                 onChange={(e) => setDateFilterType(e.target.value)}
-                className='bg-background border-border rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-[150px] transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+                className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[150px]'
               >
                 <option value='ALL'>Mọi lúc</option>
                 <option value='TODAY'>Hôm nay</option>
@@ -294,14 +299,14 @@ const OrderManagement = () => {
                     type='date'
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className='bg-background border-border rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-auto transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+                    className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-auto'
                   />
                   <span className='text-muted-foreground font-medium'>-</span>
                   <input
                     type='date'
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className='bg-background border-border rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm outline-none w-full sm:w-auto transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20'
+                    className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-auto'
                   />
                 </div>
               )}
@@ -346,7 +351,9 @@ const OrderManagement = () => {
                       <td className='text-foreground px-6 py-4 font-medium'>{order.tableName || '-'}</td>
                       <td className='text-foreground px-6 py-4'>{itemsCount}</td>
                       <td className='text-foreground px-6 py-4 font-bold'>
-                        <span title={order.voucher ? `Voucher: ${order.voucher.code} - ${order.voucher.name}` : undefined}>
+                        <span
+                          title={order.voucher ? `Voucher: ${order.voucher.code} - ${order.voucher.name}` : undefined}
+                        >
                           {(order.finalPrice ?? order.totalPrice).toLocaleString()} VND
                         </span>
                       </td>

@@ -11,6 +11,7 @@ import router from '@/router'
 import { AppProvider } from '@/contexts/app.context'
 import { useAuthStore } from '@/stores/useAuthStore'
 import NotificationRealtimeListener from '@/components/NotificationRealtimeListener/NotificationRealtimeListener'
+import { jwtDecode } from 'jwt-decode'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,12 @@ export const queryClient = new QueryClient({
 
 function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
   const accessToken = useAuthStore((state) => state.accessToken)
+  const hasValidAccessToken = isAccessTokenStillValid(accessToken)
+
+  if (!hasValidAccessToken || !accessToken) {
+    return <>{children}</>
+  }
+
   const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
   const websocketUrl = rawAccessToken
     ? `ws://localhost:8080/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
@@ -32,12 +39,14 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
     <StompSessionProvider
       key={accessToken || 'anonymous'}
       url={websocketUrl}
+      reconnectDelay={5000}
       heartbeatIncoming={10000}
       heartbeatOutgoing={10000}
       onConnect={() => console.log('WebSocket Connected!')}
       onDisconnect={() => console.log('WebSocket Disconnected!')}
       debug={(str) => console.log(str)}
     >
+      <NotificationRealtimeListener />
       {children}
     </StompSessionProvider>
   )
@@ -48,7 +57,6 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <AppWebSocketProvider>
-          <NotificationRealtimeListener />
           <RouterProvider router={router} />
           <Toaster richColors position='top-right' />
         </AppWebSocketProvider>
@@ -57,3 +65,22 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>
 )
+
+function isAccessTokenStillValid(accessToken: string | null) {
+  if (!accessToken) {
+    return false
+  }
+
+  const rawAccessToken = accessToken.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
+
+  try {
+    const decoded = jwtDecode<{ exp?: number }>(rawAccessToken)
+    if (!decoded.exp) {
+      return false
+    }
+
+    return decoded.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
+}

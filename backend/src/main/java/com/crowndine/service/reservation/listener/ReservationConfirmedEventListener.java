@@ -37,10 +37,10 @@ public class ReservationConfirmedEventListener {
      */
     @Async("notificationTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ReservationConfirmedEvent event) {
         log.info("Handling ReservationConfirmedEvent for reservation id {}", event.reservationId());
-        
+
         // 1. In-app notification
         notificationService.notifyReservationConfirmed(event.reservationId());
 

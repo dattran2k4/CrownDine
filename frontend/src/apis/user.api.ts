@@ -27,6 +27,9 @@ const userApi = {
   getCustomerByPhone(phone: string) {
     return http.get<ApiResponse<any>>(`users/customer/${phone}`)
   },
+  getAllCustomers() {
+    return http.get<ApiResponse<any[]>>('users')
+  },
   getAvailableVouchers(customerId: number) {
     return http.get<ApiResponse<any>>(`user-vouchers/customer/${customerId}`)
   }

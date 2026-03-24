@@ -1,6 +1,5 @@
 package com.crowndine.service.impl.voucher;
 
-import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.response.MyVoucherResponse;
 import com.crowndine.dto.response.VoucherAssignmentResponse;

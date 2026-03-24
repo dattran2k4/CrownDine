@@ -8,10 +8,6 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -23,9 +19,10 @@ public class AIIntentClassifier {
     private final BeanOutputConverter<AnalyzedIntent> outputConverter;
 
     public AIIntentClassifier(ChatClient.Builder builder,
+                              AIChatSupport aiChatSupport,
                               @Value("classpath:prompts/admin-intent-classifier-system.st") Resource classifierPromptResource) {
         this.chatClient = builder.build();
-        this.classifierPrompt = loadPrompt(classifierPromptResource);
+        this.classifierPrompt = aiChatSupport.loadPrompt(classifierPromptResource, "Cannot load AI intent classifier prompt");
         this.outputConverter = new BeanOutputConverter<>(AnalyzedIntent.class);
     }
 
@@ -63,13 +60,5 @@ public class AIIntentClassifier {
                 "Khong phan tich duoc intent tu noi dung hien tai.",
                 0.0d
         );
-    }
-
-    private String loadPrompt(Resource resource) {
-        try {
-            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("Cannot load AI intent classifier prompt", e);
-        }
     }
 }

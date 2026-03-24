@@ -23,6 +23,7 @@ export interface OrderLineResponse {
   quantity: number
   unitPrice: number
   totalPrice: number
+  note?: string
   hasFeedback?: boolean
 }
 
@@ -79,7 +80,7 @@ export type PreOrderCombo = ComboIdentity & {
 
 export type PreOrderEntry = PreOrderItem | PreOrderCombo
 
-export type PreOrderCartItem = PreOrderEntry & { quantity: number }
+export type PreOrderCartItem = PreOrderEntry & { quantity: number; note?: string }
 
 export interface ReservationHistoryResponse {
   reservationId?: number

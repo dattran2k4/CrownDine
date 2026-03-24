@@ -13,6 +13,7 @@ interface CartItem {
   name: string
   price: number
   quantity: number
+  note?: string
 }
 
 interface Props {
@@ -170,18 +171,28 @@ const Step4Payment = ({
               {cartItems.map((item) => (
                 <div
                   key={`${item.id}-${item.name}`}
-                  className='flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3'
+                  className='border-border flex flex-col rounded-lg border bg-white p-3'
                 >
-                  <div className='flex items-center gap-3'>
-                    <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
-                      {item.quantity}x
-                    </span>
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>{item.name}</p>
-                      <p className='text-xs text-gray-500'>{formatCurrency(item.price)} / phần</p>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-3'>
+                      <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
+                        {item.quantity}x
+                      </span>
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>{item.name}</p>
+                        <p className='text-xs text-gray-500'>{formatCurrency(item.price)} / phần</p>
+                      </div>
                     </div>
+                    <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
                   </div>
-                  <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
+
+                  {item.note && (
+                    <div className='mt-2 border-t border-dashed border-orange-200 pt-2'>
+                        <p className='text-[11px] italic text-orange-600 flex items-center gap-1'>
+                           <span className='font-bold bg-orange-100 px-1 rounded'>Ghi chú:</span> {item.note}
+                        </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

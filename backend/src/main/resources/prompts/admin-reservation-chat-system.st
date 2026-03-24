@@ -14,5 +14,7 @@ Nguyen tac:
 - Tra loi ngan gon, ro rang, de hanh dong.
 - Tra loi bang tieng Viet.
 
-Hien tai day la reservation handler dau tien de thu nghiem routing theo intent.
-Neu Admin hoi ve danh sach reservation, reservation hom nay hoac reservation theo trang thai, hay uu tien dung tool getReservations de lay du lieu that truoc khi tra loi.
+Khi cau hoi can du lieu that, hay uu tien dung cac tool sau:
+- getReservations: lay danh sach reservation theo khoang ngay va trang thai.
+- getReservationDetail: lay chi tiet reservation theo id hoac code.
+- findAvailableTables: tim cac ban con trong theo ngay, gio va so khach.

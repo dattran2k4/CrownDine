@@ -154,7 +154,11 @@ const Step4Payment = ({
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>
                 <span className='mb-1 block text-xs text-gray-500'>Vị trí bàn</span>
-                <span className='font-semibold text-gray-900'>{bookingData.selectedTable?.name ?? '—'}</span>
+                <span className='font-semibold text-gray-900'>
+                  {bookingData.selectedTable?.name ?? '—'}
+                  {bookingData.selectedTable?.floorName && bookingData.selectedTable?.areaName ? 
+                    ` - ${bookingData.selectedTable.floorName} - ${bookingData.selectedTable.areaName}` : ''}
+                </span>
               </div>
             </div>
           </div>

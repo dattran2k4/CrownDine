@@ -98,5 +98,22 @@ public class AppConfig {
                         .maxAge(3600);
             }
         };
+    }    @Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
+
+//    @Bean
+//    public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+//        return new com.fasterxml.jackson.databind.ObjectMapper();
+//    }
+
+    @Bean
+    public org.springframework.transaction.support.TransactionTemplate transactionTemplate(
+            jakarta.persistence.EntityManagerFactory entityManagerFactory) {
+        org.springframework.orm.jpa.JpaTransactionManager transactionManager =
+                new org.springframework.orm.jpa.JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+        return new org.springframework.transaction.support.TransactionTemplate(transactionManager);
     }
 }

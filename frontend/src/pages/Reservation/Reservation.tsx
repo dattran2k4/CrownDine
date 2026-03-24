@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { addMinutesToTime, generateTimeSlots, isDateTimeInPast } from '@/utils/utils'
@@ -10,6 +10,7 @@ import Step4Payment from '@/pages/Reservation/components/step/Step4Payment/Step4
 import orderApi from '@/apis/order.api'
 import reservationApi from '@/apis/reservation.api'
 import paymentApi from '@/apis/payment.api'
+import layoutApi from '@/apis/layout.api'
 import type { CreatePaymentRequest } from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
 import type { OrderDetailResponse } from '@/types/reservation.type'
@@ -18,16 +19,28 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
 import { toast } from 'sonner'
+import { useSearchParams } from 'react-router-dom'
 
 // --- 3. MAIN COMPONENT ---
 export default function Reservation() {
+  const [searchParams] = useSearchParams()
+
   const [currentStep, setCurrentStep] = useState(1)
 
   // Data State
-  const [guests, setGuests] = useState(2)
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [guests, setGuests] = useState(() => {
+    const g = searchParams.get('guests')
+    return g ? parseInt(g) : 2
+  })
+  const [date, setDate] = useState(() => {
+    const d = searchParams.get('date')
+    return d || new Date().toISOString().split('T')[0]
+  })
 
-  const [startTime, setStartTime] = useState('18:00')
+  const [startTime, setStartTime] = useState(() => {
+    const st = searchParams.get('startTime')
+    return st || '18:00'
+  })
   const duration = 240
   const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
 
@@ -50,6 +63,81 @@ export default function Reservation() {
     setVoucherPreview(null)
     setAppliedVoucherCode(null)
   }, [reservationId])
+
+  const isAutoBookingRef = useRef(false)
+
+  // --- AUTO BOOKING TỪ AI CHAT ---
+  useEffect(() => {
+    const handleAutoBooking = async () => {
+      // Prevent Strict Mode from running this twice
+      if (isAutoBookingRef.current) return
+
+      const stepParam = searchParams.get('step')
+      const tableNameParam = searchParams.get('tableName')
+      
+      if (tableNameParam && stepParam && !reservationId) {
+        isAutoBookingRef.current = true 
+        try {
+          // Lấy danh sách bàn khả dụng
+          const tablesRes = await layoutApi.getAvailableTables({
+            date,
+            startTime,
+            guestNumber: guests
+          })
+          
+          if (tablesRes.data.data) {
+            const tables = tablesRes.data.data
+            // Tìm bàn khớp tên (vd: "Bàn 01" khớp "01" hoặc "Bàn 01")
+            const matchedTable = tables.find(t => 
+              t.name.toLowerCase() === tableNameParam.toLowerCase() || 
+              `Bàn ${t.name}`.toLowerCase() === tableNameParam.toLowerCase() ||
+              t.name.toLowerCase() === tableNameParam.replace(/bàn\s+/i, '').toLowerCase()
+            )
+            
+            if (matchedTable) {
+              const tableObj: Table = {
+                id: matchedTable.id.toString(),
+                name: matchedTable.name,
+                capacity: matchedTable.capacity || 2,
+                status: 'AVAILABLE',
+                type: 'STANDARD',
+                areaName: matchedTable.areaName,
+                floorName: matchedTable.floorName
+              }
+              setSelectedTable(tableObj)
+              
+              // Tạo pre-reservation
+              setIsCreatingReservation(true)
+              const createRes = await reservationApi.createReservation({
+                date,
+                startTime,
+                guestNumber: guests,
+                tableId: matchedTable.id,
+                note: 'Tự động đặt qua trợ lý CrownDine AI'
+              })
+              
+              if (createRes.data.data) {
+                setReservationId(createRes.data.data.reservationId)
+                setReservationCode(createRes.data.data.code)
+                setExpiratedAt(createRes.data.data.expiratedAt)
+                setCurrentStep(parseInt(stepParam)) // Chuyển thẳng tới bước 3 hoặc 4
+              }
+            } else {
+              console.warn("AI AutoBook - Không tìm thấy bàn khả dụng:", tableNameParam)
+              alert(`Rất tiếc, bàn do AI chọn (${tableNameParam}) hiện đã được đặt hoặc không khả dụng. Vui lòng tự chọn bàn khác nhé!`)
+              setCurrentStep(2) // Đưa người dùng về màn hình tự chọn bàn
+            }
+          }
+        } catch (error) {
+          console.error("Lỗi khi tự động đặt bàn qua AI:", error)
+          setCurrentStep(2) // Lỗi thì đưa về chọn bàn thủ công
+        } finally {
+          setIsCreatingReservation(false)
+        }
+      }
+    }
+    handleAutoBooking()
+  }, []) // Chỉ chạy 1 lần khi mount màn hình Reservation
 
   const authUser = useAuthStore((state) => state.user)
   const paymentMutation = useMutation({
@@ -91,7 +179,7 @@ export default function Reservation() {
 
       setPaymentResultToSession({
         reservationCode: currentReservationCode,
-        amount: depositAmount,
+        amount: depositAmount || 0,
         paidAt: new Date().toISOString()
       })
 

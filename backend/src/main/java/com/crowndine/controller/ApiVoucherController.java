@@ -26,6 +26,7 @@ public class ApiVoucherController {
 
     private final VoucherService voucherService;
     private final UserVoucherService userVoucherService;
+    private final com.crowndine.service.user.RewardPointService rewardPointService;
 
     @PostMapping
     public ApiResponse createVoucher(@Valid @RequestBody VoucherRequest request) {
@@ -91,6 +92,15 @@ public class ApiVoucherController {
                 .status(HttpStatus.OK.value())
                 .message("Validate voucher successfully")
                 .data(userVoucherService.validateVoucher(request.getCode(), request.getOrderId(), principal.getName()))
+                .build();
+    }
+
+    @PostMapping("/{id}/exchange")
+    public ApiResponse exchangeVoucher(@Min(1) @PathVariable Long id, Principal principal) {
+        rewardPointService.exchangeVoucher(id, principal.getName());
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Đổi voucher thành công")
                 .build();
     }
 }

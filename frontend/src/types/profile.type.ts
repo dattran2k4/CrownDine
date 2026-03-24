@@ -20,8 +20,17 @@ export interface User {
   gender?: EGender
   role: UserRole
   totalSpent?: number // Total amount spent at restaurant
+  rewardPoints?: number
   createdAt: string
   updatedAt: string
+}
+
+export interface PointHistory {
+  id: number
+  pointsChanged: number
+  reason: 'EARN_FROM_ORDER' | 'SPEND_ON_VOUCHER' | 'ADMIN_ADJUSTMENT'
+  referenceId?: number
+  createdAt: string
 }
 export type Staff = {
   id: string

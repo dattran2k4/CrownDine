@@ -8,6 +8,7 @@ export interface Voucher {
   discountValue: number
   maxDiscountValue: number | null
   description: string | null
+  pointsRequired?: number
   createdAt: string
   updatedAt: string
 }

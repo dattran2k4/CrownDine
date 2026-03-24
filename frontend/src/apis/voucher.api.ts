@@ -61,6 +61,10 @@ const voucherApi = {
 
   validateVoucher(data: VoucherValidateRequest) {
     return http.post<ApiResponse<VoucherValidateResponse>>(`${VOUCHER_URL}/validate`, data)
+  },
+
+  exchangeVoucher(id: number) {
+    return http.post<ApiResponse<void>>(`${VOUCHER_URL}/${id}/exchange`)
   }
 }
 

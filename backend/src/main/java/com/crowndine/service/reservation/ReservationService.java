@@ -21,9 +21,9 @@ public interface ReservationService {
 
     ReservationCreateResponse createReservation(String username, ReservationCreateRequest request);
 
-    void addItemsToReservationOrder(Long reservationId, OrderItemBatchRequest request, String username);
-
     Reservation getReservationByCode(String code);
+
+    void checkInReservation(Long reservationId, String username);
 
     void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String name);
 

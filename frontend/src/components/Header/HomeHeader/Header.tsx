@@ -8,7 +8,7 @@ import { useFavoriteStore } from '@/stores/useFavoriteStore'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import authApi from '@/apis/auth.api'
 import notificationApi from '@/apis/notification.api'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,

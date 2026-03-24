@@ -1,6 +1,7 @@
 package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderStatus;
+import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
@@ -31,10 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final ComboRepository comboRepository;
     private final UserRepository userRepository;
+    private final ReservationRepository reservationRepository;
     private final RestaurantTableRepository tableRepository;
 
     private final CalculationService calculationService;
@@ -62,80 +62,37 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void addOrderForReservation(Reservation reservation, OrderItemBatchRequest request, User user) {
-        Order order = (reservation.getOrder() != null) ? reservation.getOrder() : new Order();
-
-        order.setStatus(EOrderStatus.PRE_ORDER);
-        order.setReservation(reservation);
-        order.setUser(user);
-        order.setRestaurantTable(reservation.getTable());
-        order.setDiscountPrice(BigDecimal.ZERO);
-        order.setTotalPrice(BigDecimal.ZERO);
-        order.setFinalPrice(BigDecimal.ZERO);
-
-        List<OrderDetail> orderDetails = new ArrayList<>();
-
-        for (OrderItemRequest itemReq : request.getItems()) {
-            boolean hasItem = itemReq.getItemId() != null;
-            boolean hasCombo = itemReq.getComboId() != null;
-            if (!hasItem && !hasCombo) {
-                throw new InvalidDataException("Chưa có món");
-            }
-
-            OrderDetail detail = new OrderDetail();
-            detail.setOrder(order);
-            detail.setQuantity(itemReq.getQuantity());
-            detail.setNote(itemReq.getNote());
-
-            BigDecimal unitPrice = BigDecimal.ZERO;
-
-            if (hasItem) {
-                Item item = itemRepository.findById(itemReq.getItemId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
-                detail.setItem(item);
-                unitPrice = item.getPriceAfterDiscount() != null ? item.getPriceAfterDiscount() : item.getPrice();
-                log.info("Adding item {} for order {}", itemReq.getItemId(), order.getId());
-            }
-
-            if (hasCombo) {
-                Combo combo = comboRepository.findById(itemReq.getComboId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
-                detail.setCombo(combo);
-                unitPrice = combo.getPriceAfterDiscount() != null ? combo.getPriceAfterDiscount() : combo.getPrice();
-                log.info("Adding combo {} for order {}", itemReq.getComboId(), order.getId());
-            }
-
-            detail.setTotalPrice(unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity())));
-
-            orderDetails.add(detail);
-        }
-        order.setOrderDetails(orderDetails);
-        recalculateOrderPricing(order);
-
-        Order result = orderRepository.save(order);
-
-        log.info("Order has been saved {}", result.getId());
+    public Order createOrderForReservation(Reservation reservation, User user, EOrderStatus initialStatus) {
+        log.info("Creating reservation order for reservation id {} with status {}", reservation.getId(), initialStatus);
+        return createReservationOrder(reservation, user, initialStatus);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Order createOrderForReservation(Reservation reservation, User user) {
-        log.info("Creating new order for reservation {}", reservation.getId());
+    private Order createReservationOrder(Reservation reservation, User user, EOrderStatus status) {
         Order order = new Order();
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
-        order.setStatus(EOrderStatus.PRE_ORDER);
+        order.setStatus(status);
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
         order.setCode(OrderCodeGenerator.generateOrderCode());
 
         Order result = orderRepository.save(order);
-
         log.info("New order has been created with id {} for reservationId {}", result.getId(), reservation.getId());
         return result;
+    }
+
+    @Override
+    public Order confirmReservationOrder(Order order) {
+        if (order.getStatus() == EOrderStatus.CONFIRMED) {
+            return order;
+        }
+
+        order.setStatus(EOrderStatus.CONFIRMED);
+        orderRepository.save(order);
+        log.info("Updated reservation order {} status to CONFIRMED", order.getId());
+        return order;
     }
 
     @Override
@@ -229,8 +186,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
-            int size) {
+    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
 
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
@@ -301,6 +257,31 @@ public class OrderServiceImpl implements OrderService {
         log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username) {
+        log.info("Opening order for reservation {} by staff {}", reservationId, username);
+
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+
+        if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
+            throw new InvalidDataException("Cần check-in trước khi tạo order cho đặt bàn này");
+        }
+
+        if (reservation.getOrder() != null) {
+            throw new InvalidDataException("Đặt bàn này đã có order");
+        }
+
+        Order order = createOrderForReservation(reservation, reservation.getUser(), EOrderStatus.CONFIRMED);
+        order.setStaff(staff);
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
+        recalculateOrderPricing(order);
+        reservation.setOrder(order);
+        Order savedOrder = orderRepository.save(order);
+
+        return toResponse(savedOrder);
+    }
 
 
     @Override
@@ -386,6 +367,7 @@ public class OrderServiceImpl implements OrderService {
                 .finalPrice(updatedOrder.getFinalPrice())
                 .build();
     }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {
@@ -444,9 +426,18 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
 
+    @Override
+    public List<OrderResponse> getKitchenOrders() {
+        List<EOrderStatus> activeStatuses = List.of(EOrderStatus.CONFIRMED, EOrderStatus.IN_PROGRESS);
+        List<Order> orders = orderRepository.findByStatusIn(activeStatuses);
+        log.info("Found {} active kitchen orders", orders.size());
+        return orders.stream().map(this::toResponse).toList();
+    }
+
     private void recalculateOrderPricing(Order order) {
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
         order.setTotalPrice(totalPrice);
+        log.info("Total price for order with id {} is {}", order.getId(), totalPrice);
 
         if (order.getVoucher() == null) {
             order.setDiscountPrice(BigDecimal.ZERO);

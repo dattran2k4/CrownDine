@@ -5,6 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 import { useState, useEffect, Fragment } from 'react'
 import { useSubscription } from 'react-stomp-hooks'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Search, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/pagination'
 
 const OrderManagement = () => {
+  const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [dateFilterType, setDateFilterType] = useState<string>('ALL')
@@ -32,6 +34,7 @@ const OrderManagement = () => {
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL')
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [reservationIdForNewOrder, setReservationIdForNewOrder] = useState<number | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
   const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -120,6 +123,30 @@ const OrderManagement = () => {
   }, [orders])
 
   useEffect(() => {
+    const selectedOrderId = (location.state as { selectedOrderId?: number } | null)?.selectedOrderId
+    const reservationId = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)?.reservationId
+    const createFromReservation = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)?.createFromReservation
+
+    if (createFromReservation && reservationId) {
+      setSelectedOrder(null)
+      setReservationIdForNewOrder(reservationId)
+      setIsDrawerOpen(true)
+      window.history.replaceState({}, document.title)
+      return
+    }
+
+    if (!selectedOrderId || orders.length === 0) return
+
+    const matchedOrder = orders.find((order: Order) => order.id === selectedOrderId)
+    if (matchedOrder) {
+      setSelectedOrder(matchedOrder)
+      setReservationIdForNewOrder(null)
+      setIsDrawerOpen(true)
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state, orders])
+
+  useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, statusFilter, dateFilterType, customStartDate, customEndDate, orderTypeFilter])
 
@@ -151,11 +178,13 @@ const OrderManagement = () => {
 
   const handleCreateOrder = () => {
     setSelectedOrder(null)
+    setReservationIdForNewOrder(null)
     setIsDrawerOpen(true)
   }
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order)
+    setReservationIdForNewOrder(null)
     setIsDrawerOpen(true)
   }
 
@@ -427,14 +456,20 @@ const OrderManagement = () => {
 
       <OrderDrawer
         isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={() => {
+          setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
+        }}
         order={selectedOrder}
+        reservationId={reservationIdForNewOrder}
         onPaymentClick={(order) => {
           setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
           setPaymentOrder(order)
         }}
         onCancelClick={(order) => {
           setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
           handleCancelOrder(order)
         }}
       />

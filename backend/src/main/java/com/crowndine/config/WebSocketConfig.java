@@ -1,5 +1,6 @@
 package com.crowndine.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -8,21 +9,25 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
+    private final AuthenticatedPrincipalHandshakeHandler authenticatedPrincipalHandshakeHandler;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-restaurant")
+                .addInterceptors(webSocketHandshakeInterceptor)
+                .setHandshakeHandler(authenticatedPrincipalHandshakeHandler)
                 .setAllowedOriginPatterns("*");
 //                .withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Client gửi tin nhắn đến prefix này: /app/update-table
         config.setApplicationDestinationPrefixes("/app");
-
-        // Client đăng ký nhận tin nhắn từ các prefix này
+        config.setUserDestinationPrefix("/user");
         config.enableSimpleBroker("/topic", "/queue");
     }
 }

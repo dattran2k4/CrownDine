@@ -167,8 +167,8 @@ export default function Reservation() {
 
             if (response.data.data) {
               setReservationId(response.data.data.reservationId)
-              setReservationCode(response.data.data.code)
-              setExpiratedAt(response.data.data.expiratedAt)
+              setReservationCode(response.data.data.reservationCode)
+              setExpiratedAt(null)
             }
           } catch (error) {
             console.error('Failed to create temporary reservation:', error)
@@ -276,8 +276,8 @@ export default function Reservation() {
 
         if (response.data.data) {
           setReservationId(response.data.data.reservationId)
-          setReservationCode(response.data.data.code)
-          setExpiratedAt(response.data.data.expiratedAt)
+          setReservationCode(response.data.data.reservationCode)
+          setExpiratedAt(null)
           setCurrentStep(3)
         }
       } catch (error) {
@@ -345,7 +345,7 @@ export default function Reservation() {
         method: 'PAYOS'
       },
       voucherCode: voucherPreview?.code,
-      orderId: orderDetails?.orderId
+      orderId: orderDetails?.orderId ?? undefined
     })
   }
 

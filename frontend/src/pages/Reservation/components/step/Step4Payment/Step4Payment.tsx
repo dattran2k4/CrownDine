@@ -258,7 +258,7 @@ const Step4Payment = ({
           </div>
 
           <VoucherInput
-            orderId={orderDetails?.orderId}
+            orderId={orderDetails?.orderId ?? undefined}
             disabled={isProcessing}
             onPreviewChange={onVoucherPreviewChange}
           />

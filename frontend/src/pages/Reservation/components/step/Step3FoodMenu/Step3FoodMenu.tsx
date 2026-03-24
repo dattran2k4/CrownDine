@@ -1,11 +1,9 @@
 import type { PreOrderCartItem } from '@/types/reservation.type'
-import comboApi from '@/apis/combo.api'
-import itemApi from '@/apis/item.api'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
-import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { Search, Trash2, Utensils, Info } from 'lucide-react'
+import { Info, Minus, Plus, ShoppingCart, Trash2, PenLine } from 'lucide-react'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
+import MenuSelector from '@/components/MenuSelector/MenuSelector'
+import type { MenuCardItem } from '@/types/item.type'
 
 /** Một mục có thể thêm vào giỏ (món hoặc combo) */
 type PreOrderEntry = Omit<PreOrderCartItem, 'quantity'>
@@ -14,214 +12,161 @@ interface Props {
   cartItems: PreOrderCartItem[]
   onAdd: (entry: PreOrderEntry) => void
   onRemove: (type: 'item' | 'combo', id: number) => void
+  updateQuantity: (type: 'item' | 'combo', id: number, delta: number) => void
+  onUpdateNote: (type: 'item' | 'combo', id: number, note: string) => void
   expiratedAt: string | null
 }
 
-const Step3FoodMenu = ({ cartItems, onAdd, onRemove, expiratedAt }: Props) => {
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const { data: itemsData, isPending: itemsLoading } = useQuery({
-    queryKey: ['items'],
-    queryFn: () => itemApi.getItems()
-  })
-
-  const { data: combosData, isPending: combosLoading } = useQuery({
-    queryKey: ['combos'],
-    queryFn: () => comboApi.getCombos()
-  })
-
-  const menuEntries = useMemo((): PreOrderEntry[] => {
-    const items =
-      itemsData?.data?.data
-        ?.filter((i) => i.status === 'AVAILABLE')
-        .map((i) => ({
-          type: 'item' as const,
-          id: i.id,
-          name: i.name,
-          price: Number(i.priceAfterDiscount ?? i.price),
-          image: i.imageUrl
-        })) ?? []
-    const combos =
-      combosData?.data?.data
-        ?.filter((c) => c.status === 'AVAILABLE')
-        .map((c) => ({
-          type: 'combo' as const,
-          id: c.id,
-          name: c.name,
-          price: Number(c.priceAfterDiscount ?? c.price),
-          image: c.imageUrl ?? ''
-        })) ?? []
-    return [...items, ...combos]
-  }, [itemsData?.data?.data, combosData?.data?.data])
-
-  const filteredEntries = useMemo(() => {
-    if (!searchQuery.trim()) return menuEntries
-    const q = searchQuery.trim().toLowerCase()
-    return menuEntries.filter((e) => e.name.toLowerCase().includes(q))
-  }, [menuEntries, searchQuery])
-
-  const isLoading = itemsLoading || combosLoading
-  const hasEntries = menuEntries.length > 0
-
+const Step3FoodMenu = ({ cartItems, onAdd, onRemove, updateQuantity, onUpdateNote, expiratedAt }: Props) => {
   const foodTotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
-  return (
-    <div className='animate-fade-in space-y-6 p-6'>
-      {/* Alert Header & Timer */}
-      {expiratedAt && (
-        <div className='rounded-lg border border-yellow-300 bg-yellow-50 p-4'>
-          <div className='flex flex-col items-center justify-between gap-4 md:flex-row'>
-            <div className='flex items-center gap-3'>
-              <Info className='text-yellow-600' size={20} />
-              <span className='text-sm font-medium text-yellow-900'>Vui lòng hoàn tất trong thời gian giữ vé.</span>
-            </div>
-            <CountdownTimer
-              expiratedAt={expiratedAt}
-              onExpire={() => {
-                alert('Hết phiên giao dịch! Vui lòng đặt lại.')
-                window.location.reload()
-              }}
-            />
-          </div>
-        </div>
-      )}
+  const handleSelectItem = (item: MenuCardItem, type: 'item' | 'combo') => {
+    onAdd({
+      type,
+      id: item.id,
+      name: item.name,
+      price: Number(item.priceAfterDiscount ?? item.price),
+      image: item.imageUrl
+    })
+  }
 
-      {/* Header & Subtotal */}
-      <div className='flex items-end justify-between rounded-lg border border-gray-200 bg-gray-50 p-5'>
-        <div className='flex-1'>
-          <h3 className='mb-2 flex items-center gap-3 text-xl font-bold text-gray-900'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500'>
-              <Utensils className='text-white' size={20} />
+  return (
+    <div className='animate-fade-in flex flex-col overflow-hidden lg:h-[700px] lg:flex-row'>
+      {/* Left Column: Menu Selection */}
+      <div className='bg-muted/10 flex flex-1 flex-col overflow-hidden border-r p-4 lg:p-6'>
+        <div className='mb-4 flex items-center justify-between'>
+          <div>
+            <h3 className='text-lg font-bold text-gray-900'>Chọn món ăn & combo</h3>
+            <p className='text-muted-foreground text-xs'>Sẵn sàng phục vụ khi bạn tới nhà hàng</p>
+          </div>
+          {expiratedAt && (
+            <div className='flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 border border-orange-200'>
+              <CountdownTimer
+                expiratedAt={expiratedAt}
+                onExpire={() => {
+                  alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                  window.location.reload()
+                }}
+              />
             </div>
-            Đặt món trước (Tuỳ chọn)
-          </h3>
-          <p className='ml-[3.25rem] text-sm text-gray-600'>Món ăn sẽ được chuẩn bị sẵn khi bạn đến.</p>
+          )}
         </div>
-        <div className='rounded-lg border border-gray-200 bg-white px-4 py-3 text-right'>
-          <p className='mb-1 text-xs font-medium text-gray-500'>Tạm tính món ăn</p>
-          <p className='text-2xl font-bold text-orange-600'>{formatCurrency(foodTotal)}</p>
+
+        <div className='flex-1 overflow-hidden h-full'>
+          <MenuSelector onSelectItem={handleSelectItem} />
         </div>
       </div>
 
-      {/* Search theo tên */}
-      {!isLoading && hasEntries && (
-        <div className='relative'>
-          <div className='absolute top-1/2 left-4 z-10 -translate-y-1/2'>
-            <Search className='h-5 w-5 text-gray-400' />
+      {/* Right Column: Mini Cart / Summary */}
+      <div className='bg-background flex w-full flex-col border-t lg:w-[400px] lg:border-t-0'>
+        {/* Cart Header */}
+        <div className='border-border flex items-center justify-between border-b p-4 lg:px-6 lg:py-5'>
+          <div className='flex items-center gap-2'>
+            <div className='bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg'>
+              <ShoppingCart size={18} />
+            </div>
+            <h4 className='font-bold text-gray-900'>Món đã chọn</h4>
           </div>
-          <input
-            type='text'
-            placeholder='Tìm theo tên món...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className='w-full rounded-lg border border-gray-200 bg-white py-3 pr-4 pl-12 text-sm outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-200'
-          />
+          <span className='bg-primary text-primary-foreground flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold'>
+            {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+          </span>
         </div>
-      )}
 
-      {/* Menu Grid - Modern Card Design */}
-      {isLoading ? (
-        <div className='py-12 text-center'>
-          <div className='inline-flex flex-col items-center gap-3'>
-            <div className='h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500'></div>
-            <p className='text-sm font-medium text-gray-500'>Đang tải danh sách món và combo...</p>
-          </div>
-        </div>
-      ) : (
-        <div className='custom-scrollbar max-h-[45vh] overflow-y-auto pr-2'>
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-            {filteredEntries.length === 0 ? (
-              <div className='col-span-full py-12 text-center'>
-                <div className='inline-flex flex-col items-center gap-3'>
-                  <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gray-100'>
-                    <Search className='h-8 w-8 text-gray-400' />
-                  </div>
-                  <p className='text-sm font-medium text-gray-500'>
-                    {searchQuery.trim() ? 'Không tìm thấy món/combo phù hợp.' : 'Chưa có món hoặc combo nào.'}
-                  </p>
-                </div>
+        {/* Cart Items List */}
+        <div className='custom-scrollbar flex-1 overflow-y-auto p-4 lg:p-6'>
+          {cartItems.length === 0 ? (
+            <div className='flex h-48 flex-col items-center justify-center text-center opacity-40'>
+              <div className='bg-muted mb-4 flex h-16 w-16 items-center justify-center rounded-full'>
+                <ShoppingCart size={32} />
               </div>
-            ) : (
-              filteredEntries.map((entry) => (
-                <div
-                  key={`${entry.type}-${entry.id}`}
-                  className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-orange-400 hover:shadow-md'
-                >
-                  <div className='mb-3 h-40 w-full overflow-hidden rounded-lg bg-gray-100'>
-                    <img src={getImageUrl(entry.image)} alt={entry.name} className='h-full w-full object-cover' />
-                  </div>
-                  <div className='space-y-3'>
-                    <div>
-                      <div className='mb-2 flex items-start justify-between gap-2'>
-                        <h4 className='line-clamp-2 flex-1 text-sm leading-tight font-semibold text-gray-900'>
-                          {entry.name}
-                        </h4>
-                        {entry.type === 'combo' && (
-                          <span className='shrink-0 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold text-white'>
-                            COMBO
-                          </span>
-                        )}
-                      </div>
-                      <p className='text-lg font-bold text-orange-600'>{formatCurrency(entry.price)}</p>
+              <p className='text-sm font-medium'>Giỏ hàng của bạn đang trống</p>
+              <p className='mt-1 text-xs'>Chọn món bên trái để thêm vào đơn</p>
+            </div>
+          ) : (
+            <div className='space-y-4'>
+              {cartItems.map((item) => (
+                <div key={`${item.type}-${item.id}`} className='group border-border flex flex-col gap-3 border-b pb-4 last:border-0 last:pb-0'>
+                  <div className='flex gap-3'>
+                    <div className='h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-gray-50'>
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        className='h-full w-full object-cover'
+                      />
                     </div>
-                    <button
-                      onClick={() => onAdd(entry)}
-                      className='w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600'
-                    >
-                      + Thêm vào giỏ
-                    </button>
+                    <div className='flex flex-1 flex-col justify-between py-0.5'>
+                      <div className='flex items-start justify-between gap-2'>
+                        <h5 className='line-clamp-1 text-sm font-bold text-gray-900'>{item.name}</h5>
+                        <button
+                          onClick={() => onRemove(item.type, item.id)}
+                          className='text-muted-foreground hover:text-destructive transition-colors'
+                          title='Xóa món'
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      
+                      <div className='mt-2 flex items-center justify-between'>
+                        <p className='text-primary text-xs font-semibold'>{formatCurrency(item.price)}</p>
+                        <div className='border-border flex items-center gap-3 rounded-md border bg-white px-1 py-0.5'>
+                          <button
+                            onClick={() => updateQuantity(item.type, item.id, -1)}
+                            className='hover:bg-muted text-muted-foreground hover:text-foreground flex h-5 w-5 items-center justify-center rounded transition-colors disabled:opacity-30'
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className='w-4 text-center text-xs font-bold'>{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.type, item.id, 1)}
+                            className='hover:bg-muted text-muted-foreground hover:text-foreground flex h-5 w-5 items-center justify-center rounded transition-colors'
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Note Input */}
+                  <div className='relative mt-1'>
+                    <PenLine size={12} className='text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2' />
+                    <input
+                      type='text'
+                      placeholder='Thêm ghi chú (vị cay, dị ứng...)'
+                      value={item.note || ''}
+                      onChange={(e) => onUpdateNote(item.type, item.id, e.target.value)}
+                      className='bg-muted/30 border-border w-full rounded-md border py-1.5 pr-3 pl-8 text-[11px] outline-none transition-all focus:border-primary focus:bg-white'
+                    />
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Mini Cart Display */}
-      {cartItems.length > 0 && (
-        <div className='mt-6 rounded-lg border border-dashed border-orange-300 bg-orange-50 p-5'>
-          <div className='mb-4 flex items-center justify-between'>
-            <h4 className='flex items-center gap-2 text-base font-bold text-gray-900'>
-              <span className='flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white'>
-                {cartItems.length}
-              </span>
-              Đã chọn món
-            </h4>
-            <span className='rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700'>
-              Thanh toán tại nhà hàng
-            </span>
+        {/* Cart Footer / Summary */}
+        <div className='bg-muted/30 border-border border-t p-4 lg:p-6'>
+          <div className='mb-4 space-y-2'>
+            <div className='flex items-center justify-between text-xs text-gray-500'>
+              <span>Tạm tính món ăn</span>
+              <span>{formatCurrency(foodTotal)}</span>
+            </div>
           </div>
-          <div className='custom-scrollbar max-h-64 space-y-2 overflow-y-auto'>
-            {cartItems.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className='flex items-center justify-between rounded-lg border border-orange-200 bg-white p-3'
-              >
-                <span className='flex items-center gap-3'>
-                  <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
-                    {item.quantity}x
-                  </span>
-                  <div>
-                    <p className='text-sm font-medium text-gray-900'>{item.name}</p>
-                    {item.type === 'combo' && <span className='text-[10px] font-medium text-orange-600'>Combo</span>}
-                  </div>
-                </span>
-                <div className='flex items-center gap-3'>
-                  <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
-                  <button
-                    onClick={() => onRemove(item.type, item.id)}
-                    className='rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500'
-                    title='Xoá món này'
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+          
+          <div className='mb-4 flex items-center justify-between border-t border-dashed border-gray-300 pt-4'>
+            <span className='text-sm font-bold text-gray-900 uppercase tracking-tight'>Tổng cộng</span>
+            <span className='text-primary text-xl font-black'>{formatCurrency(foodTotal)}</span>
+          </div>
+
+          <div className='flex items-center gap-2 rounded-lg bg-blue-50 p-2 border border-blue-100'>
+            <Info size={14} className='text-blue-600 flex-shrink-0' />
+            <p className='text-[10px] text-blue-700 leading-tight'>
+              Sau khi chọn xong, vui lòng nhấn <strong>Tiếp tục</strong> ở dưới để sang bước thanh toán cọc.
+            </p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

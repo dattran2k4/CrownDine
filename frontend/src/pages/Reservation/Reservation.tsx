@@ -18,6 +18,7 @@ import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
+import { toast } from 'sonner'
 import { useSearchParams } from 'react-router-dom'
 
 // --- 3. MAIN COMPONENT ---
@@ -286,13 +287,15 @@ export default function Reservation() {
         await reservationApi.updateItemInReservation(reservationId, {
           itemId: entry.type === 'item' ? entry.id : undefined,
           comboId: entry.type === 'combo' ? entry.id : undefined,
-          quantity: newQuantity
+          quantity: newQuantity,
+          note: exist.note
         })
       } else {
         await reservationApi.addItemToReservation(reservationId, {
           itemId: entry.type === 'item' ? entry.id : undefined,
           comboId: entry.type === 'combo' ? entry.id : undefined,
-          quantity: 1
+          quantity: 1,
+          note: undefined
         })
       }
 
@@ -308,6 +311,34 @@ export default function Reservation() {
       console.error('Failed to add/update item:', error)
       alert('Không thể thêm món. Vui lòng thử lại.')
     }
+  }
+
+  const handleUpdateQuantity = async (type: 'item' | 'combo', id: number, delta: number) => {
+    if (!reservationId) return
+
+    const exist = cartItems.find((i) => i.type === type && i.id === id)
+    if (!exist) return
+
+    const newQuantity = exist.quantity + delta
+    if (newQuantity < 1) return
+
+    try {
+      await reservationApi.updateItemInReservation(reservationId, {
+        itemId: type === 'item' ? id : undefined,
+        comboId: type === 'combo' ? id : undefined,
+        quantity: newQuantity,
+        note: exist.note // Preserve current note
+      })
+
+      setCartItems(cartItems.map((i) => (i.type === type && i.id === id ? { ...i, quantity: newQuantity } : i)))
+    } catch (error) {
+      console.error('Failed to update quantity:', error)
+      alert('Không thể cập nhật số lượng. Vui lòng thử lại.')
+    }
+  }
+
+  const handleUpdateNote = (type: 'item' | 'combo', id: number, note: string) => {
+    setCartItems(cartItems.map((i) => (i.type === type && i.id === id ? { ...i, note } : i)))
   }
 
   const handleNext = async () => {
@@ -379,17 +410,34 @@ export default function Reservation() {
 
     // Step 3: Fetch order details và chuyển sang Step 4
     // Cho phép tiếp tục dù không có món (order có thể chưa có hoặc trống)
+    // Step 3: Fetch order details và chuyển sang Step 4
+    // Cho phép tiếp tục dù không có món (order có thể chưa có hoặc trống)
     if (currentStep === 3) {
       if (reservationId) {
         setIsLoadingOrderDetails(true)
         try {
+          // --- BEGIN SYNC ---
+          // Đồng bộ tất cả (đặc biệt là ghi chú) lên server trước khi sang step 4
+          await Promise.all(
+            cartItems.map((item) =>
+              reservationApi.updateItemInReservation(reservationId, {
+                itemId: item.type === 'item' ? item.id : undefined,
+                comboId: item.type === 'combo' ? item.id : undefined,
+                quantity: item.quantity,
+                note: item.note
+              })
+            )
+          )
+          // --- END SYNC ---
+
           const response = await reservationApi.getReservationOrderDetails(reservationId)
           setOrderDetails(response.data.data)
           setCurrentStep(4)
         } catch (error) {
-          console.error('Failed to fetch order details:', error)
+          console.error('Failed to fetch/sync order details:', error)
           // Vẫn cho phép tiếp tục với orderDetails = null (Step4Payment có fallback logic)
-          // Không hiện alert để không làm gián đoạn flow khi khách không chọn món
+          // Nhưng hiện thông báo lỗi nếu sync thất bại
+          toast.error('Có lỗi xảy ra khi lưu thông tin món ăn. Vui lòng thử lại.')
           setOrderDetails(null)
           setCurrentStep(4)
         } finally {
@@ -498,6 +546,8 @@ export default function Reservation() {
               cartItems={cartItems}
               onAdd={handleAddToCart}
               onRemove={handleRemoveFromCart}
+              updateQuantity={handleUpdateQuantity}
+              onUpdateNote={handleUpdateNote}
               expiratedAt={expiratedAt}
             />
           )}

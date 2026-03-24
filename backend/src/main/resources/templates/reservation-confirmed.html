@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Xác nhận đặt bàn</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px; margin: 0;">
+
+<div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+
+    <div style="background-color: #2c3e50; padding: 20px; text-align: center; color: #ffffff;">
+        <img src="https://e1e3a0a4-d8fc-4375-a417-50a3d0d0b3e5.b-cdn.net/e/85ee6c09-9b06-4a95-87da-8c41f31a8f5b/0e7241e2-62ca-4fe9-a03a-9869f8efc3f9.png" alt="Logo" style="max-height: 80px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;"/>
+        <h1 style="margin: 0; font-size: 24px;">XÁC NHẬN ĐẶT BÀN</h1>
+        <p style="margin:5px 0 0;">Chúng tôi rất mong được phục vụ bạn 🍽️</p>
+    </div>
+
+    <div style="padding: 30px;">
+        <p style="font-size: 16px;">Chào <strong th:text="${customerName}">Khách hàng</strong>,</p>
+        <p>Cảm ơn bạn đã đặt bàn tại <strong>CrownDine</strong>. Dưới đây là thông tin đơn đặt bàn của bạn:</p>
+
+        <div style="margin: 20px 0; border: 1px solid #eeeeee; border-radius: 5px; padding: 15px; background-color: #f8f9fa;">
+            <p style="margin: 0; font-size: 14px; color: #777;">Mã đơn đặt bàn:</p>
+            <p style="margin: 5px 0 15px 0; font-weight: bold; color: #e67e22; font-size: 18px;" th:text="${reservationCode}">#ABCXYZ</p>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 5px 0; font-size: 14px; color: #555;">Ngày đặt:</td>
+                    <td style="padding: 5px 0; font-size: 14px; font-weight: bold;" th:text="${date}">2024-03-24</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; font-size: 14px; color: #555;">Thời gian:</td>
+                    <td style="padding: 5px 0; font-size: 14px; font-weight: bold;"><span th:text="${startTime}">19:00</span> - <span th:text="${endTime}">21:00</span></td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; font-size: 14px; color: #555;">Số khách:</td>
+                    <td style="padding: 5px 0; font-size: 14px; font-weight: bold;"><span th:text="${guestNumber}">2</span> người</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; font-size: 14px; color: #555;">Bàn số:</td>
+                    <td style="padding: 5px 0; font-size: 14px; font-weight: bold;" th:text="${tableName}">Bàn 1</td>
+                </tr>
+            </table>
+        </div>
+
+        <h3 style="border-bottom: 2px solid #2c3e50; padding-bottom: 5px; margin-top: 30px;">CHI TIẾT MÓN ĂN</h3>
+        
+        <table th:if="${not #lists.isEmpty(items)}" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr th:each="item : ${items}">
+                <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; width: 80px; vertical-align: top;">
+                    <img th:src="${item.imageUrl}" alt="Item" style="width: 70px; height: 70px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;"/>
+                </td>
+                <td style="padding: 15px 10px; border-bottom: 1px solid #eeeeee; vertical-align: top;">
+                    <p style="margin: 0; font-weight: bold; font-size: 15px;" th:text="${item.name}">Tên món ăn</p>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #777;">Số lượng: <span th:text="${item.quantity}">1</span></p>
+                    <p th:if="${item.note != null and item.note != ''}" style="margin: 5px 0 0 0; font-size: 12px; color: #e67e22; font-style: italic;">
+                        Ghi chú: <span th:text="${item.note}">Ghi chú món ăn</span>
+                    </p>
+                </td>
+                <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; text-align: right; vertical-align: top; font-weight: bold; color: #333;">
+                    <span th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}">32,295</span>đ
+                </td>
+            </tr>
+        </table>
+        
+        <p th:if="${#lists.isEmpty(items)}" style="font-style: italic; color: #777; margin-top: 10px;">Bạn chưa đặt trước món ăn.</p>
+
+        <table style="width: 100%; margin-top: 20px; border-top: 2px solid #eeeeee;">
+            <tr>
+                <td style="padding: 10px 0; font-size: 14px; color: #555;">Tổng cộng tiền món:</td>
+                <td style="padding: 10px 0; text-align: right; font-size: 14px;" th:text="${#numbers.formatDecimal(totalPrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</td>
+            </tr>
+            <tr th:if="${discountPrice != null and discountPrice > 0}">
+                <td style="padding: 10px 0; font-size: 14px; color: #555;">Giảm giá:</td>
+                <td style="padding: 10px 0; text-align: right; font-size: 14px; color: #e74c3c;" th:text="'-' + ${#numbers.formatDecimal(discountPrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</td>
+            </tr>
+            <tr>
+                <td style="padding: 15px 0; font-size: 16px; font-weight: bold;">Tổng thanh toán dự kiến:</td>
+                <td style="padding: 15px 0; text-align: right; font-size: 18px; font-weight: bold; color: #e67e22;" th:text="${#numbers.formatDecimal(finalPrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</td>
+            </tr>
+        </table>
+
+        <div style="text-align:center; margin-top:30px;">
+            <a th:href="${historyLink}" style="background-color:#e67e22; color:#fff; padding:15px 25px; text-decoration:none; border-radius:5px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">QUẢN LÝ ĐẶT BÀN</a>
+        </div>
+
+        <p style="margin-top:25px; font-size:14px; color:#e74c3c; background-color: #fff5f5; padding: 10px; border-radius: 5px; border-left: 4px solid #e74c3c;">
+            <strong>Lưu ý:</strong> Nhà hàng chỉ giữ bàn tối đa 15 phút so với giờ hẹn. Quý khách vui lòng đến đúng giờ.
+        </p>
+
+        <hr style="margin:30px 0; border: 0; border-top: 1px solid #eeeeee;"/>
+
+        <h3 style="color: #2c3e50;">🍴 Có thể bạn sẽ thích</h3>
+        <p style="color:#555; font-size: 14px;">Đừng quên thử các món tráng miệng đặc sắc của chúng tôi!</p>
+
+        <h3 style="color: #2c3e50;">📍 Thông tin liên hệ</h3>
+        <p style="font-size: 14px; color: #555; margin: 5px 0;">Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+        <p style="font-size: 14px; color: #555; margin: 5px 0;">Hotline hỗ trợ: <a href="tel:0123456789" style="color: #0666EB;">0123-456-789</a></p>
+
+    </div>
+
+    <div style="background-color: #f4f4f7; padding: 25px; text-align: center; font-size: 12px; color: #888;">
+        <p style="margin: 0;">Cảm ơn bạn đã lựa chọn CrownDine.</p>
+        <p style="margin: 10px 0;">
+            <a href="#" style="color: #888; text-decoration: underline;">Facebook</a> | 
+            <a href="#" style="color: #888; text-decoration: underline;">Instagram</a> | 
+            <a href="#" style="color: #888; text-decoration: underline;">Website</a>
+        </p>
+        <p style="margin: 0;">&copy; 2024 CrownDine Restaurant. All rights reserved.</p>
+    </div>
+
+</div>
+</body>
+</html>

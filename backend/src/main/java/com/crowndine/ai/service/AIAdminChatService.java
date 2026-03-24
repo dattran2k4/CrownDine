@@ -1,5 +1,6 @@
 package com.crowndine.ai.service;
 
+import com.crowndine.ai.intent.AnalyzedIntent;
 import com.crowndine.ai.tool.AIToolNames;
 import com.crowndine.ai.tool.method.AdminProductMethodTools;
 import com.crowndine.exception.AiRateLimitException;
@@ -22,11 +23,14 @@ import java.nio.charset.StandardCharsets;
 public class AIAdminChatService {
 
     private final ChatClient chatClient;
+    private final AIIntentClassifier aiIntentClassifier;
 
     public AIAdminChatService(ChatClient.Builder builder,
                               ChatMemory chatMemory,
+                              AIIntentClassifier aiIntentClassifier,
                               AdminProductMethodTools adminProductMethodTools,
                               @Value("classpath:prompts/admin-chatbot-system.st") Resource systemPromptResource) {
+        this.aiIntentClassifier = aiIntentClassifier;
 
         this.chatClient = builder
                 .defaultSystem(loadSystemPrompt(systemPromptResource))
@@ -39,7 +43,20 @@ public class AIAdminChatService {
     }
 
     public Flux<String> chatStream(String username, String message) {
+        AnalyzedIntent analyzedIntent = aiIntentClassifier.analyze(message);
         return this.chatClient.prompt()
+                .system(system -> system.text("""
+                        Ngu canh intent da phan tich:
+                        - Intent chinh: %s
+                        - Intent phu: %s
+                        - Do tin cay: %.2f
+                        - Ly do: %s
+                        """.formatted(
+                        analyzedIntent.intent(),
+                        analyzedIntent.secondaryIntents(),
+                        analyzedIntent.confidence(),
+                        analyzedIntent.reason()
+                )))
                 .user(message)
                 .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, username))
                 .stream()

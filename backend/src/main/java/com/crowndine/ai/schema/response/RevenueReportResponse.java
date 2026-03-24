@@ -6,6 +6,5 @@ public record RevenueReportResponse(
         String currency,
         long completedOrders,
         long totalCustomers,
-        String summary
-) {
+        String summary) {
 }

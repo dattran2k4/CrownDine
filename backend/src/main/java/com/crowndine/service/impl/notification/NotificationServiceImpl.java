@@ -11,6 +11,7 @@ import com.crowndine.model.UserVoucher;
 import com.crowndine.repository.NotificationRepository;
 import com.crowndine.repository.ReservationRepository;
 import com.crowndine.repository.UserVoucherRepository;
+import com.crowndine.service.notification.NotificationRealtimeService;
 import com.crowndine.service.notification.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final ReservationRepository reservationRepository;
     private final UserVoucherRepository userVoucherRepository;
+    private final NotificationRealtimeService notificationRealtimeService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -89,7 +91,8 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Đặt bàn thành công");
         notification.setMessage(buildReservationConfirmedMessage(reservation));
         notification.setPayload(buildReservationConfirmedPayload(reservation));
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+        pushRealtimeNotification(savedNotification);
         log.info("Created reservation confirmed notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
     }
 
@@ -109,7 +112,8 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Bạn nhận được voucher mới");
         notification.setMessage(buildVoucherGrantedMessage(userVoucher));
         notification.setPayload(buildVoucherGrantedPayload(userVoucher));
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+        pushRealtimeNotification(savedNotification);
         log.info("Created voucher granted notification for userVoucher {} and user {}", userVoucherId, userVoucher.getCustomer().getUsername());
     }
 
@@ -134,10 +138,11 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Sắp đến giờ đặt bàn");
         notification.setMessage(buildReservationReminderMessage(reservation));
         notification.setPayload(buildReservationReminderPayload(reservation));
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
 
         reservation.setReminderSentAt(LocalDateTime.now());
         reservationRepository.save(reservation);
+        pushRealtimeNotification(savedNotification);
         log.info("Created reservation reminder notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
     }
 
@@ -194,6 +199,15 @@ public class NotificationServiceImpl implements NotificationService {
             log.warn("Cannot serialize reservation reminder payload for reservation {}", reservation.getId(), e);
             return null;
         }
+    }
+
+    private void pushRealtimeNotification(Notification notification) {
+        if (notification.getUser() == null || notification.getUser().getUsername() == null) {
+            return;
+        }
+
+        long unreadCount = notificationRepository.countByUserUsernameAndReadAtIsNull(notification.getUser().getUsername());
+        notificationRealtimeService.sendToUser(notification, unreadCount);
     }
 
     private record ReservationConfirmedPayload(

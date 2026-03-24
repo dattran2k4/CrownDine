@@ -8,6 +8,8 @@ import { StompSessionProvider } from 'react-stomp-hooks'
 import '@/index.css'
 import router from '@/router'
 import { AppProvider } from '@/contexts/app.context'
+import { useAuthStore } from '@/stores/useAuthStore'
+import NotificationRealtimeListener from '@/components/NotificationRealtimeListener/NotificationRealtimeListener'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,23 +20,37 @@ export const queryClient = new QueryClient({
   }
 })
 
+function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
+  const accessToken = useAuthStore((state) => state.accessToken)
+  const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
+  const websocketUrl = rawAccessToken
+    ? `ws://localhost:8080/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
+    : 'ws://localhost:8080/ws-restaurant'
+
+  return (
+    <StompSessionProvider
+      key={accessToken || 'anonymous'}
+      url={websocketUrl}
+      heartbeatIncoming={10000}
+      heartbeatOutgoing={10000}
+      onConnect={() => console.log('WebSocket Connected!')}
+      onDisconnect={() => console.log('WebSocket Disconnected!')}
+      debug={(str) => console.log(str)}
+    >
+      {children}
+    </StompSessionProvider>
+  )
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <StompSessionProvider
-          // Thay makeSocket bằng webSocketFactory
-          url='ws://localhost:8080/ws-restaurant'
-          heartbeatIncoming={10000}
-          heartbeatOutgoing={10000}
-          onConnect={() => console.log('WebSocket Connected!')}
-          onDisconnect={() => console.log('WebSocket Disconnected!')}
-          // Một số phiên bản dùng debug thay vì debugConfig
-          debug={(str) => console.log(str)}
-        >
+        <AppWebSocketProvider>
+          <NotificationRealtimeListener />
           <RouterProvider router={router} />
           <Toaster richColors position='top-right' />
-        </StompSessionProvider>
+        </AppWebSocketProvider>
       </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

@@ -112,7 +112,7 @@ export default function OrderDrawer({ isOpen, onClose, order, reservationId, onP
   }
 
   const createOrderMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async (): Promise<any> => {
       if (reservationId) {
         return orderApi.openOrderForReservation(reservationId, {
           items: cart.map((c) => ({

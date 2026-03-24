@@ -63,7 +63,7 @@ const ReservationList = () => {
 
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = (id: string | number) => {
     setExpandedCards((prev) => ({
       ...prev,
       [id]: !prev[id]

@@ -8,8 +8,10 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class VoucherAssignUsersRequest {
 
     @NotEmpty(message = "Danh sách user không được để trống")

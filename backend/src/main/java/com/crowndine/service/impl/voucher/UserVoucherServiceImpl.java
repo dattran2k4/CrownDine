@@ -67,9 +67,15 @@ public class UserVoucherServiceImpl implements UserVoucherService {
             userVoucher.setCustomer(user);
 
             if (request.getUsageLimit() != null) {
-                userVoucher.setUsageLimit(request.getUsageLimit());
+                if (isNewAssignment || userVoucher.getUsageLimit() == null) {
+                    userVoucher.setUsageLimit(request.getUsageLimit());
+                } else {
+                    userVoucher.setUsageLimit(userVoucher.getUsageLimit() + request.getUsageLimit());
+                }
             } else if (isNewAssignment || userVoucher.getUsageLimit() == null) {
                 userVoucher.setUsageLimit(1);
+            } else {
+                userVoucher.setUsageLimit(userVoucher.getUsageLimit() + 1);
             }
 
             if (request.getExpiredAt() != null || isNewAssignment) {

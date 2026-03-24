@@ -5,6 +5,7 @@ import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.ProfileResponse;
+import com.crowndine.service.user.RewardPointService;
 import com.crowndine.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.security.Principal;
 public class ApiUserController {
 
     private final UserService userService;
+    private final RewardPointService rewardPointService;
     private final Cloudinary cloudinary;
 
     @GetMapping
@@ -57,6 +59,18 @@ public class ApiUserController {
                 .status(200)
                 .message("Get profile successfully")
                 .data(response)
+                .build();
+    }
+
+    @GetMapping("/profile/point-history")
+    public ApiResponse getPointHistory(
+            Principal principal,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Get point history successfully")
+                .data(rewardPointService.getMyPointHistory(principal.getName(), page, size))
                 .build();
     }
 

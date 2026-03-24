@@ -43,6 +43,9 @@ public class RewardPointServiceImpl implements RewardPointService {
     private final PointHistoryRepository pointHistoryRepository;
     private final UserVoucherService userVoucherService;
 
+    private static final BigDecimal POINT_CONVERSION_RATE = BigDecimal.valueOf(100000);
+    private static final int VOUCHER_VALIDITY_MONTHS = 1;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addPointsFromOrder(Long orderId) {
@@ -56,7 +59,7 @@ public class RewardPointServiceImpl implements RewardPointService {
             return;
         }
 
-        int pointsToAdd = finalPrice.divide(BigDecimal.valueOf(100000)).intValue();
+        int pointsToAdd = finalPrice.divide(POINT_CONVERSION_RATE).intValue();
         if (pointsToAdd <= 0) {
             return;
         }
@@ -102,7 +105,7 @@ public class RewardPointServiceImpl implements RewardPointService {
         VoucherAssignUsersRequest assignRequest = new VoucherAssignUsersRequest();
         assignRequest.setUserIds(Collections.singletonList(user.getId()));
         assignRequest.setUsageLimit(1);
-        assignRequest.setExpiredAt(LocalDateTime.now().plusMonths(1));
+        assignRequest.setExpiredAt(LocalDateTime.now().plusMonths(VOUCHER_VALIDITY_MONTHS));
         userVoucherService.assignUsers(voucherId, assignRequest);
 
         log.info("User {} exchanged {} points for voucher {}", username, voucher.getPointsRequired(), voucherId);
@@ -123,7 +126,7 @@ public class RewardPointServiceImpl implements RewardPointService {
                         .referenceId(history.getReferenceId())
                         .createdAt(history.getCreatedAt())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResponse.<PointHistoryResponse>builder()
                 .page(page)

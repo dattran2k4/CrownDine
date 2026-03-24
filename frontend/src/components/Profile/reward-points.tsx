@@ -130,8 +130,8 @@ const RewardPointsTab = ({ user, onUpdateUser }: RewardPointsProps) => {
                         {pts} Điểm
                       </span>
                     </div>
-                    <p className='text-sm text-foreground/60 line-clamp-2'>
-                      {voucher.description || 'Voucher ưu đãi từ CrownDine'}
+                    <p className='text-xs text-primary/80 mt-1 font-medium'>
+                      HSD: 1 tháng kể từ ngày đổi
                     </p>
                   </div>
                   

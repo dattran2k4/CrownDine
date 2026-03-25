@@ -26,6 +26,7 @@ import KitchenDisplay from './pages/Staffs/KitchenDisplay'
 import WorkSchedule from './pages/Staffs/WorkSchedule'
 import StaffChat from './pages/Staffs/StaffChat'
 import AttendanceBoard from './pages/Staffs/Attendance'
+import PaymentManagement from './pages/Admin/Payment/PaymentManagement'
 
 const router = createBrowserRouter([
   {
@@ -100,6 +101,10 @@ const router = createBrowserRouter([
           {
             path: 'attendance',
             element: <AttendanceBoard />
+          },
+          {
+            path: 'payment-management',
+            element: <PaymentManagement />
           }
         ]
       }

@@ -15,3 +15,16 @@ export interface PaymentDetailResponse {
   createdAt: string
   updatedAt: string
 }
+
+export interface PaymentFilterParams {
+  method?: string
+  status?: string
+  type?: string
+  target?: string
+  source?: string
+  search?: string
+  fromDate?: string
+  toDate?: string
+  page?: number
+  size?: number
+}

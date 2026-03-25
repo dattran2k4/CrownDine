@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Children, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, Moon, Sun, LogOut, User, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -67,7 +67,14 @@ export default function AdminHeader() {
         { label: 'Bảng chấm công', href: '/admin/attendance' }
       ]
     },
-    { label: 'Quản lý phòng bàn', href: '/admin/layout' },
+    {
+      label: 'Quản lý ',
+      children: [
+        { label: 'Phòng bàn', href: '/admin/layout' },
+        { label: 'Thanh toán', href: '/admin/payment-management' }
+      ]
+    },
+
     { label: 'Trợ lý AI', href: '/admin/ai-assistant' }
   ]
 
@@ -102,8 +109,8 @@ export default function AdminHeader() {
                 <>
                   <button
                     className={cn(
-                      'group flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary',
-                      isActive(item) ? 'font-bold text-primary' : 'text-foreground/80'
+                      'group hover:text-primary flex items-center gap-1 text-sm font-medium transition-colors',
+                      isActive(item) ? 'text-primary font-bold' : 'text-foreground/80'
                     )}
                   >
                     {item.label}
@@ -118,15 +125,17 @@ export default function AdminHeader() {
                     </svg>
                   </button>
                   {/* Dropdown */}
-                  <div className='absolute left-1/2 top-full hidden w-56 -translate-x-1/2 pt-4 animate-in fade-in zoom-in-95 group-hover:block'>
-                    <div className='bg-card border-border overflow-hidden rounded-md border shadow-lg ring-1 ring-black/5 p-1'>
+                  <div className='animate-in fade-in zoom-in-95 absolute top-full left-1/2 hidden w-56 -translate-x-1/2 pt-4 group-hover:block'>
+                    <div className='bg-card border-border overflow-hidden rounded-md border p-1 shadow-lg ring-1 ring-black/5'>
                       {item.children.map((child) => (
                         <Link
                           key={child.label}
                           to={child.href}
                           className={cn(
-                            'block rounded-sm px-4 py-2 text-sm transition-colors hover:bg-accent hover:text-primary',
-                            location.pathname === child.href ? 'bg-primary/5 text-primary font-medium' : 'text-foreground/80'
+                            'hover:bg-accent hover:text-primary block rounded-sm px-4 py-2 text-sm transition-colors',
+                            location.pathname === child.href
+                              ? 'bg-primary/5 text-primary font-medium'
+                              : 'text-foreground/80'
                           )}
                         >
                           {child.label}
@@ -139,8 +148,8 @@ export default function AdminHeader() {
                 <Link
                   to={item.href!}
                   className={cn(
-                    'text-sm font-medium transition-colors hover:text-primary',
-                    isActive(item) ? 'font-bold text-primary' : 'text-foreground/80'
+                    'hover:text-primary text-sm font-medium transition-colors',
+                    isActive(item) ? 'text-primary font-bold' : 'text-foreground/80'
                   )}
                 >
                   {item.label}
@@ -215,7 +224,7 @@ export default function AdminHeader() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className='animate-in fade-in slide-in-from-top-2 border-t border-border bg-card duration-200 xl:hidden'>
+        <div className='animate-in fade-in slide-in-from-top-2 border-border bg-card border-t duration-200 xl:hidden'>
           <div className='container mx-auto flex flex-col px-4 py-4'>
             {navItems.map((item) => (
               <div key={item.label}>
@@ -224,7 +233,7 @@ export default function AdminHeader() {
                     <button
                       onClick={() => toggleMobileMenu(item.label)}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent',
+                        'hover:bg-accent flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
                         isActive(item) ? 'text-primary' : 'text-foreground/80'
                       )}
                     >
@@ -242,14 +251,14 @@ export default function AdminHeader() {
                       </svg>
                     </button>
                     {expandedMobileMenu === item.label && (
-                      <div className='ml-4 flex flex-col gap-1 border-l border-border/50 pl-4 mt-1'>
+                      <div className='border-border/50 mt-1 ml-4 flex flex-col gap-1 border-l pl-4'>
                         {item.children.map((child) => (
                           <Link
                             key={child.label}
                             to={child.href}
                             onClick={() => setIsOpen(false)}
                             className={cn(
-                              'block rounded-md px-3 py-2 text-sm transition-colors hover:text-primary',
+                              'hover:text-primary block rounded-md px-3 py-2 text-sm transition-colors',
                               location.pathname === child.href ? 'text-primary font-medium' : 'text-muted-foreground'
                             )}
                           >

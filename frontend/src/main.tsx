@@ -9,6 +9,7 @@ import { StompSessionProvider } from 'react-stomp-hooks'
 import '@/index.css'
 import router from '@/router'
 import { AppProvider } from '@/contexts/app.context'
+import { WebSocketEnabledProvider } from '@/contexts/WebSocketEnabledProvider'
 import { useAuthStore } from '@/stores/useAuthStore'
 import NotificationRealtimeListener from '@/components/NotificationRealtimeListener/NotificationRealtimeListener'
 import { jwtDecode } from 'jwt-decode'
@@ -27,7 +28,7 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
   const hasValidAccessToken = isAccessTokenStillValid(accessToken)
 
   if (!hasValidAccessToken || !accessToken) {
-    return <>{children}</>
+    return <WebSocketEnabledProvider enabled={false}>{children}</WebSocketEnabledProvider>
   }
 
   const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
@@ -36,19 +37,21 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
     : 'ws://localhost:8080/ws-restaurant'
 
   return (
-    <StompSessionProvider
-      key={accessToken || 'anonymous'}
-      url={websocketUrl}
-      reconnectDelay={5000}
-      heartbeatIncoming={10000}
-      heartbeatOutgoing={10000}
-      onConnect={() => console.log('WebSocket Connected!')}
-      onDisconnect={() => console.log('WebSocket Disconnected!')}
-      debug={(str) => console.log(str)}
-    >
-      <NotificationRealtimeListener />
-      {children}
-    </StompSessionProvider>
+    <WebSocketEnabledProvider enabled={true}>
+      <StompSessionProvider
+        key={accessToken || 'anonymous'}
+        url={websocketUrl}
+        reconnectDelay={5000}
+        heartbeatIncoming={10000}
+        heartbeatOutgoing={10000}
+        onConnect={() => console.log('WebSocket Connected!')}
+        onDisconnect={() => console.log('WebSocket Disconnected!')}
+        debug={(str) => console.log(str)}
+      >
+        <NotificationRealtimeListener />
+        {children}
+      </StompSessionProvider>
+    </WebSocketEnabledProvider>
   )
 }
 

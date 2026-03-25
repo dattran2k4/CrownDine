@@ -7,6 +7,7 @@ import { useState, useEffect, Fragment } from 'react'
 import { useSubscription } from 'react-stomp-hooks'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useWebSocketEnabled } from '@/contexts/websocket-context'
 import { Search, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/pagination'
 
 const OrderManagement = () => {
+  const isWebSocketEnabled = useWebSocketEnabled()
   const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -73,25 +75,6 @@ const OrderManagement = () => {
         toDate
       }),
     select: (response) => response?.data?.data?.data ?? []
-  })
-
-  // WebSocket Subscription
-  useSubscription('/topic/orders', (message) => {
-    const updatedOrder = JSON.parse(message.body) as Order
-
-    queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
-      if (!oldData) return oldData
-      return {
-        ...oldData,
-        data: {
-          ...oldData.data,
-          data: {
-            ...oldData.data.data,
-            data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
-          }
-        }
-      }
-    })
   })
 
   // Filter orders
@@ -220,6 +203,7 @@ const OrderManagement = () => {
 
   return (
     <div className='bg-background flex min-h-screen flex-col p-6 md:p-8'>
+      {isWebSocketEnabled && <OrdersRealtimeSubscription />}
       {/* Header */}
       <header className='mb-6'>
         <h1 className='text-foreground text-3xl font-bold tracking-tight'>Đơn gọi món</h1>
@@ -501,6 +485,28 @@ const OrderManagement = () => {
       )}
     </div>
   )
+}
+
+function OrdersRealtimeSubscription() {
+  useSubscription('/topic/orders', (message) => {
+    const updatedOrder = JSON.parse(message.body) as Order
+
+    queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
+      if (!oldData) return oldData
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: {
+            ...oldData.data.data,
+            data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
+          }
+        }
+      }
+    })
+  })
+
+  return null
 }
 
 export default OrderManagement

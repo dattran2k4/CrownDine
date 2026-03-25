@@ -52,4 +52,6 @@ public interface OrderService {
     void markAsPaid(Order order);
 
     List<OrderResponse> getKitchenOrders();
+
+    void cancelPreOrderForReservation(Long orderId);
 }

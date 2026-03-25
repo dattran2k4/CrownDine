@@ -14,6 +14,7 @@ import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.ReservationAvailabilityService;
 import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.ReservationService;
+import com.crowndine.service.reservation.event.ReservationCancelledEvent;
 import com.crowndine.service.reservation.event.ReservationConfirmedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -140,13 +141,13 @@ public class ReservationServiceImpl implements ReservationService {
         List<Reservation> reservations = reservationRepository.findAllByUser_Id(user.getId());
         List<ReservationHistoryResponse> resHistory = reservations.stream()
                 .map(this::toHistoryResponse)
-                .collect(Collectors.toList());
+                .toList();
 
         // Fetch all standalone orders (orders not linked to a reservation)
         List<Order> standaloneOrders = orderRepository.findAllByUser_IdAndReservationIsNull(user.getId());
         List<ReservationHistoryResponse> orderHistory = standaloneOrders.stream()
                 .map(this::fromStandaloneOrderToHistoryResponse)
-                .collect(Collectors.toList());
+                .toList();
 
         // Merge both lists
         List<ReservationHistoryResponse> allHistory = new ArrayList<>(resHistory);
@@ -176,7 +177,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .page(page + 1)
                 .pageSize(size)
                 .totalPages(totalPages)
-                .totalItems((long) totalItems)
+                .totalItems(totalItems)
                 .data(pagedData)
                 .build();
     }
@@ -253,7 +254,8 @@ public class ReservationServiceImpl implements ReservationService {
     private OrderLineResponse toLineResponse(OrderDetail od, Long userId) {
         OrderLineResponse r = new OrderLineResponse();
         r.setOrderDetailId(od.getId());
-        r.setProductId(od.getCombo() != null ? od.getCombo().getId() : (od.getItem() != null ? od.getItem().getId() : null));
+        Long itemId = (od.getItem() != null) ? od.getItem().getId() : null;
+        r.setProductId(od.getCombo() != null ? od.getCombo().getId() : itemId);
         r.setName(od.getProductName());
         r.setType(od.getCombo() != null ? "COMBO" : "ITEM");
         r.setQuantity(od.getQuantity());
@@ -426,7 +428,11 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         reservation.setStatus(EReservationStatus.CANCELLED);
+        if (reservation.getTable() != null) {
+            reservation.getTable().setStatus(ETableStatus.AVAILABLE);
+        }
         reservationRepository.save(reservation);
+        eventPublisher.publishEvent(new ReservationCancelledEvent(reservation.getId(), reservation.getOrder() != null ? reservation.getOrder().getId() : null));
 
         log.info("Reservation id {} has been cancelled", reservationId);
     }

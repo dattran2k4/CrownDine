@@ -238,6 +238,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelPreOrderForReservation(Long orderId) {
+        Order order = getOrder(orderId);
+
+        if (order.getStatus() != EOrderStatus.PRE_ORDER) {
+            log.warn("Skip auto-cancelling order {} because status is {}", orderId, order.getStatus());
+            return;
+        }
+
+        updateOrderStatus(orderId, EOrderStatus.CANCELLED);
+        log.info("Cancelled PRE_ORDER {} after reservation cancellation", orderId);
+    }
+
+    @Override
     public void createWalkInOrder(OrderRequest request, String username) {
         log.info("Processing create new walk-in order by username {}", username);
         User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));

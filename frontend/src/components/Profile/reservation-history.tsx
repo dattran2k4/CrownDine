@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import feedbackApi from '@/apis/feedback.api'
+import paymentApi from '@/apis/payment.api'
 import { toast } from 'react-toastify'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -50,6 +51,28 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to send feedback')
+    }
+  })
+
+  const continuePaymentMutation = useMutation({
+    mutationFn: async (reservationCode: string) => {
+      const response = await paymentApi.createPayment({
+        reservationCode,
+        method: 'PAYOS'
+      })
+
+      return response.data.data
+    },
+    onSuccess: (checkoutUrl) => {
+      if (!checkoutUrl) {
+        toast.error('Không nhận được liên kết thanh toán')
+        return
+      }
+
+      window.location.href = checkoutUrl
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Không thể tạo liên kết thanh toán')
     }
   })
 
@@ -112,6 +135,15 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
     })
   }
 
+  const handleContinuePayment = (reservationCode?: string | null) => {
+    if (!reservationCode) {
+      toast.error('Không tìm thấy mã đặt bàn để tiếp tục thanh toán')
+      return
+    }
+
+    continuePaymentMutation.mutate(reservationCode)
+  }
+
   if (isLoading) {
     return (
       <div className='bg-card border-border rounded-lg border p-8'>
@@ -166,6 +198,18 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                   </div>
 
                   <div className='flex items-center gap-4'>
+                    {reservation.reservationStatus === 'PENDING' && reservation.reservationCode && (
+                      <Button
+                        size='sm'
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleContinuePayment(reservation.reservationCode)
+                        }}
+                        disabled={continuePaymentMutation.isPending}
+                      >
+                        {continuePaymentMutation.isPending ? 'Đang tạo link...' : 'Tiếp tục thanh toán'}
+                      </Button>
+                    )}
                     <Badge className={getReservationStatusColor(reservation.reservationStatus)}>
                       {reservation.reservationStatus}
                     </Badge>

@@ -86,6 +86,7 @@ export type PreOrderCartItem = PreOrderEntry & { quantity: number; note?: string
 
 export interface ReservationHistoryResponse {
   reservationId?: number
+  reservationCode?: string | null
   date: string
   startTime: string
   endTime: string

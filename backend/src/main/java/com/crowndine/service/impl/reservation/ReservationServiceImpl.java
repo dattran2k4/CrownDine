@@ -184,6 +184,7 @@ public class ReservationServiceImpl implements ReservationService {
     private ReservationHistoryResponse toHistoryResponse(Reservation r) {
         ReservationHistoryResponse resp = new ReservationHistoryResponse();
         resp.setReservationId(r.getId());
+        resp.setReservationCode(r.getCode());
         resp.setDate(r.getDate());
         resp.setStartTime(r.getStartTime());
         resp.setEndTime(r.getEndTime());
@@ -210,6 +211,7 @@ public class ReservationServiceImpl implements ReservationService {
     private ReservationHistoryResponse fromStandaloneOrderToHistoryResponse(Order order) {
         ReservationHistoryResponse resp = new ReservationHistoryResponse();
         resp.setReservationId(null); // No reservation linked
+        resp.setReservationCode(null);
         resp.setDate(order.getCreatedAt().toLocalDate());
         resp.setStartTime(order.getCreatedAt().toLocalTime());
         resp.setEndTime(order.getCreatedAt().toLocalTime().plusHours(1)); // Default duration for display

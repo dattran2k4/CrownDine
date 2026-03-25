@@ -154,6 +154,10 @@ public class UserVoucherServiceImpl implements UserVoucherService {
         String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
         Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("Mã voucher không hợp lệ"));
 
+        if (voucher.getMinValue() != null && totalOrder.compareTo(voucher.getMinValue()) < 0) {
+            throw new InvalidDataException("Đơn hàng chưa đạt giá trị tối thiểu để áp voucher");
+        }
+
         boolean isPersonal = !voucher.getUserVouchers().isEmpty();
         Integer usageCount = 0;
         Integer usageLimit = null;
@@ -179,6 +183,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
                 .name(voucher.getName())
                 .type(voucher.getType())
                 .orderAmount(totalOrder)
+                .minValue(voucher.getMinValue())
                 .discountAmount(discountAmount)
                 .finalAmount(finalAmount)
                 .usageCount(usageCount)
@@ -285,6 +290,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
                 .voucherType(voucher != null ? voucher.getType() : null)
                 .discountValue(voucher != null ? voucher.getDiscountValue() : null)
                 .maxDiscountValue(voucher != null ? voucher.getMaxDiscountValue() : null)
+                .minValue(voucher != null ? voucher.getMinValue() : null)
                 .description(voucher != null ? voucher.getDescription() : null)
                 .usageCount(userVoucher.getUsageCount())
                 .usageLimit(userVoucher.getUsageLimit())

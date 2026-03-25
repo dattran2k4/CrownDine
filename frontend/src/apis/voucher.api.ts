@@ -35,6 +35,7 @@ const voucherApi = {
     type: 'PERCENTAGE' | 'FIXED_AMOUNT'
     discountValue: number
     maxDiscountValue?: number | null
+    minValue?: number | null
     description?: string | null
   }) {
     return http.post<ApiResponse<Voucher>>(VOUCHER_URL, data)
@@ -46,6 +47,7 @@ const voucherApi = {
     type: 'PERCENTAGE' | 'FIXED_AMOUNT'
     discountValue: number
     maxDiscountValue?: number | null
+    minValue?: number | null
     description?: string | null
   }) {
     return http.patch<ApiResponse<Voucher>>(`${VOUCHER_URL}/${id}`, data)

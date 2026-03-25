@@ -7,6 +7,7 @@ export interface Voucher {
   type: VoucherType
   discountValue: number
   maxDiscountValue: number | null
+  minValue: number | null
   description: string | null
   pointsRequired?: number
   createdAt: string
@@ -19,6 +20,7 @@ export interface VoucherFormData {
   type: VoucherType
   discountValue: string
   maxDiscountValue: string
+  minValue: string
   description: string
 }
 
@@ -52,6 +54,7 @@ export interface VoucherValidateResponse {
   name: string
   type: VoucherType
   orderAmount: number
+  minValue: number | null
   discountAmount: number
   finalAmount: number
   usageCount: number
@@ -66,6 +69,7 @@ export interface MyVoucherResponse {
   voucherType: VoucherType
   discountValue: number
   maxDiscountValue: number | null
+  minValue: number | null
   description: string | null
   usageCount: number
   usageLimit: number | null

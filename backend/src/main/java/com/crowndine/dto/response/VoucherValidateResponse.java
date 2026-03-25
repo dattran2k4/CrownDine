@@ -16,6 +16,7 @@ public class VoucherValidateResponse {
     private String name;
     private EVoucherType type;
     private BigDecimal orderAmount;
+    private BigDecimal minValue;
     private BigDecimal discountAmount;
     private BigDecimal finalAmount;
     private Integer usageCount;

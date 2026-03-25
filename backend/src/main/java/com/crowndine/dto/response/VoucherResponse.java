@@ -18,6 +18,7 @@ public class VoucherResponse {
     private EVoucherType type;
     private BigDecimal discountValue;
     private BigDecimal maxDiscountValue;
+    private BigDecimal minValue;
     private String description;
     private Integer pointsRequired;
     private LocalDateTime createdAt;

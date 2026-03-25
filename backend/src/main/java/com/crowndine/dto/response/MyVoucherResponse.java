@@ -19,6 +19,7 @@ public class MyVoucherResponse {
     private EVoucherType voucherType;
     private BigDecimal discountValue;
     private BigDecimal maxDiscountValue;
+    private BigDecimal minValue;
     private String description;
     private Integer usageCount;
     private Integer usageLimit;

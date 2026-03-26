@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -61,6 +62,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final RestTemplate restTemplate;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -267,6 +272,82 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository.save(user);
 
         log.info("Reset password successfully");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Processing Google login with Access Token");
+        
+        try {
+            // Get user info from Google
+            String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + request.getToken();
+            Map<String, Object> payload = restTemplate.getForObject(userInfoUrl, Map.class);
+            
+            if (payload == null || !payload.containsKey("sub")) {
+                throw new InvalidDataException("Invalid Google Access Token");
+            }
+            
+            String email = (String) payload.get("email");
+            String googleId = (String) payload.get("sub");
+            String firstName = (String) payload.get("given_name");
+            String lastName = (String) payload.get("family_name");
+            String pictureUrl = (String) payload.get("picture");
+
+            // Check if user exists by googleId
+            Optional<User> userOptional = userRepository.findByGoogleId(googleId);
+            User user;
+            
+            if (userOptional.isPresent()) {
+                user = userOptional.get();
+                log.info("Google user found: {}", user.getUsername());
+            } else {
+                // Check if user exists by email
+                userOptional = userRepository.findByEmail(email);
+                
+                if (userOptional.isPresent()) {
+                    user = userOptional.get();
+                    user.setGoogleId(googleId);
+                    if (user.getAvatarUrl() == null) {
+                        user.setAvatarUrl(pictureUrl);
+                    }
+                    userRepository.save(user);
+                    log.info("Linked existing user {} with Google ID", user.getUsername());
+                } else {
+                    // Create new user
+                    user = new User();
+                    user.setEmail(email);
+                    user.setUsername(email); 
+                    user.setFirstName(firstName != null ? firstName : "User");
+                    user.setLastName(lastName != null ? lastName : "Google");
+                    user.setGoogleId(googleId);
+                    user.setAvatarUrl(pictureUrl);
+                    user.setStatus(EUserStatus.ACTIVE);
+                    
+                    Role role = roleRepository.findByName(ERole.USER);
+                    user.setRoles(new HashSet<>(List.of(role)));
+                    
+                    userRepository.save(user);
+                    log.info("Created new user via Google login: {}", user.getUsername());
+                }
+            }
+
+            List<String> roles = extractRoles(user.getAuthorities());
+            String accessToken = jwtService.generateAccessToken(user.getUsername(), roles);
+            String refreshToken = jwtService.generateRefreshToken(user.getUsername(), roles);
+
+            tokenService.saveToken(user.getUsername(), refreshToken, httpServletRequest);
+
+            return TokenResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .username(user.getUsername())
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("Error during Google login: ", e);
+            throw new InvalidDataException("Google authentication failed: " + e.getMessage());
+        }
     }
 
 }

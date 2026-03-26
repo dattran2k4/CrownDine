@@ -15,6 +15,8 @@ import { isAxiosUnauthorizedError } from '@/utils/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { ErrorResponse } from '@/types/utils.type'
 import { toast } from 'sonner'
+import { useGoogleLogin as useGoogleLoginOAuth } from '@react-oauth/google'
+import { useGoogleLogin } from '@/hooks/useGoogleLogin'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
@@ -29,6 +31,32 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   })
 
   const loginMutation = useLogin()
+  const googleLoginMutation = useGoogleLogin()
+
+  const handleGoogleLogin = useGoogleLoginOAuth({
+    onSuccess: async (tokenResponse) => {
+      try {
+        await googleLoginMutation.mutateAsync(tokenResponse.access_token)
+        toast.success('Đăng nhập Google thành công!')
+
+        const roles = useAuthStore.getState().roles
+        if (roles.includes('ADMIN')) {
+          navigate('/admin')
+        } else if (roles.includes('STAFF')) {
+          navigate('/staff')
+        } else {
+          navigate(path.home)
+        }
+      } catch (error) {
+        console.error('Google Login Mutation Failed:', error)
+        toast.error('Đăng nhập Google thất bại!')
+      }
+    },
+    onError: () => {
+      toast.error('Đăng nhập Google thất bại!')
+    }
+  })
+
   const onSubmit = handleSubmit(async (data) => {
     try {
       await loginMutation.mutateAsync(data)
@@ -134,13 +162,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                 type='button'
                 className='btn-auth w-full cursor-pointer'
                 size='lg'
-                onClick={() => {
-                  // TODO: Implement Google login
-                  console.log('Google login clicked')
-                }}
+                onClick={() => handleGoogleLogin()}
+                disabled={googleLoginMutation.isPending}
               >
                 <GoogleIcon className='size-5' />
-                Đăng nhập với Google
+                {googleLoginMutation.isPending ? 'Đang xử lý...' : 'Đăng nhập với Google'}
               </Button>
 
               {/* Signup link */}

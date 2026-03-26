@@ -13,6 +13,7 @@ import { WebSocketEnabledProvider } from '@/contexts/WebSocketEnabledProvider'
 import { useAuthStore } from '@/stores/useAuthStore'
 import NotificationRealtimeListener from '@/components/NotificationRealtimeListener/NotificationRealtimeListener'
 import { jwtDecode } from 'jwt-decode'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,15 +58,17 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <AppWebSocketProvider>
-          <RouterProvider router={router} />
-          <Toaster richColors position='top-right' />
-        </AppWebSocketProvider>
-      </AppProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <QueryClientProvider client={queryClient}>
+        <AppProvider>
+          <AppWebSocketProvider>
+            <RouterProvider router={router} />
+            <Toaster richColors position='top-right' />
+          </AppWebSocketProvider>
+        </AppProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   </StrictMode>
 )
 

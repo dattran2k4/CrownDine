@@ -20,6 +20,8 @@ public interface AuthenticationService {
 
     boolean confirmRegister(String verifyCode);
 
+    TokenResponse googleLogin(com.crowndine.dto.request.GoogleLoginRequest request, HttpServletRequest httpServletRequest);
+
     void resetPassword(String verifyCode, ResetPasswordRequest request);
 
 }

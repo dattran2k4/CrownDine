@@ -464,7 +464,7 @@ public class OrderServiceImpl implements OrderService {
             case CONFIRMED, IN_PROGRESS -> updateTableStatus(order, ETableStatus.OCCUPIED);
             case COMPLETED, CANCELLED -> updateTableStatus(order, ETableStatus.AVAILABLE);
             case PRE_ORDER, SERVED -> {
-                //TODO SCHEDULE BEFORE RESERVATION 1 HOUR
+                updateTableStatus(order, ETableStatus.RESERVED);
             }
         }
     }

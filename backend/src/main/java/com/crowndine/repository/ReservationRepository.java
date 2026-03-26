@@ -1,15 +1,19 @@
 package com.crowndine.repository;
 
+import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
+import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.model.Reservation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +51,28 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             """)
     List<Reservation> findReminderCandidates(EReservationStatus status, LocalDate date);
 
+    @Query("""
+            select r
+            from Reservation r
+            join fetch r.table t
+            join fetch r.order o
+            where r.status = :reservationStatus
+              and o.status = :orderStatus
+              and t.status = :tableStatus
+              and r.checkedOutAt is null
+              and r.date = :date
+              and r.startTime >= :fromTime
+              and r.startTime < :toTime
+            """)
+    List<Reservation> findTableReserveCandidates(
+            @Param("reservationStatus") EReservationStatus reservationStatus,
+            @Param("orderStatus") EOrderStatus orderStatus,
+            @Param("tableStatus") ETableStatus tableStatus,
+            @Param("date") LocalDate date,
+            @Param("fromTime") LocalTime fromTime,
+            @Param("toTime") LocalTime toTime
+    );
+
     Optional<Reservation> findByCode(String code);
 
     @Query("SELECT r FROM Reservation r WHERE " +
@@ -54,8 +80,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "(:toDate IS NULL OR r.date <= :toDate) AND " +
             "(:status IS NULL OR r.status = :status)")
     Page<Reservation> findReservations(
-            @org.springframework.data.repository.query.Param("fromDate") LocalDate fromDate,
-            @org.springframework.data.repository.query.Param("toDate") LocalDate toDate,
-            @org.springframework.data.repository.query.Param("status") EReservationStatus status,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate,
+            @Param("status") EReservationStatus status,
             Pageable pageable);
 }

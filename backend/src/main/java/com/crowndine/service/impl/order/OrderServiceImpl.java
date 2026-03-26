@@ -429,6 +429,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(EOrderStatus.COMPLETED);
         orderRepository.save(order);
+        handleOrderStatusSideEffects(order);
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }

@@ -1,5 +1,6 @@
 package com.crowndine.service.order.listener;
 
+import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.event.ReservationCancelledEvent;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,11 @@ public class ReservationCancelledEventListener {
             return;
         }
 
-        orderService.cancelPreOrderForReservation(event.orderId());
+        if (orderService.getOrder(event.orderId()).getStatus() != EOrderStatus.PRE_ORDER) {
+            log.warn("Skip auto-cancelling order {} because status is not PRE_ORDER", event.orderId());
+            return;
+        }
+
+        orderService.updateOrderStatus(event.orderId(), EOrderStatus.CANCELLED);
     }
 }

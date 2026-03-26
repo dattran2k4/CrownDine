@@ -93,6 +93,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(EOrderStatus.CONFIRMED);
         orderRepository.save(order);
+        handleOrderStatusSideEffects(order);
         log.info("Updated reservation order {} status to CONFIRMED", order.getId());
         return order;
     }
@@ -216,41 +217,8 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(status);
         orderRepository.save(order);
 
-        if (status == EOrderStatus.COMPLETED || status == EOrderStatus.CANCELLED) {
-            RestaurantTable table = order.getRestaurantTable();
-            if (table != null) {
-                table.setStatus(ETableStatus.AVAILABLE);
-                tableRepository.save(table);
-
-                RestaurantTableResponse tableRes = new RestaurantTableResponse();
-                BeanUtils.copyProperties(table, tableRes);
-                tableRes.setId(table.getId());
-                messagingTemplate.convertAndSend("/topic/tables", tableRes);
-                log.info("Released table {} to AVAILABLE after order updated to {}", table.getId(), status);
-            }
-        }
-
-        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
-        response.setId(order.getId());
-        response.setStatus(order.getStatus());
-
-        messagingTemplate.convertAndSend("/topic/orders", response);
-
-        return response;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void cancelPreOrderForReservation(Long orderId) {
-        Order order = getOrder(orderId);
-
-        if (order.getStatus() != EOrderStatus.PRE_ORDER) {
-            log.warn("Skip auto-cancelling order {} because status is {}", orderId, order.getStatus());
-            return;
-        }
-
-        updateOrderStatus(orderId, EOrderStatus.CANCELLED);
-        log.info("Cancelled PRE_ORDER {} after reservation cancellation", orderId);
+        handleOrderStatusSideEffects(order);
+        return publishOrderStatus(order);
     }
 
     @Override
@@ -265,6 +233,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
         orderRepository.save(order);
+        handleOrderStatusSideEffects(order);
 
         orderDetailService.createPendingOrderDetails(order, request.getItems());
         recalculateOrderPricing(order);
@@ -295,6 +264,7 @@ public class OrderServiceImpl implements OrderService {
         recalculateOrderPricing(order);
         reservation.setOrder(order);
         Order savedOrder = orderRepository.save(order);
+        handleOrderStatusSideEffects(savedOrder);
 
         return toResponse(savedOrder);
     }
@@ -486,6 +456,37 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
         order.setDiscountPrice(discountPrice);
         order.setFinalPrice(finalPrice);
+    }
+
+    private void handleOrderStatusSideEffects(Order order) {
+        switch (order.getStatus()) {
+            case CONFIRMED, IN_PROGRESS -> updateTableStatus(order, ETableStatus.OCCUPIED);
+            case COMPLETED, CANCELLED -> updateTableStatus(order, ETableStatus.AVAILABLE);
+            case PRE_ORDER, SERVED -> {
+                //TODO SCHEDULE BEFORE RESERVATION 1 HOUR
+            }
+        }
+    }
+
+    private void updateTableStatus(Order order, ETableStatus targetStatus) {
+        RestaurantTable table = order.getRestaurantTable();
+
+        table.setStatus(targetStatus);
+        tableRepository.save(table);
+
+        RestaurantTableResponse tableResponse = new RestaurantTableResponse();
+        BeanUtils.copyProperties(table, tableResponse);
+        tableResponse.setId(table.getId());
+        messagingTemplate.convertAndSend("/topic/tables", tableResponse);
+        log.info("Updated table {} to {} after order updated to {}", table.getId(), targetStatus, order.getStatus());
+    }
+
+    private UpdateStatusOrderResponse publishOrderStatus(Order order) {
+        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
+        response.setId(order.getId());
+        response.setStatus(order.getStatus());
+        messagingTemplate.convertAndSend("/topic/orders", response);
+        return response;
     }
 
     private OrderResponse toResponse(Order order) {

@@ -6,7 +6,6 @@ import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.OrderApplyVoucherResponse;
-import com.crowndine.dto.response.OrderDetailHistoryResponse;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
 import com.crowndine.dto.response.UpdateStatusOrderResponse;
@@ -52,6 +51,4 @@ public interface OrderService {
     void markAsPaid(Order order);
 
     List<OrderResponse> getKitchenOrders();
-
-    void cancelPreOrderForReservation(Long orderId);
 }

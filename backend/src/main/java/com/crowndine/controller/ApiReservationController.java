@@ -123,6 +123,36 @@ public class ApiReservationController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/{reservationId}/cancel")
+    public ApiResponse cancelReservationByStaff(@PathVariable Long reservationId, Principal principal) {
+        reservationService.cancelReservationByStaff(reservationId, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Cancelled reservation successfully")
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/{reservationId}/no-show")
+    public ApiResponse markReservationNoShow(@PathVariable Long reservationId, Principal principal) {
+        reservationService.markReservationNoShow(reservationId, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Marked reservation as no-show successfully")
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/{reservationId}/complete")
+    public ApiResponse completeReservation(@PathVariable Long reservationId, Principal principal) {
+        reservationService.completeReservation(reservationId, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Completed reservation successfully")
+                .build();
+    }
+
     @PutMapping("/{reservationId}/update-table")
     public ApiResponse updateReservationTable(@PathVariable Long reservationId,
                                               @Valid @RequestBody ReservationUpdateTableRequest request,

@@ -17,7 +17,7 @@ import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
-import com.crowndine.util.OrderCodeGenerator;
+import com.crowndine.common.utils.OrderCodeGenerator;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.crowndine.util;
+package com.crowndine.common.utils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

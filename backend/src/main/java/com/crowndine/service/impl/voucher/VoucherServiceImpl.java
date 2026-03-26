@@ -89,6 +89,12 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
+    public Voucher getVoucherByCode(String code) {
+        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
+        return voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public VoucherResponse updateVoucher(Long id, VoucherRequest request) {
         Voucher voucher = getVoucher(id);

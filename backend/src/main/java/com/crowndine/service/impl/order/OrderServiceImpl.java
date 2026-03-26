@@ -17,6 +17,7 @@ import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
+import com.crowndine.service.voucher.VoucherService;
 import com.crowndine.common.utils.OrderCodeGenerator;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
     private final UserVoucherService userVoucherService;
+    private final VoucherService voucherService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -341,7 +343,6 @@ public class OrderServiceImpl implements OrderService {
         String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
 
         if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
-            userVoucherService.releaseVoucher(order.getVoucher().getCode(), customerUsername);
             order.setVoucher(null);
         }
 
@@ -350,18 +351,17 @@ public class OrderServiceImpl implements OrderService {
         }
 
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        log.info("Total price for order with id {} is {}", orderId, totalPrice);
 
-        if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
-        }
+        userVoucherService.validateVoucher(code, orderId, customerUsername);
+        Voucher voucher = voucherService.getVoucherByCode(code);
 
-        Voucher voucher = userVoucherService.consumeVoucher(code, customerUsername);
+        //Remove voucher for old orders
+        detachVoucherFromPreviousOrders(order, voucher);
 
         BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
-        log.info("Discount price for order with id {} is {}", orderId, discountPrice);
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-        log.info("Final price for order with id {} is {}", orderId, finalPrice);
+
+        log.info("Total price = {}, Discount price = {}, Final price = {} for order with id {} is {}", totalPrice, discountPrice, finalPrice, orderId, discountPrice);
 
         order.setVoucher(voucher);
         order.setTotalPrice(totalPrice);
@@ -382,6 +382,26 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    private void detachVoucherFromPreviousOrders(Order currentOrder, Voucher voucher) {
+        if (voucher == null || currentOrder.getUser() == null) {
+            return;
+        }
+
+        List<EOrderStatus> finalStatuses = List.of(EOrderStatus.COMPLETED, EOrderStatus.CANCELLED);
+        List<Order> previousOrders = orderRepository.findActiveOrdersUsingVoucherByUserId(currentOrder.getUser().getId(), voucher.getId(), currentOrder.getId(), finalStatuses);
+
+        if (previousOrders.isEmpty()) {
+            return;
+        }
+
+        previousOrders.forEach(previousOrder -> {
+            previousOrder.setVoucher(null);
+            recalculateOrderPricing(previousOrder);
+            orderRepository.save(previousOrder);
+            log.info("Detached voucher {} from previous order {}", voucher.getCode(), previousOrder.getId());
+        });
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {
@@ -397,11 +417,7 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Đơn hàng chưa áp voucher");
         }
 
-        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-
         String voucherCode = order.getVoucher().getCode();
-        userVoucherService.releaseVoucher(voucherCode, customerUsername);
-
         order.setVoucher(null);
 
         BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
@@ -432,6 +448,13 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() == EOrderStatus.COMPLETED) {
             log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
             return;
+        }
+
+        if (order.getVoucher() != null) {
+            String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
+            userVoucherService.validateVoucher(order.getVoucher().getCode(), order.getId(), customerUsername);
+            Voucher consumedVoucher = userVoucherService.consumeVoucher(order.getVoucher().getCode(), customerUsername);
+            order.setVoucher(consumedVoucher);
         }
 
         order.setStatus(EOrderStatus.COMPLETED);

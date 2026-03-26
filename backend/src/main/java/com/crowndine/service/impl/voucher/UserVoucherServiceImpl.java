@@ -159,7 +159,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
         }
 
         boolean isPersonal = !voucher.getUserVouchers().isEmpty();
-        Integer usageCount = 0;
+        int usageCount = 0;
         Integer usageLimit = null;
 
         if (isPersonal) {

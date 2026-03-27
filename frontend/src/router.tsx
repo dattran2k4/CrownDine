@@ -27,6 +27,7 @@ import WorkSchedule from './pages/Staffs/WorkSchedule'
 import StaffChat from './pages/Staffs/StaffChat'
 import AttendanceBoard from './pages/Staffs/Attendance'
 import PaymentManagement from './pages/Admin/Payment/PaymentManagement'
+import Cashier from './pages/Staffs/Cashier'
 
 const router = createBrowserRouter([
   {
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <Navigate to='floor-plan' replace />
+          },
+          {
+            path: 'cashier',
+            element: <Cashier />
           },
           {
             path: 'floor-plan',

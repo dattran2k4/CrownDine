@@ -135,6 +135,7 @@ public class OrderServiceImpl implements OrderService {
             detail.setQuantity(request.getQuantity());
             detail.setNote(request.getNote());
             detail.setOrder(order);
+            detail.setStatus(com.crowndine.common.enums.EOrderDetailStatus.PENDING);
             detail.calculateAndSetTotalPrice();
             orderDetails.add(detail);
         }
@@ -429,6 +430,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(EOrderStatus.COMPLETED);
         orderRepository.save(order);
+        handleOrderStatusSideEffects(order);
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
@@ -518,6 +520,7 @@ public class OrderServiceImpl implements OrderService {
             od.setNote(d.getNote());
             od.setStatus(d.getStatus());
             od.setTotalPrice(d.getTotalPrice());
+            od.setCreatedAt(d.getCreatedAt());
             return od;
         }).toList();
 

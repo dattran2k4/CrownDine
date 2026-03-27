@@ -7,6 +7,8 @@ export interface ReservationCreateRequest {
   startTime: string // HH:mm
   guestNumber: number
   tableId: number
+  customerId?: number | null
+  status?: string
   note?: string
 }
 

@@ -3,7 +3,7 @@ import { queryClient } from '@/main'
 import type { Order, OrderDetailStatus } from '@/types/order.type'
 import { useQuery } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useStompClient, useSubscription } from 'react-stomp-hooks'
 import { toast } from 'sonner'
 
@@ -76,7 +76,7 @@ const KitchenDisplay = () => {
     const id = setInterval(() => {
       setClock(new Date())
       forceUpdate((n) => n + 1) // re-render for elapsed timers
-    }, 1000)
+    }, 60000)
     return () => clearInterval(id)
   }, [])
 
@@ -160,6 +160,50 @@ const KitchenDisplay = () => {
   const cookingCount = allDetails.filter((d) => d.status === 'COOKING').length
   const servedCount = allDetails.filter((d) => d.status === 'SERVED').length
 
+  const batches = useMemo(() => {
+    const flatItems = orders.flatMap((o) =>
+      o.orderDetails.map((d) => ({
+        ...d,
+        orderId: o.id,
+        orderCode: o.code,
+        tableName: o.tableName,
+        createdAt: d.createdAt || o.createdAt
+      }))
+    )
+
+    // Sắp xếp món theo thời gian tạo (giây)
+    flatItems.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return timeA - timeB
+    })
+
+    const grouped: any[] = []
+    flatItems.forEach((item) => {
+      const lastBatch = grouped[grouped.length - 1]
+      const itemTime = item.createdAt ? new Date(item.createdAt).getTime() : 0
+
+      // Nhóm các món có cùng OrderId và thời gian tạo cách nhau không quá 2 giây (coi như cùng 1 lần nhấn Thông báo)
+      if (
+        lastBatch &&
+        lastBatch.orderId === item.orderId &&
+        Math.abs(new Date(lastBatch.createdAt).getTime() - itemTime) < 2000
+      ) {
+        lastBatch.items.push(item)
+      } else {
+        grouped.push({
+          id: `batch-${item.orderId}-${item.createdAt}`,
+          orderId: item.orderId,
+          orderCode: item.orderCode,
+          tableName: item.tableName,
+          createdAt: item.createdAt,
+          items: [item]
+        })
+      }
+    })
+    return grouped
+  }, [orders])
+
   return (
     <div className='bg-background flex min-h-screen flex-col p-6 md:p-8'>
       {/* ── Header ── */}
@@ -197,12 +241,13 @@ const KitchenDisplay = () => {
       )}
 
       {/* ── Order Cards Grid ── */}
-      {orders.length > 0 && (
+      {batches.length > 0 && (
         <div className='grid gap-5 sm:grid-cols-2 xl:grid-cols-3'>
-          {orders.map((order) => {
-            const elapsedMin = getElapsedMinutes(order.createdAt)
-            const allServed = order.orderDetails.every((d) => d.status === 'SERVED' || d.status === 'CANCELLED')
-            const hasPending = order.orderDetails.some((d) => d.status === 'PENDING')
+          {batches.map((batch) => {
+            const batchTimeStr = batch.createdAt || ''
+            const elapsedMin = getElapsedMinutes(batchTimeStr)
+            const allServed = batch.items.every((d: any) => d.status === 'SERVED' || d.status === 'CANCELLED')
+            const hasPending = batch.items.some((d: any) => d.status === 'PENDING')
 
             // Chỉ tính cảnh báo khi còn món PENDING chưa nấu
             const isOverdue = hasPending && elapsedMin >= OVERDUE_MINUTES
@@ -216,12 +261,17 @@ const KitchenDisplay = () => {
 
             return (
               <div
-                key={order.id}
+                key={batch.id}
                 className={`bg-card flex flex-col rounded-xl border-2 shadow-sm transition-all duration-300 ${cardBorder}`}
               >
                 {/* Card Header */}
                 <div className='border-border flex items-center justify-between border-b px-4 py-3'>
-                  <h2 className='text-foreground text-lg font-bold'>{order.tableName || 'Không có bàn'}</h2>
+                  <div className='flex items-center gap-2'>
+                    <h2 className='text-foreground text-lg font-bold'>{batch.tableName || 'Không có bàn'}</h2>
+                    <span className='bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase'>
+                      #{batchTimeStr ? batchTimeStr.substring(11, 19) : 'N/A'}
+                    </span>
+                  </div>
                   <div className='flex items-center gap-1.5'>
                     {isUrgent && (
                       <span className='inline-flex items-center rounded-md bg-orange-500 px-2.5 py-1 text-xs font-bold text-white'>
@@ -240,36 +290,24 @@ const KitchenDisplay = () => {
                 <div className='border-border grid grid-cols-2 gap-x-4 border-b px-4 py-3 text-sm'>
                   <span className='text-foreground'>
                     <span className='text-muted-foreground font-medium'>Đơn: </span>
-                    <span className='font-semibold'>{order.code}</span>
+                    <span className='font-semibold'>{batch.orderCode}</span>
                   </span>
                   <span className='text-foreground'>
-                    <span className='text-muted-foreground font-medium'>Thời gian: </span>
-                    <span className='font-semibold'>{formatTime(order.createdAt)}</span>
-                  </span>
-                  <span className='text-foreground'>
-                    <span className='text-muted-foreground font-medium'>Nhân viên: </span>
-                    <span className='font-semibold'>{order.staffName || '—'}</span>
-                  </span>
-                  <span className={`font-semibold ${isOverdue ? 'text-red-600' : isUrgent ? 'text-orange-500' : 'text-foreground'}`}>
-                    <span className='text-muted-foreground font-medium'>Đã trôi qua: </span>
-                    {elapsedMin} phút
+                    <span className='text-muted-foreground font-medium'>Gửi lúc: </span>
+                    <span className='font-semibold'>{formatTime(batchTimeStr)}</span>
                   </span>
                 </div>
 
-                {/* Order Details */}
-                <div className='space-y-3 p-4'>
-                  {order.orderDetails
-                    .filter((d) => d.status !== 'CANCELLED')
-                    .map((detail) => {
-                      const name = detail.item?.name ?? detail.combo?.name ?? 'Món ăn'
-                      const detailElapsed = detail.createdAt ? getElapsedMinutes(detail.createdAt) : elapsedMin
+                {/* Items List */}
+                <div className='flex-1 space-y-3 p-4'>
+                  {batch.items
+                    .filter((d: any) => d.status !== 'CANCELLED')
+                    .map((detail: any) => {
+                      const name = detail.item?.name || detail.combo?.name || 'Món ăn'
+                      const detailElapsed = getElapsedMinutes(detail.createdAt)
 
                       return (
-                        <div
-                          key={detail.id}
-                          className='bg-muted/40 border-border rounded-lg border p-3'
-                        >
-                          {/* Item name + status badge */}
+                        <div key={detail.id} className='bg-muted/40 border-border rounded-lg border p-3'>
                           <div className='flex items-start justify-between gap-2'>
                             <p className='text-foreground text-sm font-bold'>
                               {detail.quantity}x {name}
@@ -277,14 +315,11 @@ const KitchenDisplay = () => {
                             <DetailStatusBadge status={detail.status} />
                           </div>
 
-                          {/* Time info */}
                           <div className='mt-1.5 flex items-center justify-between'>
                             <div className='text-muted-foreground text-xs'>
-                              {detail.createdAt && <span>Bắt đầu: {formatTime(detail.createdAt)} · </span>}
                               <span>{detailElapsed} phút</span>
                             </div>
 
-                            {/* Action button */}
                             <div>
                               {detail.status === 'PENDING' && (
                                 <button
@@ -315,15 +350,14 @@ const KitchenDisplay = () => {
                         </div>
                       )
                     })}
-
-                  {/* All-served indicator */}
-                  {allServed && order.orderDetails.length > 0 && (
-                    <div className='mt-2 rounded-lg border border-green-200 bg-green-50 p-3 text-center'>
-                      <p className='text-sm font-semibold text-green-700'>Tất cả món đã sẵn sàng để mang ra</p>
-                      <p className='mt-0.5 text-xs text-green-600'>Đơn sẽ tự ẩn sau khi thanh toán</p>
-                    </div>
-                  )}
                 </div>
+
+                {/* All-served indicator */}
+                {allServed && batch.items.length > 0 && (
+                  <div className='bg-green-50/50 flex items-center justify-center gap-2 border-t border-green-100 p-3'>
+                    <span className='text-xs font-black text-green-600 uppercase tracking-widest'>Tất cả đã xong</span>
+                  </div>
+                )}
               </div>
             )
           })}

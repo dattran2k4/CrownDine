@@ -19,8 +19,8 @@ const orderApi = {
     return http.post<ApiResponse<null>>(`${TABLE_URL}`, body)
   },
 
-  openOrderForReservation(reservationId: number, body: OrderItemBatchRequest) {
-    return http.post<ApiResponse<Order>>(`${TABLE_URL}/reservation/${reservationId}`, body)
+  openOrderForReservation(reservationId: number, body: OrderItemBatchRequest, staffId?: string) {
+    return http.post<ApiResponse<Order>>(`${TABLE_URL}/reservation/${reservationId}${staffId ? `?staffId=${staffId}` : ''}`, body)
   },
 
   addOrderDetails(orderId: number, body: OrderItemBatchRequest) {

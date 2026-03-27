@@ -33,7 +33,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.UUID;
 
 import static com.crowndine.service.impl.CalculationServiceImpl.DEPOSIT_RATE;
@@ -427,14 +426,66 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidDataException("Không thể hủy đặt bàn ở trạng thái này");
         }
 
-        reservation.setStatus(EReservationStatus.CANCELLED);
-        if (reservation.getTable() != null) {
-            reservation.getTable().setStatus(ETableStatus.AVAILABLE);
-        }
-        reservationRepository.save(reservation);
-        eventPublisher.publishEvent(new ReservationCancelledEvent(reservation.getId(), reservation.getOrder() != null ? reservation.getOrder().getId() : null));
+        cancelReservationWithStatus(reservation, EReservationStatus.CANCELLED);
 
         log.info("Reservation id {} has been cancelled", reservationId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelReservationByStaff(Long reservationId, String username) {
+        log.info("Staff/Admin {} cancelling reservation id {}", username, reservationId);
+
+        Reservation reservation = getReservationById(reservationId);
+        getUserByUserName(username);
+
+        if (reservation.getStatus() != EReservationStatus.PENDING && reservation.getStatus() != EReservationStatus.CONFIRMED) {
+            throw new InvalidDataException("Chỉ có thể hủy đặt bàn ở trạng thái PENDING hoặc CONFIRMED");
+        }
+
+        cancelReservationWithStatus(reservation, EReservationStatus.CANCELLED);
+        log.info("Reservation id {} has been cancelled by staff/admin", reservationId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markReservationNoShow(Long reservationId, String username) {
+        log.info("Staff/Admin {} marking reservation id {} as no-show", username, reservationId);
+
+        Reservation reservation = getReservationById(reservationId);
+        getUserByUserName(username);
+
+        if (reservation.getStatus() != EReservationStatus.CONFIRMED) {
+            throw new InvalidDataException("Chỉ có thể đánh dấu no-show cho đặt bàn ở trạng thái CONFIRMED");
+        }
+
+        cancelReservationWithStatus(reservation, EReservationStatus.NO_SHOW);
+        log.info("Reservation id {} has been marked as no-show", reservationId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void completeReservation(Long reservationId, String username) {
+        log.info("Staff/Admin {} completing reservation id {}", username, reservationId);
+
+        Reservation reservation = getReservationById(reservationId);
+        getUserByUserName(username);
+
+        if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
+            throw new InvalidDataException("Chỉ có thể hoàn thành đặt bàn ở trạng thái CHECKED_IN");
+        }
+
+        Order order = reservation.getOrder();
+        if (order != null && order.getStatus() != EOrderStatus.COMPLETED) {
+            throw new InvalidDataException("Chỉ có thể hoàn thành đặt bàn khi đơn hàng đã hoàn tất thanh toán");
+        }
+
+        reservation.setStatus(EReservationStatus.COMPLETED);
+        reservation.setCheckedOutAt(LocalDateTime.now());
+        reservation.setExpiratedAt(null);
+        reservationRepository.save(reservation);
+
+        log.info("Reservation id {} has been completed", reservationId);
     }
 
     @Override
@@ -562,4 +613,13 @@ public class ReservationServiceImpl implements ReservationService {
     private BigDecimal defaultMoney(BigDecimal amount) {
         return amount != null ? amount : BigDecimal.ZERO;
     }
+
+    private void cancelReservationWithStatus(Reservation reservation, EReservationStatus targetStatus) {
+        reservation.setStatus(targetStatus);
+        reservation.setCheckedOutAt(null);
+        reservation.setExpiratedAt(null);
+        reservationRepository.save(reservation);
+        eventPublisher.publishEvent(new ReservationCancelledEvent(reservation.getId(), reservation.getOrder() != null ? reservation.getOrder().getId() : null));
+    }
+
 }

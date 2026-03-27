@@ -35,6 +35,12 @@ public interface ReservationService {
 
     void cancelReservation(Long reservationId, String username);
 
+    void cancelReservationByStaff(Long reservationId, String username);
+
+    void markReservationNoShow(Long reservationId, String username);
+
+    void completeReservation(Long reservationId, String username);
+
     void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
 
     void confirmAfterDepositPaid(Reservation reservation);

@@ -2,7 +2,6 @@ package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
-import com.crowndine.common.enums.ETableStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
@@ -15,14 +14,14 @@ import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.OrderStatusService;
+import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
-import com.crowndine.service.voucher.VoucherService;
 import com.crowndine.common.utils.OrderCodeGenerator;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.beans.BeanUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,9 +49,9 @@ public class OrderServiceImpl implements OrderService {
 
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
+    private final OrderStatusService orderStatusService;
+    private final OrderVoucherService orderVoucherService;
     private final UserVoucherService userVoucherService;
-    private final VoucherService voucherService;
-    private final SimpMessagingTemplate messagingTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
@@ -87,15 +86,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order confirmReservationOrder(Order order) {
-        if (order.getStatus() == EOrderStatus.CONFIRMED) {
-            return order;
-        }
-
-        order.setStatus(EOrderStatus.CONFIRMED);
-        orderRepository.save(order);
-        handleOrderStatusSideEffects(order);
-        log.info("Updated reservation order {} status to CONFIRMED", order.getId());
-        return order;
+        Order updatedOrder = orderStatusService.transitionOrderStatus(order, EOrderStatus.CONFIRMED);
+        log.info("Updated reservation order {} status to CONFIRMED", updatedOrder.getId());
+        return updatedOrder;
     }
 
     @Override
@@ -210,18 +203,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status) {
-        Order order = getOrder(id);
-
-        order.setStatus(status);
-        orderRepository.save(order);
-
-        handleOrderStatusSideEffects(order);
-        return publishOrderStatus(order);
-    }
-
-    @Override
     public void createWalkInOrder(OrderRequest request, String username) {
         log.info("Processing create new walk-in order by username {}", username);
         User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
@@ -233,7 +214,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
         orderRepository.save(order);
-        handleOrderStatusSideEffects(order);
+        orderStatusService.transitionOrderStatus(order, EOrderStatus.CONFIRMED);
 
         orderDetailService.createPendingOrderDetails(order, request.getItems());
         recalculateOrderPricing(order);
@@ -264,7 +245,7 @@ public class OrderServiceImpl implements OrderService {
         recalculateOrderPricing(order);
         reservation.setOrder(order);
         Order savedOrder = orderRepository.save(order);
-        handleOrderStatusSideEffects(savedOrder);
+        orderStatusService.transitionOrderStatus(savedOrder, EOrderStatus.CONFIRMED);
 
         return toResponse(savedOrder);
     }
@@ -300,120 +281,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username) {
-        log.info("Applying voucher to order with id {}", orderId);
-
-        Order order = getOrder(orderId);
-
-        if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
-        }
-
-        // Determine the customer username to check ownership
-        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-
-        if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
-            order.setVoucher(null);
-        }
-
-        if (order.getOrderDetails().isEmpty()) {
-            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
-        }
-
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-
-        userVoucherService.validateVoucher(code, orderId, customerUsername);
-        Voucher voucher = voucherService.getVoucherByCode(code);
-
-        //Remove voucher for old orders
-        detachVoucherFromPreviousOrders(order, voucher);
-
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-
-        log.info("Total price = {}, Discount price = {}, Final price = {} for order with id {} is {}", totalPrice, discountPrice, finalPrice, orderId, discountPrice);
-
-        order.setVoucher(voucher);
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
-
-        Order updatedOrder = orderRepository.save(order);
-        log.info("Applied successfully voucher {} to order {}", voucher.getCode(), updatedOrder.getId());
-
-        return OrderApplyVoucherResponse.builder()
-                .orderId(updatedOrder.getId())
-                .orderCode(updatedOrder.getCode())
-                .voucherId(voucher.getId())
-                .voucherCode(voucher.getCode())
-                .totalPrice(updatedOrder.getTotalPrice())
-                .discountPrice(updatedOrder.getDiscountPrice())
-                .finalPrice(updatedOrder.getFinalPrice())
-                .build();
-    }
-
-    private void detachVoucherFromPreviousOrders(Order currentOrder, Voucher voucher) {
-        if (voucher == null || currentOrder.getUser() == null) {
-            return;
-        }
-
-        List<EOrderStatus> finalStatuses = List.of(EOrderStatus.COMPLETED, EOrderStatus.CANCELLED);
-        List<Order> previousOrders = orderRepository.findActiveOrdersUsingVoucherByUserId(currentOrder.getUser().getId(), voucher.getId(), currentOrder.getId(), finalStatuses);
-
-        if (previousOrders.isEmpty()) {
-            return;
-        }
-
-        previousOrders.forEach(previousOrder -> {
-            previousOrder.setVoucher(null);
-            recalculateOrderPricing(previousOrder);
-            orderRepository.save(previousOrder);
-            log.info("Detached voucher {} from previous order {}", voucher.getCode(), previousOrder.getId());
-        });
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {
-        log.info("Removing voucher from order with id {}", orderId);
-
-        Order order = getOrder(orderId);
-
-        if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể gỡ voucher cho đơn đã hoàn tất hoặc đã hủy");
-        }
-
-        if (order.getVoucher() == null) {
-            throw new InvalidDataException("Đơn hàng chưa áp voucher");
-        }
-
-        String voucherCode = order.getVoucher().getCode();
-        order.setVoucher(null);
-
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        BigDecimal discountPrice = BigDecimal.ZERO;
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
-
-        Order updatedOrder = orderRepository.save(order);
-        log.info("Removed voucher {} from order {}", voucherCode, updatedOrder.getId());
-
-        return OrderApplyVoucherResponse.builder()
-                .orderId(updatedOrder.getId())
-                .orderCode(updatedOrder.getCode())
-                .voucherId(null)
-                .voucherCode(null)
-                .totalPrice(updatedOrder.getTotalPrice())
-                .discountPrice(updatedOrder.getDiscountPrice())
-                .finalPrice(updatedOrder.getFinalPrice())
-                .build();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public void markAsPaid(Order order) {
         if (order.getStatus() == EOrderStatus.COMPLETED) {
             log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
@@ -422,13 +289,12 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getVoucher() != null) {
             String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-            userVoucherService.validateVoucher(order.getVoucher().getCode(), order.getId(), customerUsername);
+            orderVoucherService.validateVoucherForOrder(order.getId(), order.getVoucher().getCode(), customerUsername);
             Voucher consumedVoucher = userVoucherService.consumeVoucher(order.getVoucher().getCode(), customerUsername);
             order.setVoucher(consumedVoucher);
         }
 
-        order.setStatus(EOrderStatus.COMPLETED);
-        orderRepository.save(order);
+        orderStatusService.transitionOrderStatus(order, EOrderStatus.COMPLETED);
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
         log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
@@ -456,37 +322,6 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
         order.setDiscountPrice(discountPrice);
         order.setFinalPrice(finalPrice);
-    }
-
-    private void handleOrderStatusSideEffects(Order order) {
-        switch (order.getStatus()) {
-            case CONFIRMED, IN_PROGRESS -> updateTableStatus(order, ETableStatus.OCCUPIED);
-            case COMPLETED, CANCELLED -> updateTableStatus(order, ETableStatus.AVAILABLE);
-            case PRE_ORDER, SERVED -> {
-                //TODO SCHEDULE BEFORE RESERVATION 1 HOUR
-            }
-        }
-    }
-
-    private void updateTableStatus(Order order, ETableStatus targetStatus) {
-        RestaurantTable table = order.getRestaurantTable();
-
-        table.setStatus(targetStatus);
-        tableRepository.save(table);
-
-        RestaurantTableResponse tableResponse = new RestaurantTableResponse();
-        BeanUtils.copyProperties(table, tableResponse);
-        tableResponse.setId(table.getId());
-        messagingTemplate.convertAndSend("/topic/tables", tableResponse);
-        log.info("Updated table {} to {} after order updated to {}", table.getId(), targetStatus, order.getStatus());
-    }
-
-    private UpdateStatusOrderResponse publishOrderStatus(Order order) {
-        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
-        response.setId(order.getId());
-        response.setStatus(order.getStatus());
-        messagingTemplate.convertAndSend("/topic/orders", response);
-        return response;
     }
 
     private OrderResponse toResponse(Order order) {

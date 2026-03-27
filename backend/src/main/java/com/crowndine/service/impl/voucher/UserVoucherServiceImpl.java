@@ -3,18 +3,14 @@ package com.crowndine.service.impl.voucher;
 import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.response.MyVoucherResponse;
 import com.crowndine.dto.response.VoucherAssignmentResponse;
-import com.crowndine.dto.response.VoucherValidateResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
-import com.crowndine.model.Order;
 import com.crowndine.model.User;
 import com.crowndine.model.UserVoucher;
 import com.crowndine.model.Voucher;
-import com.crowndine.repository.OrderRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.repository.UserVoucherRepository;
 import com.crowndine.repository.VoucherRepository;
-import com.crowndine.service.CalculationService;
 import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.service.voucher.event.VoucherGrantedEvent;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +32,6 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     private final UserRepository userRepository;
     private final UserVoucherRepository userVoucherRepository;
     private final VoucherRepository voucherRepository;
-    private final OrderRepository orderRepository;
-    private final CalculationService calculationService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -128,67 +122,6 @@ public class UserVoucherServiceImpl implements UserVoucherService {
                 .stream()
                 .map(this::toMyVoucherResponse)
                 .toList();
-    }
-
-    @Override
-    public VoucherValidateResponse validateVoucher(String code, Long orderId, String username) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-        if (order.getUser() != null && username != null && !order.getUser().getUsername().equals(username)) {
-            throw new InvalidDataException("Đơn hàng này không phải của user");
-        }
-
-        if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
-        }
-
-        if (order.getOrderDetails().isEmpty()) {
-            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
-        }
-
-        BigDecimal totalOrder = calculationService.calculateTotalOrder(order.getOrderDetails());
-        if (totalOrder.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
-        }
-
-        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
-        Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("Mã voucher không hợp lệ"));
-
-        if (voucher.getMinValue() != null && totalOrder.compareTo(voucher.getMinValue()) < 0) {
-            throw new InvalidDataException("Đơn hàng chưa đạt giá trị tối thiểu để áp voucher");
-        }
-
-        boolean isPersonal = !voucher.getUserVouchers().isEmpty();
-        int usageCount = 0;
-        Integer usageLimit = null;
-
-        if (isPersonal) {
-            if (username == null) {
-                throw new InvalidDataException("Voucher này là voucher cá nhân, vui lòng thêm thông tin khách hàng vào đơn");
-            }
-            User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId())
-                    .orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
-            validateUserVoucherAvailability(userVoucher);
-            usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
-            usageLimit = userVoucher.getUsageLimit();
-        }
-
-        BigDecimal discountAmount = calculationService.calculateVoucherDiscount(totalOrder, voucher);
-        BigDecimal finalAmount = calculationService.calculateFinalTotalPrice(totalOrder, discountAmount);
-
-        return VoucherValidateResponse.builder()
-                .voucherId(voucher.getId())
-                .code(voucher.getCode())
-                .name(voucher.getName())
-                .type(voucher.getType())
-                .orderAmount(totalOrder)
-                .minValue(voucher.getMinValue())
-                .discountAmount(discountAmount)
-                .finalAmount(finalAmount)
-                .usageCount(usageCount)
-                .usageLimit(usageLimit)
-                .build();
     }
 
     @Override

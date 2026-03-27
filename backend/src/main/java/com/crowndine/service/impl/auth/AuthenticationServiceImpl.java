@@ -19,15 +19,12 @@ import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
 import com.crowndine.service.user.UserService;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -255,7 +252,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = userRepository.findByVerificationCode(verifyCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
 
-        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
+        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());
             return;
         }
@@ -277,30 +274,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
-        log.info("Verifying Google ID Token");
+        log.info("Verifying Google OIDC ID Token using Spring Security OAuth2");
         
         try {
-            NetHttpTransport transport = new NetHttpTransport();
-            GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+            // Using Spring Security's NimbusJwtDecoder to verify Google ID Token (OIDC)
+            NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation("https://accounts.google.com").build();
             
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
+            Jwt jwt = jwtDecoder.decode(request.getToken());
 
-            // Verify the ID Token sent from frontend
-            GoogleIdToken idToken = verifier.verify(request.getToken());
-            
-            if (idToken == null) {
-                log.error("Invalid Google ID Token");
-                throw new InvalidDataException("Invalid Google ID Token");
+            // Validate Audience (your Client ID)
+            if (!jwt.getAudience().contains(googleClientId)) {
+                log.error("Invalid Audience in ID Token");
+                throw new InvalidDataException("Token belongs to a different client");
             }
-            
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail();
-            String googleId = payload.getSubject();
-            String firstName = (String) payload.get("given_name");
-            String lastName = (String) payload.get("family_name");
-            String pictureUrl = (String) payload.get("picture");
+
+            String email = jwt.getClaim("email");
+            String googleId = jwt.getSubject();
+            String firstName = jwt.getClaim("given_name");
+            String lastName = jwt.getClaim("family_name");
+            String pictureUrl = jwt.getClaim("picture");
 
             // Logic to find or create user remains the same
             Optional<User> userOptional = userRepository.findByGoogleId(googleId);
@@ -348,7 +340,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .build();
                     
         } catch (Exception e) {
-            log.error("Error during Google OAuth2 verification: ", e);
+            log.error("Error during Google OAuth2 Nimbus verification: ", e);
             throw new InvalidDataException("Google authentication failed: " + e.getMessage());
         }
     }

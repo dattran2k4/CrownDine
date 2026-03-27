@@ -19,6 +19,10 @@ import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
 import com.crowndine.service.user.UserService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +63,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final CustomUserDetailsService customUserDetailsService;
-    private final RestTemplate restTemplate;
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -274,32 +277,38 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
-        log.info("Processing Google login with Access Token");
+        log.info("Verifying Google ID Token");
         
         try {
-            // Get user info from Google
-            String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + request.getToken();
-            Map<String, Object> payload = restTemplate.getForObject(userInfoUrl, Map.class);
+            NetHttpTransport transport = new NetHttpTransport();
+            GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
             
-            if (payload == null || !payload.containsKey("sub")) {
-                throw new InvalidDataException("Invalid Google Access Token");
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            // Verify the ID Token sent from frontend
+            GoogleIdToken idToken = verifier.verify(request.getToken());
+            
+            if (idToken == null) {
+                log.error("Invalid Google ID Token");
+                throw new InvalidDataException("Invalid Google ID Token");
             }
             
-            String email = (String) payload.get("email");
-            String googleId = (String) payload.get("sub");
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String googleId = payload.getSubject();
             String firstName = (String) payload.get("given_name");
             String lastName = (String) payload.get("family_name");
             String pictureUrl = (String) payload.get("picture");
 
-            // Check if user exists by googleId
+            // Logic to find or create user remains the same
             Optional<User> userOptional = userRepository.findByGoogleId(googleId);
             User user;
             
             if (userOptional.isPresent()) {
                 user = userOptional.get();
-                log.info("Google user found: {}", user.getUsername());
             } else {
-                // Check if user exists by email
                 userOptional = userRepository.findByEmail(email);
                 
                 if (userOptional.isPresent()) {
@@ -309,9 +318,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         user.setAvatarUrl(pictureUrl);
                     }
                     userRepository.save(user);
-                    log.info("Linked existing user {} with Google ID", user.getUsername());
                 } else {
-                    // Create new user
                     user = new User();
                     user.setEmail(email);
                     user.setUsername(email); 
@@ -325,7 +332,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     user.setRoles(new HashSet<>(List.of(role)));
                     
                     userRepository.save(user);
-                    log.info("Created new user via Google login: {}", user.getUsername());
                 }
             }
 
@@ -342,7 +348,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .build();
                     
         } catch (Exception e) {
-            log.error("Error during Google login: ", e);
+            log.error("Error during Google OAuth2 verification: ", e);
             throw new InvalidDataException("Google authentication failed: " + e.getMessage());
         }
     }

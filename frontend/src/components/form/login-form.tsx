@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
 import { useLogin } from '@/hooks/useLogin'
@@ -15,7 +14,7 @@ import { isAxiosUnauthorizedError } from '@/utils/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { ErrorResponse } from '@/types/utils.type'
 import { toast } from 'sonner'
-import { useGoogleLogin as useGoogleLoginOAuth } from '@react-oauth/google'
+import { GoogleLogin } from '@react-oauth/google'
 import { useGoogleLogin } from '@/hooks/useGoogleLogin'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
@@ -33,29 +32,24 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   const loginMutation = useLogin()
   const googleLoginMutation = useGoogleLogin()
 
-  const handleGoogleLogin = useGoogleLoginOAuth({
-    onSuccess: async (tokenResponse) => {
-      try {
-        await googleLoginMutation.mutateAsync(tokenResponse.access_token)
-        toast.success('Đăng nhập Google thành công!')
+  const handleGoogleLoginSuccess = async (credential: string) => {
+    try {
+      await googleLoginMutation.mutateAsync(credential)
+      toast.success('Đăng nhập Google thành công!')
 
-        const roles = useAuthStore.getState().roles
-        if (roles.includes('ADMIN')) {
-          navigate('/admin')
-        } else if (roles.includes('STAFF')) {
-          navigate('/staff')
-        } else {
-          navigate(path.home)
-        }
-      } catch (error) {
-        console.error('Google Login Mutation Failed:', error)
-        toast.error('Đăng nhập Google thất bại!')
+      const roles = useAuthStore.getState().roles
+      if (roles.includes('ADMIN')) {
+        navigate('/admin')
+      } else if (roles.includes('STAFF')) {
+        navigate('/staff')
+      } else {
+        navigate(path.home)
       }
-    },
-    onError: () => {
+    } catch (error) {
+      console.error('Google Login Mutation Failed:', error)
       toast.error('Đăng nhập Google thất bại!')
     }
-  })
+  }
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -158,16 +152,22 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
 
               {/* Google Login Button */}
-              <Button
-                type='button'
-                className='btn-auth w-full cursor-pointer'
-                size='lg'
-                onClick={() => handleGoogleLogin()}
-                disabled={googleLoginMutation.isPending}
-              >
-                <GoogleIcon className='size-5' />
-                {googleLoginMutation.isPending ? 'Đang xử lý...' : 'Đăng nhập với Google'}
-              </Button>
+              <div className='flex justify-center'>
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      handleGoogleLoginSuccess(credentialResponse.credential)
+                    }
+                  }}
+                  onError={() => {
+                    toast.error('Đăng nhập Google thất bại!')
+                  }}
+                  useOneTap
+                  theme='outline'
+                  size='large'
+                  width='100%'
+                />
+              </div>
 
               {/* Signup link */}
               <p className='text-muted-foreground text-center text-sm'>

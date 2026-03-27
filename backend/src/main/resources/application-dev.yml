@@ -89,3 +89,5 @@ payos:
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID}

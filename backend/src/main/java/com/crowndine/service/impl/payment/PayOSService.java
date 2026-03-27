@@ -12,7 +12,7 @@ import com.crowndine.service.order.OrderService;
 import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
-import com.crowndine.service.reservation.ReservationService;
+import com.crowndine.service.reservation.ReservationLifecycleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,19 +33,20 @@ public class PayOSService extends AbstractPaymentStrategy {
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
     private final OrderService orderService;
-    private final ReservationService reservationService;
+    private final ReservationLifecycleService reservationLifecycleService;
 
     public PayOSService(PaymentPreparationService paymentPreparationService,
                         PayOSConfig payOSConfig,
                         PayOS payOS,
                         PaymentRepository paymentRepository,
-                        OrderService orderService, ReservationService reservationService) {
+                        OrderService orderService,
+                        ReservationLifecycleService reservationLifecycleService) {
         super(paymentPreparationService);
         this.payOSConfig = payOSConfig;
         this.payOS = payOS;
         this.paymentRepository = paymentRepository;
         this.orderService = orderService;
-        this.reservationService = reservationService;
+        this.reservationLifecycleService = reservationLifecycleService;
     }
 
     @Override
@@ -138,7 +139,7 @@ public class PayOSService extends AbstractPaymentStrategy {
         if (payment.getReservation() == null) {
             throw new InvalidDataException("Payment reservation not found");
         }
-        reservationService.confirmAfterDepositPaid(payment.getReservation());
+        reservationLifecycleService.confirmAfterDepositPaid(payment.getReservation());
     }
 
     private void handleOrderPaymentSuccess(Payment payment) {

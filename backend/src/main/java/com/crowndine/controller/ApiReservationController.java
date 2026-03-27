@@ -2,6 +2,7 @@ package com.crowndine.controller;
 
 import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.reservation.ReservationLifecycleService;
 import com.crowndine.service.reservation.ReservationOrderService;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 public class ApiReservationController {
 
     private final ReservationService reservationService;
+    private final ReservationLifecycleService reservationLifecycleService;
     private final ReservationOrderService reservationOrderService;
 
     @GetMapping("/history")
@@ -68,14 +70,14 @@ public class ApiReservationController {
         return ApiResponse.builder()
                 .status(201)
                 .message("Created reservation successfully")
-                .data(reservationService.createReservation(principal.getName(), request))
+                .data(reservationLifecycleService.createReservation(principal.getName(), request))
                 .build();
     }
 
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{reservationId}/check-in")
     public ApiResponse checkInReservation(@PathVariable Long reservationId, Principal principal) {
-        reservationService.checkInReservation(reservationId, principal.getName());
+        reservationLifecycleService.checkInReservation(reservationId, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Checked in reservation successfully")
@@ -118,7 +120,7 @@ public class ApiReservationController {
 
     @DeleteMapping("/{reservationId}/cancel")
     public ApiResponse cancelReservation(@PathVariable Long reservationId, Principal principal) {
-        reservationService.cancelReservation(reservationId, principal.getName());
+        reservationLifecycleService.cancelReservation(reservationId, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Cancelled reservation successfully")
@@ -128,7 +130,7 @@ public class ApiReservationController {
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{reservationId}/cancel")
     public ApiResponse cancelReservationByStaff(@PathVariable Long reservationId, Principal principal) {
-        reservationService.cancelReservationByStaff(reservationId, principal.getName());
+        reservationLifecycleService.cancelReservationByStaff(reservationId, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Cancelled reservation successfully")
@@ -138,7 +140,7 @@ public class ApiReservationController {
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{reservationId}/no-show")
     public ApiResponse markReservationNoShow(@PathVariable Long reservationId, Principal principal) {
-        reservationService.markReservationNoShow(reservationId, principal.getName());
+        reservationLifecycleService.markReservationNoShow(reservationId, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Marked reservation as no-show successfully")
@@ -148,7 +150,7 @@ public class ApiReservationController {
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{reservationId}/complete")
     public ApiResponse completeReservation(@PathVariable Long reservationId, Principal principal) {
-        reservationService.completeReservation(reservationId, principal.getName());
+        reservationLifecycleService.completeReservation(reservationId, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Completed reservation successfully")
@@ -159,7 +161,7 @@ public class ApiReservationController {
     public ApiResponse updateReservationTable(@PathVariable Long reservationId,
                                               @Valid @RequestBody ReservationUpdateTableRequest request,
                                               Principal principal) {
-        reservationService.updateReservationTable(reservationId, request, principal.getName());
+        reservationLifecycleService.updateReservationTable(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Updated reservation table successfully")

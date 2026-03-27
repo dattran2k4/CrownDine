@@ -67,6 +67,39 @@ const ReservationList = () => {
     }
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (reservationId: number) => reservationApi.cancelReservationByStaff(reservationId),
+    onSuccess: () => {
+      toast.success('Huỷ đặt bàn thành công')
+      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Không thể huỷ đặt bàn')
+    }
+  })
+
+  const noShowMutation = useMutation({
+    mutationFn: (reservationId: number) => reservationApi.noShowReservation(reservationId),
+    onSuccess: () => {
+      toast.success('Đã cập nhật trạng thái không đến')
+      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Không thể cập nhật no-show')
+    }
+  })
+
+  const completeMutation = useMutation({
+    mutationFn: (reservationId: number) => reservationApi.completeReservation(reservationId),
+    onSuccess: () => {
+      toast.success('Hoàn thành đặt bàn thành công')
+      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Không thể hoàn thành đặt bàn')
+    }
+  })
+
   // Tìm kiếm cục bộ theo mã hoặc tên
   const filteredReservations = (data || []).filter((r: StaffReservationResponse) => {
     const searchLower = searchTerm.toLowerCase()
@@ -156,37 +189,85 @@ const ReservationList = () => {
           const hasOrder = reservation.orderId != null
 
           const renderActionButton = () => {
+            if (reservation.status === 'PENDING') {
+              return (
+                <div className='flex flex-wrap justify-end gap-2'>
+                  <button
+                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => cancelMutation.mutate(reservation.id)}
+                    disabled={cancelMutation.isPending}
+                  >
+                    Huỷ
+                  </button>
+                </div>
+              )
+            }
+
             if (reservation.status === 'CONFIRMED') {
               return (
-                <button
-                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                  onClick={() => checkInMutation.mutate(reservation)}
-                  disabled={checkInMutation.isPending}
-                >
-                  Check in
-                </button>
+                <div className='flex flex-wrap justify-end gap-2'>
+                  <button
+                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => checkInMutation.mutate(reservation)}
+                    disabled={checkInMutation.isPending}
+                  >
+                    Check in
+                  </button>
+                  <button
+                    className='bg-muted text-foreground hover:bg-accent flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => noShowMutation.mutate(reservation.id)}
+                    disabled={noShowMutation.isPending}
+                  >
+                    No-show
+                  </button>
+                  <button
+                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => cancelMutation.mutate(reservation.id)}
+                    disabled={cancelMutation.isPending}
+                  >
+                    Huỷ
+                  </button>
+                </div>
               )
             }
 
             if (reservation.status === 'CHECKED_IN' && hasOrder) {
               return (
-                <button
-                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                  onClick={() => navigate('/staff/order-management', { state: { selectedOrderId: reservation.orderId } })}
-                >
-                  Xem món
-                </button>
+                <div className='flex flex-wrap justify-end gap-2'>
+                  <button
+                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => navigate('/staff/order-management', { state: { selectedOrderId: reservation.orderId } })}
+                  >
+                    Xem món
+                  </button>
+                  <button
+                    className='bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => completeMutation.mutate(reservation.id)}
+                    disabled={completeMutation.isPending}
+                  >
+                    Hoàn thành
+                  </button>
+                </div>
               )
             }
 
             if (reservation.status === 'CHECKED_IN' && !hasOrder) {
               return (
-                <button
-                  className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                  onClick={() => navigate('/staff/order-management', { state: { reservationId: reservation.id, createFromReservation: true } })}
-                >
-                  Gọi món
-                </button>
+                <div className='flex flex-wrap justify-end gap-2'>
+                  <button
+                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => navigate('/staff/order-management', { state: { reservationId: reservation.id, createFromReservation: true } })}
+                  >
+                    Gọi món
+                  </button>
+                  <button
+                    className='bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
+                    onClick={() => completeMutation.mutate(reservation.id)}
+                    disabled={completeMutation.isPending}
+                  >
+                    Hoàn thành
+                  </button>
+                </div>
               )
             }
 

@@ -41,8 +41,8 @@ export default function TableShape({
   const capacity = table.capacity || 2
   
   // Xác định màu sắc dựa trên trạng thái và yêu cầu khách hàng
-  let style = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
-  let seatColor = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
+  let style: { fill: string; text: string } = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
+  let seatColor: string = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
   
   // Bàn AVAILABLE, OCCUPIED, hoặc RESERVED -> màu xanh lá cây (có thể chọn)
   if (statusKey === 'AVAILABLE' || statusKey === 'OCCUPIED' || statusKey === 'RESERVED') {
@@ -194,6 +194,16 @@ export default function TableShape({
     : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED') // Cho phép chọn OCCUPIED và RESERVED
   const isDisabled = statusKey === 'UNAVAILABLE' || (statusKey === 'AVAILABLE' && !isSelectable)
 
+  const minDim = Math.min(width, height)
+  const scaleFactor = Math.max(1, minDim / 60)
+
+  const nameFontSize = Math.max(14, Math.round(14 * scaleFactor))
+  const capacityFontSize = Math.max(12, Math.round(12 * scaleFactor))
+
+  const centerY = isCircle ? r : height / 2
+  const nameY = centerY - (nameFontSize * 0.5)
+  const capacityY = centerY + (capacityFontSize * 1.0)
+
   return (
     <g
       transform={`translate(${table.x}, ${table.y})`}
@@ -267,9 +277,9 @@ export default function TableShape({
       {/* ===== TÊN ===== */}
       <text
         x={isCircle ? r : width / 2}
-        y={isCircle ? r - 8 : height / 2 - 8}
+        y={nameY}
         textAnchor="middle"
-        fontSize={12}
+        fontSize={nameFontSize}
         fontWeight={600}
         fill={style.text}
       >
@@ -279,9 +289,9 @@ export default function TableShape({
       {/* ===== SỐ LƯỢNG KHÁCH ===== */}
       <text
         x={isCircle ? r : width / 2}
-        y={isCircle ? r + 12 : height / 2 + 12}
+        y={capacityY}
         textAnchor="middle"
-        fontSize={10}
+        fontSize={capacityFontSize}
         fontWeight={500}
         fill={style.text}
       >

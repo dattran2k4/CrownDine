@@ -34,6 +34,18 @@ const reservationApi = {
     return http.delete<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/cancel`)
   },
 
+  cancelReservationByStaff(reservationId: number) {
+    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/cancel`)
+  },
+
+  noShowReservation(reservationId: number) {
+    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/no-show`)
+  },
+
+  completeReservation(reservationId: number) {
+    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/complete`)
+  },
+
   addItemToReservation(reservationId: number, data: OrderItemRequest) {
     return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/add-item`, data)
   },

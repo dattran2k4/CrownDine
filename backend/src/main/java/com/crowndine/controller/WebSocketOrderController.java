@@ -8,6 +8,7 @@ import com.crowndine.dto.response.UpdateStatusOrderDetailResponse;
 import com.crowndine.dto.response.UpdateStatusOrderResponse;
 import com.crowndine.service.layout.RestaurantTableService;
 import com.crowndine.service.order.OrderDetailService;
+import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderService;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class WebSocketOrderController {
 
     private final RestaurantTableService restaurantTableService;
     private final OrderService orderService;
+    private final OrderStatusService orderStatusService;
     private final OrderDetailService orderDetailService;
 
     //Cập nhật status bàn
@@ -43,7 +45,7 @@ public class WebSocketOrderController {
     public UpdateStatusOrderResponse updateStatusOrder(@Min(1) @DestinationVariable Long id, EOrderStatus status) {
         log.info("Received request to update order with id {}", id);
         log.info("Received request to update order with status {}", status);
-        return orderService.updateOrderStatus(id, status);
+        return orderStatusService.updateOrderStatus(id, status);
     }
 
     //Cập nhật order detail

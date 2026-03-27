@@ -27,15 +27,15 @@ VALUES
 -- 3. Cập nhật vị trí và kích thước cho các Bàn đã có từ V2 (1, 2, 3, 4)
 -- Gán hết vào "Sảnh chính" (area_id = 1)
 UPDATE `restaurant_tables` 
-SET `area_id` = 1, `shape` = 'RECT', `width` = 100, `height` = 60, `position_x` = 100, `position_y` = 100, `rotation` = 0
+SET `area_id` = 1, `shape` = 'RECT', `width` = 140, `height` = 80, `position_x` = 100, `position_y` = 100, `rotation` = 0
 WHERE `id` = 1;
 
 UPDATE `restaurant_tables` 
-SET `area_id` = 1, `shape` = 'RECT', `width` = 100, `height` = 60, `position_x` = 250, `position_y` = 100, `rotation` = 0
+SET `area_id` = 1, `shape` = 'RECT', `width` = 140, `height` = 80, `position_x` = 300, `position_y` = 100, `rotation` = 0
 WHERE `id` = 2;
 
 UPDATE `restaurant_tables` 
-SET `area_id` = 1, `shape` = 'RECT', `width` = 120, `height` = 80, `position_x` = 100, `position_y` = 250, `rotation` = 0
+SET `area_id` = 1, `shape` = 'RECT', `width` = 140, `height` = 80, `position_x` = 100, `position_y` = 250, `rotation` = 0
 WHERE `id` = 3;
 
 UPDATE `restaurant_tables` 
@@ -46,14 +46,14 @@ WHERE `id` = 4;
 INSERT INTO `restaurant_tables` 
 (`name`, `capacity`, `status`, `base_deposit`, `position_x`, `position_y`, `width`, `height`, `rotation`, `shape`, `area_id`, `created_at`, `updated_at`)
 VALUES
--- VIP 1 (Area 2)
-('VIP-1-01', 12, 'AVAILABLE', 500000.00, 150, 100, 200, 100, 0, 'RECT', 2, NOW(), NOW()),
+-- VIP 1 (Area 2) - Bàn VIP lớn
+('VIP-1-01', 12, 'AVAILABLE', 500000.00, 100, 100, 270, 120, 0, 'RECT', 2, NOW(), NOW()),
 
--- VIP 2 (Area 3)
-('VIP-2-01', 8, 'AVAILABLE', 200000.00, 150, 100, 150, 150, 0, 'CIRCLE', 3, NOW(), NOW()),
+-- VIP 2 (Area 3) - Bàn VIP tròn
+('VIP-2-01', 8, 'AVAILABLE', 200000.00, 100, 100, 140, 140, 0, 'CIRCLE', 3, NOW(), NOW()),
 
 -- Sân thượng (Area 4)
-('Bàn T2-01', 4, 'AVAILABLE', 0.00, 100, 100, 80,  80,  0, 'RECT', 4, NOW(), NOW()),
-('Bàn T2-02', 4, 'AVAILABLE', 0.00, 250, 100, 80,  80,  0, 'RECT', 4, NOW(), NOW()),
-('Bàn T2-03', 2, 'AVAILABLE', 0.00, 100, 250, 60,  60,  0, 'CIRCLE',    4, NOW(), NOW()),
-('Bàn T2-04', 2, 'AVAILABLE', 0.00, 250, 250, 60,  60,  0, 'CIRCLE',    4, NOW(), NOW());
+('Bàn T2-01', 4, 'AVAILABLE', 0.00, 100, 100, 140, 140, 0, 'SQUARE', 4, NOW(), NOW()),
+('Bàn T2-02', 4, 'AVAILABLE', 0.00, 300, 100, 140, 140, 0, 'SQUARE', 4, NOW(), NOW()),
+('Bàn T2-03', 2, 'AVAILABLE', 0.00, 100, 300, 100, 100, 0, 'CIRCLE', 4, NOW(), NOW()),
+('Bàn T2-04', 2, 'AVAILABLE', 0.00, 300, 300, 100, 100, 0, 'CIRCLE', 4, NOW(), NOW());

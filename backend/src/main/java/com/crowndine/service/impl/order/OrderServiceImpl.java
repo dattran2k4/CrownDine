@@ -128,6 +128,7 @@ public class OrderServiceImpl implements OrderService {
             detail.setQuantity(request.getQuantity());
             detail.setNote(request.getNote());
             detail.setOrder(order);
+            detail.setStatus(com.crowndine.common.enums.EOrderDetailStatus.PENDING);
             detail.calculateAndSetTotalPrice();
             orderDetails.add(detail);
         }
@@ -182,7 +183,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page, int size) {
+    public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
+            int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
 
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
@@ -205,9 +207,11 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void createWalkInOrder(OrderRequest request, String username) {
         log.info("Processing create new walk-in order by username {}", username);
-        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        User staff = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
-        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+        RestaurantTable table = tableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
         Order order = new Order();
         order.setCode(OrderCodeGenerator.generateOrderCode());
         order.setStaff(staff);
@@ -220,7 +224,8 @@ public class OrderServiceImpl implements OrderService {
         recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
-        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
+        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(),
+                order.getFinalPrice());
     }
 
     @Override
@@ -228,8 +233,10 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username) {
         log.info("Opening order for reservation {} by staff {}", reservationId, username);
 
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
-        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        User staff = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
         if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
             throw new InvalidDataException("Cần check-in trước khi tạo order cho đặt bàn này");
@@ -249,7 +256,6 @@ public class OrderServiceImpl implements OrderService {
 
         return toResponse(savedOrder);
     }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -273,7 +279,8 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void mapCustomerToOrder(Long orderId, Long customerId) {
         Order order = getOrder(orderId);
-        User customer = userRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         order.setUser(customer);
         orderRepository.save(order);
         log.info("Mapped user {} to order {}", customerId, orderId);
@@ -283,7 +290,8 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void markAsPaid(Order order) {
         if (order.getStatus() == EOrderStatus.COMPLETED) {
-            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
+            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.",
+                    order.getId());
             return;
         }
 
@@ -353,6 +361,7 @@ public class OrderServiceImpl implements OrderService {
             od.setNote(d.getNote());
             od.setStatus(d.getStatus());
             od.setTotalPrice(d.getTotalPrice());
+            od.setCreatedAt(d.getCreatedAt());
             return od;
         }).toList();
 

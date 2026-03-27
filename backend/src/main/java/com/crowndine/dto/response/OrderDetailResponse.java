@@ -16,4 +16,5 @@ public class OrderDetailResponse {
     private String note;
     private EOrderDetailStatus status;
     private BigDecimal totalPrice;
+    private java.time.LocalDateTime createdAt;
 }

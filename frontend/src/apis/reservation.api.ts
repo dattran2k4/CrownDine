@@ -58,8 +58,8 @@ const reservationApi = {
     return http.delete<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/remove-item`, { data })
   },
 
-  checkInReservation(reservationId: number) {
-    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/check-in`)
+  checkInReservation(id: number, staffId?: string) {
+    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${id}/check-in${staffId ? `?staffId=${staffId}` : ''}`)
   },
 
   updateReservationTable(reservationId: number, data: ReservationUpdateTableRequest) {

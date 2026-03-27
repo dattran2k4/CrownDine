@@ -5,11 +5,15 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
 import reservationApi from '@/apis/reservation.api'
+import orderApi from '@/apis/order.api'
 import clsx from 'clsx'
 import { queryClient } from '@/main'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import type { StaffReservationResponse } from '@/types/reservation.type'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { PlusCircle } from 'lucide-react'
+import CreateReservationModal from './components/CreateReservationModal'
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-500/10 text-yellow-600 font-bold',
@@ -31,8 +35,10 @@ const STATUS_LABELS: Record<string, string> = {
 
 const ReservationList = () => {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['staff-reservations', statusFilter],
@@ -41,10 +47,20 @@ const ReservationList = () => {
   })
 
   const checkInMutation = useMutation({
-    mutationFn: (reservationId: number) => reservationApi.checkInReservation(reservationId),
+    mutationFn: async (reservation: StaffReservationResponse) => {
+      // 1. Check in the reservation
+      await reservationApi.checkInReservation(reservation.id, user?.id)
+      
+      // 2. Only create a new order if none exists (prevents double-order error)
+      if (!reservation.orderId) {
+        await orderApi.openOrderForReservation(reservation.id, { items: [] }, user?.id)
+      }
+    },
     onSuccess: () => {
-      toast.success('Check in đặt bàn thành công')
+      toast.success('Check in và tạo đơn thành công')
       queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['orders-active'] })
+      queryClient.invalidateQueries({ queryKey: ['tables'] })
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Không thể check in đặt bàn')
@@ -114,6 +130,15 @@ const ReservationList = () => {
         <p className='text-muted-foreground mx-auto max-w-2xl'>
           Quản lý danh sách đặt bàn và gọi món trước của khách hàng.
         </p>
+        <div className="mt-8 flex justify-center">
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-primary text-primary-foreground font-bold px-8 py-6 rounded-xl hover:scale-105 transition-transform shadow-lg shadow-primary/20 flex items-center gap-2 text-lg"
+            >
+              <PlusCircle className="w-6 h-6" />
+              TẠO ĐƠN ĐẶT BÀN MỚI
+            </Button>
+        </div>
       </div>
 
       <div className='mx-auto max-w-5xl'>
@@ -183,7 +208,7 @@ const ReservationList = () => {
                 <div className='flex flex-wrap justify-end gap-2'>
                   <button
                     className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => checkInMutation.mutate(reservation.id)}
+                    onClick={() => checkInMutation.mutate(reservation)}
                     disabled={checkInMutation.isPending}
                   >
                     Check in
@@ -370,6 +395,11 @@ const ReservationList = () => {
           )
         })}
       </div>
+      <CreateReservationModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })}
+      />
     </div>
   )
 }

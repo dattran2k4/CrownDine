@@ -2,6 +2,7 @@ package com.crowndine.controller;
 
 import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.reservation.ReservationOrderService;
 import com.crowndine.service.reservation.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.time.LocalDate;
 public class ApiReservationController {
 
     private final ReservationService reservationService;
+    private final ReservationOrderService reservationOrderService;
 
     @GetMapping("/history")
     public ApiResponse getReservationHistory(
@@ -57,7 +59,7 @@ public class ApiReservationController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Get reservation order details successfully")
-                .data(reservationService.getReservationOrderDetails(reservationId))
+                .data(reservationOrderService.getReservationOrderDetails(reservationId))
                 .build();
     }
 
@@ -84,7 +86,7 @@ public class ApiReservationController {
     public ApiResponse addOrderItem(@PathVariable Long reservationId,
                                     @Valid @RequestBody OrderItemRequest request,
                                     Principal principal) {
-        reservationService.addItemToReservationOrder(reservationId, request, principal.getName());
+        reservationOrderService.addItemToReservationOrder(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(201)
                 .message("Added item successfully")
@@ -95,7 +97,7 @@ public class ApiReservationController {
     public ApiResponse updateOrderItem(@PathVariable Long reservationId,
                                        @Valid @RequestBody OrderItemRequest request,
                                        Principal principal) {
-        reservationService.updateItemInReservation(reservationId, request, principal.getName());
+        reservationOrderService.updateReservationOrderItem(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Updated item successfully")
@@ -107,7 +109,7 @@ public class ApiReservationController {
     public ApiResponse deleteOrderItem(@PathVariable Long reservationId,
                                        @Valid @RequestBody OrderItemRemoveRequest request,
                                        Principal principal) {
-        reservationService.removeItemFromReservation(reservationId, request, principal.getName());
+        reservationOrderService.removeReservationOrderItem(reservationId, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Removed item successfully")

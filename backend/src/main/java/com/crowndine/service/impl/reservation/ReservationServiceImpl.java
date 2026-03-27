@@ -239,17 +239,6 @@ public class ReservationServiceImpl implements ReservationService {
         return resp;
     }
 
-    public OrderDetailHistoryResponse getReservationOrderDetails(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not founded"));
-
-        Order order = reservation.getOrder();
-        if (order == null) {
-            return createEmptyOrderDetailResponse(reservation);
-        }
-
-        return toOrderDetailPageResponse(order);
-    }
-
     private OrderLineResponse toLineResponse(OrderDetail od, Long userId) {
         OrderLineResponse r = new OrderLineResponse();
         r.setOrderDetailId(od.getId());
@@ -368,44 +357,8 @@ public class ReservationServiceImpl implements ReservationService {
         log.info("Reservation id {} has been checked in successfully", reservationId);
     }
 
-    @Override
-    public void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String name) {
-        log.info("Adding order item for reservation id {}", reservationId);
-
-        Reservation reservation = getReservationById(reservationId);
-
-        User user = getUserByUserName(name);
-
-        validateReservationForUser(reservation, user);
-
-        Order order = reservation.getOrder();
-
-        //Create order if order null
-        if (order == null) {
-            order = orderService.createOrderForReservation(reservation, user, resolveReservationOrderStatus(reservation));
-            reservation.setOrder(order);
-        }
-        log.info("Adding order item for order id {}", order.getId());
-
-        orderService.addOrUpdateItemToOrder(order.getId(), request);
-    }
-
     private User getUserByUserName(String name) {
         return userRepository.findByUsername(name).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    }
-
-    @Override
-    public void updateItemInReservation(Long reservationId, OrderItemRequest request, String name) {
-        log.info("Processing update order item for reservation id {}", reservationId);
-        Reservation reservation = getReservationById(reservationId);
-
-        User user = getUserByUserName(name);
-
-        validateReservationForUser(reservation, user);
-
-        Order order = reservation.getOrder();
-        orderService.updateOrderItemInReservation(order, request);
-
     }
 
     @Override
@@ -413,23 +366,12 @@ public class ReservationServiceImpl implements ReservationService {
         return reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
     }
 
-    @Override
-    public void removeItemFromReservation(Long reservationId, OrderItemRemoveRequest request, String name) {
-        log.info("Processing remove order item for reservation id {}", reservationId);
-        Reservation reservation = getReservationById(reservationId);
-
-        User user = getUserByUserName(name);
-
-        validateReservationForUser(reservation, user);
-
-        orderService.removeOrderItemInReservation(reservation.getOrder(), request);
-    }
-
     private void validateReservationForUser(Reservation reservation, User user) {
         if (reservation.getUser() == null || !reservation.getUser().getId().equals(user.getId())) {
             throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
         }
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -563,76 +505,6 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
         eventPublisher.publishEvent(new ReservationConfirmedEvent(reservation.getId()));
         log.info("Reservation id {} status changed to {} and ReservationConfirmedEvent published", reservation.getId(), reservation.getStatus());
-    }
-
-    /**
-     * Lấy tiền cọc cố định của bàn.
-     */
-    private BigDecimal getTableDeposit(RestaurantTable table) {
-        if (table == null || table.getBaseDeposit() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        return table.getBaseDeposit().setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order) {
-        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
-        List<OrderLineResponse> data = orderDetails.stream()
-                .map(od -> toLineResponse(od, order.getUser() != null ? order.getUser().getId() : null))
-                .toList();
-
-        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable());
-        BigDecimal totalPrice = defaultMoney(order.getTotalPrice());
-        BigDecimal discountPrice = defaultMoney(order.getDiscountPrice());
-        BigDecimal finalPrice = defaultMoney(order.getFinalPrice());
-        BigDecimal itemsTotal = totalPrice;
-        BigDecimal depositAmount = calculationService.calculateDepositPayment(finalPrice, tableDeposit);
-        BigDecimal remainingAmount = finalPrice.subtract(finalPrice.multiply(DEPOSIT_RATE))
-                .setScale(2, RoundingMode.HALF_UP);
-
-        OrderDetailHistoryResponse resp = new OrderDetailHistoryResponse();
-        resp.setOrderId(order.getId());
-        resp.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : null);
-        resp.setStatus(order.getStatus());
-        resp.setTotalPrice(totalPrice);
-        resp.setDiscountPrice(discountPrice);
-        resp.setFinalPrice(finalPrice);
-        resp.setItemsTotal(itemsTotal);
-        resp.setTableDeposit(tableDeposit);
-        resp.setDepositAmount(depositAmount);
-        resp.setRemainingAmount(remainingAmount);
-        resp.setCreatedAt(order.getCreatedAt());
-        resp.setItems(data);
-        return resp;
-    }
-
-    private EOrderStatus resolveReservationOrderStatus(Reservation reservation) {
-        if (reservation.getStatus() == EReservationStatus.CHECKED_IN) {
-            return EOrderStatus.CONFIRMED;
-        }
-
-        return EOrderStatus.PRE_ORDER;
-    }
-
-    private OrderDetailHistoryResponse createEmptyOrderDetailResponse(Reservation reservation) {
-        OrderDetailHistoryResponse response = new OrderDetailHistoryResponse();
-        response.setOrderId(null);
-        response.setTableName(reservation.getTable() != null ? reservation.getTable().getName() : null);
-        response.setStatus(resolveReservationOrderStatus(reservation));
-        response.setTotalPrice(BigDecimal.ZERO);
-        response.setDiscountPrice(BigDecimal.ZERO);
-        response.setFinalPrice(BigDecimal.ZERO);
-        response.setItemsTotal(BigDecimal.ZERO);
-        response.setTableDeposit(getTableDeposit(reservation.getTable()));
-        response.setDepositAmount(BigDecimal.ZERO);
-        response.setRemainingAmount(BigDecimal.ZERO);
-        response.setItems(List.of());
-        return response;
-    }
-
-    private BigDecimal defaultMoney(BigDecimal amount) {
-        return amount != null ? amount : BigDecimal.ZERO;
     }
 
     private void cancelReservationWithStatus(Reservation reservation, EReservationStatus targetStatus) {

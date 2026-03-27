@@ -3,10 +3,7 @@ package com.crowndine.service.impl.auth;
 import com.crowndine.common.enums.ERole;
 import com.crowndine.common.enums.ETokenType;
 import com.crowndine.common.enums.EUserStatus;
-import com.crowndine.dto.request.ForgotPasswordRequest;
-import com.crowndine.dto.request.LoginRequest;
-import com.crowndine.dto.request.RegisterRequest;
-import com.crowndine.dto.request.ResetPasswordRequest;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
@@ -23,6 +20,8 @@ import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
 import com.crowndine.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,6 +60,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final CustomUserDetailsService customUserDetailsService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -250,7 +252,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = userRepository.findByVerificationCode(verifyCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
 
-        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
+        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());
             return;
         }
@@ -267,6 +269,80 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository.save(user);
 
         log.info("Reset password successfully");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Verifying Google OIDC ID Token using Spring Security OAuth2");
+        
+        try {
+            // Using Spring Security's NimbusJwtDecoder to verify Google ID Token (OIDC)
+            NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation("https://accounts.google.com").build();
+            
+            Jwt jwt = jwtDecoder.decode(request.getToken());
+
+            // Validate Audience (your Client ID)
+            if (!jwt.getAudience().contains(googleClientId)) {
+                log.error("Invalid Audience in ID Token");
+                throw new InvalidDataException("Token belongs to a different client");
+            }
+
+            String email = jwt.getClaim("email");
+            String googleId = jwt.getSubject();
+            String firstName = jwt.getClaim("given_name");
+            String lastName = jwt.getClaim("family_name");
+            String pictureUrl = jwt.getClaim("picture");
+
+            // Logic to find or create user remains the same
+            Optional<User> userOptional = userRepository.findByGoogleId(googleId);
+            User user;
+            
+            if (userOptional.isPresent()) {
+                user = userOptional.get();
+            } else {
+                userOptional = userRepository.findByEmail(email);
+                
+                if (userOptional.isPresent()) {
+                    user = userOptional.get();
+                    user.setGoogleId(googleId);
+                    if (user.getAvatarUrl() == null) {
+                        user.setAvatarUrl(pictureUrl);
+                    }
+                    userRepository.save(user);
+                } else {
+                    user = new User();
+                    user.setEmail(email);
+                    user.setUsername(email); 
+                    user.setFirstName(firstName != null ? firstName : "User");
+                    user.setLastName(lastName != null ? lastName : "Google");
+                    user.setGoogleId(googleId);
+                    user.setAvatarUrl(pictureUrl);
+                    user.setStatus(EUserStatus.ACTIVE);
+                    
+                    Role role = roleRepository.findByName(ERole.USER);
+                    user.setRoles(new HashSet<>(List.of(role)));
+                    
+                    userRepository.save(user);
+                }
+            }
+
+            List<String> roles = extractRoles(user.getAuthorities());
+            String accessToken = jwtService.generateAccessToken(user.getUsername(), roles);
+            String refreshToken = jwtService.generateRefreshToken(user.getUsername(), roles);
+
+            tokenService.saveToken(user.getUsername(), refreshToken, httpServletRequest);
+
+            return TokenResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .username(user.getUsername())
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("Error during Google OAuth2 Nimbus verification: ", e);
+            throw new InvalidDataException("Google authentication failed: " + e.getMessage());
+        }
     }
 
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crowndine.dto.request.ForgotPasswordRequest;
+import com.crowndine.dto.request.GoogleLoginRequest;
 import com.crowndine.dto.request.LoginRequest;
 import com.crowndine.dto.request.RegisterRequest;
 import com.crowndine.dto.request.ResetPasswordRequest;
@@ -35,6 +36,12 @@ public class ApiAuthController {
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
         log.info("Login request for user: {}", request.getUsername());
         return new ResponseEntity<>(authenticationService.accessToken(request, httpServletRequest), HttpStatus.OK);
+    }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<TokenResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Google login request");
+        return new ResponseEntity<>(authenticationService.googleLogin(request, httpServletRequest), HttpStatus.OK);
     }
 
     @PostMapping("/refresh-token")

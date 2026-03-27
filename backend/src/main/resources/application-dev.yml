@@ -89,14 +89,3 @@ payos:
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
 
-
-gemini:
-  api:
-    keys: ${GEMINI_API_KEYS:AIzaSyCAL3kehGqWSkIx-JaNRv9X_58qsNql8JE,AIzaSyDEbJ5pomuZN8N-DZ1upB14XC4In-RERds,AIzaSyBux-QgHbKe7_qIZGmdduHOOOjgsn91K1Y,AIzaSyAacDMqzyEYlAGTI6SwPOyT-ZBcbfiWl3w}
-    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
-  model: models/gemini-2.0-flash-001
-
-#OpenRouter
-openrouter:
-  api:
-    key: ${OPENROUTER_API_KEY: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}

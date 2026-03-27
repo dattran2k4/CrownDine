@@ -1,6 +1,7 @@
 package com.crowndine.service.order.listener;
 
 import com.crowndine.common.enums.EOrderStatus;
+import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.event.ReservationCancelledEvent;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class ReservationCancelledEventListener {
 
     private final OrderService orderService;
+    private final OrderStatusService orderStatusService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -32,6 +34,6 @@ public class ReservationCancelledEventListener {
             return;
         }
 
-        orderService.updateOrderStatus(event.orderId(), EOrderStatus.CANCELLED);
+        orderStatusService.updateOrderStatus(event.orderId(), EOrderStatus.CANCELLED);
     }
 }

@@ -5,7 +5,9 @@ import com.crowndine.dto.request.OrderApplyVoucherRequest;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.OrderVoucherService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ import java.time.LocalDate;
 public class ApiOrderController {
 
     private final OrderService orderService;
+    private final OrderStatusService orderStatusService;
+    private final OrderVoucherService orderVoucherService;
 
     @GetMapping
     public ApiResponse getAllOrders(@RequestParam(required = false) LocalDate fromDate,
@@ -88,7 +92,7 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Applied voucher to order successfully")
-                .data(orderService.applyVoucherToOrder(orderId, request.getCode(), principal.getName()))
+                .data(orderVoucherService.applyVoucher(orderId, request.getCode(), principal.getName()))
                 .build();
     }
 
@@ -97,7 +101,7 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Removed voucher from order successfully")
-                .data(orderService.removeVoucherFromOrder(orderId, principal.getName()))
+                .data(orderVoucherService.removeVoucher(orderId, principal.getName()))
                 .build();
     }
 
@@ -107,7 +111,7 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully updated order status")
-                .data(orderService.updateOrderStatus(id, status))
+                .data(orderStatusService.updateOrderStatus(id, status))
                 .build();
     }
 

@@ -3,14 +3,11 @@ package com.crowndine.service.impl.reservation;
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
-import com.crowndine.dto.response.RestaurantTableResponse;
 import com.crowndine.model.Reservation;
-import com.crowndine.model.RestaurantTable;
 import com.crowndine.repository.ReservationRepository;
+import com.crowndine.service.layout.RestaurantTableStateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +24,7 @@ public class ReservationTableReserveScheduler {
     private static final long WINDOW_MINUTES = 10;
 
     private final ReservationRepository reservationRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RestaurantTableStateService restaurantTableStateService;
 
     @Scheduled(fixedRate = 300000)
     @Transactional(rollbackFor = Exception.class)
@@ -48,17 +45,9 @@ public class ReservationTableReserveScheduler {
     }
 
     private boolean reserveTable(Reservation reservation) {
-        RestaurantTable table = reservation.getTable();
-        table.setStatus(ETableStatus.RESERVED);
-        notifyTableUpdated(table);
-        log.info("Set table {} to RESERVED for reservation {}", table.getId(), reservation.getId());
+        Long tableId = reservation.getTable().getId();
+        restaurantTableStateService.markReserved(tableId);
+        log.info("Set table {} to RESERVED for reservation {}", tableId, reservation.getId());
         return true;
-    }
-
-    private void notifyTableUpdated(RestaurantTable table) {
-        RestaurantTableResponse tableResponse = new RestaurantTableResponse();
-        BeanUtils.copyProperties(table, tableResponse);
-        tableResponse.setId(table.getId());
-        messagingTemplate.convertAndSend("/topic/tables", tableResponse);
     }
 }

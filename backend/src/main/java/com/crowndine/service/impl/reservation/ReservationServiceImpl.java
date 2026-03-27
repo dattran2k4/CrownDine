@@ -280,7 +280,13 @@ public class ReservationServiceImpl implements ReservationService {
         LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
         reservationTimePolicy.validateStartTime(startDateTime);
 
-        User user = getUserByUserName(username);
+        User user;
+        if (request.getCustomerId() != null) {
+            user = userRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng"));
+        } else {
+            user = getUserByUserName(username);
+        }
 
         RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
 
@@ -301,8 +307,23 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setCheckedOutAt(null);
         reservation.setGuestNumber(request.getGuestNumber());
         reservation.setNote(request.getNote());
-        reservation.setStatus(EReservationStatus.PENDING);
-        reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
+
+        if (request.getStatus() != null) {
+            try {
+                reservation.setStatus(EReservationStatus.valueOf(request.getStatus()));
+                if (reservation.getStatus() == EReservationStatus.CONFIRMED) {
+                    reservation.setExpiratedAt(null);
+                } else {
+                    reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
+                }
+            } catch (IllegalArgumentException e) {
+                reservation.setStatus(EReservationStatus.PENDING);
+                reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
+            }
+        } else {
+            reservation.setStatus(EReservationStatus.PENDING);
+            reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
+        }
         reservation.setUser(user);
         reservation.setCode(UUID.randomUUID().toString());
         reservation.setTable(table);

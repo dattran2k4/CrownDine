@@ -31,7 +31,7 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "avatar_url", length = 200)
     private String avatarUrl;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     @JsonIgnore
     private String password;
 
@@ -55,8 +55,11 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "status", nullable = false)
     private EUserStatus status;
 
-    @Column(name = "phone", unique = true, nullable = false, length = 11)
+    @Column(name = "phone", unique = true, length = 11)
     private String phone;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @Column(name = "verification_code")
     private String verificationCode;

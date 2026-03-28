@@ -13,6 +13,7 @@ import com.crowndine.repository.OrderRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.repository.UserVoucherRepository;
 import com.crowndine.service.CalculationService;
+import com.crowndine.service.OrderPricingResult;
 import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.voucher.VoucherService;
 import lombok.RequiredArgsConstructor;
@@ -126,20 +127,13 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
             order.setVoucher(null);
         }
 
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-
         validateVoucherForOrderInternal(orderId, code, customerUsername);
         Voucher voucher = voucherService.getVoucherByCode(code);
 
         detachVoucherFromPreviousOrders(order, voucher);
 
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-
         order.setVoucher(voucher);
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
+        applyPricing(order);
 
         Order updatedOrder = orderRepository.save(order);
         log.info("Applied voucher {} to order {}", voucher.getCode(), updatedOrder.getId());
@@ -164,10 +158,7 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
 
         order.setVoucher(null);
 
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(BigDecimal.ZERO);
-        order.setFinalPrice(totalPrice);
+        applyPricing(order);
 
         Order updatedOrder = orderRepository.save(order);
         log.info("Removed voucher from order {}", updatedOrder.getId());
@@ -201,19 +192,14 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
     }
 
     private void recalculateOrderPricing(Order order) {
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(totalPrice);
+        applyPricing(order);
+    }
 
-        if (order.getVoucher() == null) {
-            order.setDiscountPrice(BigDecimal.ZERO);
-            order.setFinalPrice(totalPrice);
-            return;
-        }
-
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
+    private void applyPricing(Order order) {
+        OrderPricingResult pricing = calculationService.calculateOrderPricing(order);
+        order.setTotalPrice(pricing.totalPrice());
+        order.setDiscountPrice(pricing.discountPrice());
+        order.setFinalPrice(pricing.finalPrice());
     }
 
     private OrderApplyVoucherResponse buildResponse(Order order) {

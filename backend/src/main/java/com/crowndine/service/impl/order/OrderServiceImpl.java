@@ -12,6 +12,7 @@ import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.*;
 import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
+import com.crowndine.service.OrderPricingResult;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.order.OrderStatusService;
@@ -184,7 +185,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
-            int size) {
+                                                    int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
 
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
@@ -316,20 +317,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void recalculateOrderPricing(Order order) {
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(totalPrice);
-        log.info("Total price for order with id {} is {}", order.getId(), totalPrice);
-
-        if (order.getVoucher() == null) {
-            order.setDiscountPrice(BigDecimal.ZERO);
-            order.setFinalPrice(totalPrice);
-            return;
-        }
-
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
+        OrderPricingResult pricing = calculationService.calculateOrderPricing(order);
+        order.setTotalPrice(pricing.totalPrice());
+        order.setDiscountPrice(pricing.discountPrice());
+        order.setFinalPrice(pricing.finalPrice());
     }
 
     private OrderResponse toResponse(Order order) {

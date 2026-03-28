@@ -18,7 +18,7 @@ import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
-import com.crowndine.common.utils.OrderCodeGenerator;
+import com.crowndine.common.utils.CodeUtils;
 import org.springframework.beans.BeanUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +77,7 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
-        order.setCode(OrderCodeGenerator.generateOrderCode());
+        order.setCode(CodeUtils.generateOrderCode());
 
         Order result = orderRepository.save(order);
         log.info("New order has been created with id {} for reservationId {}", result.getId(), reservation.getId());
@@ -213,7 +213,7 @@ public class OrderServiceImpl implements OrderService {
         RestaurantTable table = tableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
         Order order = new Order();
-        order.setCode(OrderCodeGenerator.generateOrderCode());
+        order.setCode(CodeUtils.generateOrderCode());
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);

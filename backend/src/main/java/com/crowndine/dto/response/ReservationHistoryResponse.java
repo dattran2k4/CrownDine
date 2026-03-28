@@ -15,6 +15,9 @@ import java.util.List;
 public class ReservationHistoryResponse {
     private Long reservationId;
     private String reservationCode;
+    private String customerName;
+    private String guestName;
+    private String createdByStaffName;
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;

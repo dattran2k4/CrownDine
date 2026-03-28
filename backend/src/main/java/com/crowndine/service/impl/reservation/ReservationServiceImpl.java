@@ -128,7 +128,11 @@ public class ReservationServiceImpl implements ReservationService {
             response.setCustomerName(reservation.getUser().getFullName());
             response.setPhone(reservation.getUser().getPhone());
             response.setEmail(reservation.getUser().getEmail());
+        } else {
+            response.setCustomerName(reservation.getGuestName());
         }
+        response.setGuestName(reservation.getGuestName());
+        response.setCreatedByStaffName(reservation.getCreatedByStaff() != null ? reservation.getCreatedByStaff().getFullName() : null);
 
         if (reservation.getOrder() != null) {
             response.setOrderId(reservation.getOrder().getId());
@@ -177,6 +181,9 @@ public class ReservationServiceImpl implements ReservationService {
         ReservationHistoryResponse response = new ReservationHistoryResponse();
         response.setReservationId(reservation.getId());
         response.setReservationCode(reservation.getCode());
+        response.setCustomerName(reservation.getUser() != null ? reservation.getUser().getFullName() : reservation.getGuestName());
+        response.setGuestName(reservation.getGuestName());
+        response.setCreatedByStaffName(reservation.getCreatedByStaff() != null ? reservation.getCreatedByStaff().getFullName() : null);
         response.setDate(reservation.getDate());
         response.setStartTime(reservation.getStartTime());
         response.setEndTime(reservation.getEndTime());

@@ -4,6 +4,7 @@ import type {
   ReservationCreateResponse,
   OrderDetailResponse,
   StaffReservationResponse,
+  StaffReservationCreateRequest,
   ReservationUpdateTableRequest,
   ReservationHistoryResponse,
   OrderItemRequest,
@@ -24,6 +25,10 @@ const reservationApi = {
 
   createReservation(data: ReservationCreateRequest) {
     return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/create`, data)
+  },
+
+  createWalkInReservationByStaff(data: StaffReservationCreateRequest) {
+    return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/staff-create`, data)
   },
 
   getReservationOrderDetails(reservationId: number) {

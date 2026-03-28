@@ -14,6 +14,8 @@ public class ReservationResponse {
     private Long id;
     private String code;
     private String customerName;
+    private String guestName;
+    private String createdByStaffName;
     private String phone;
     private String email;
     private LocalDate date;

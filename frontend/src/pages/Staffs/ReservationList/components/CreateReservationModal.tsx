@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, User, Calendar, Users, Hash, Trash2, Plus, Minus } from 'lucide-react'
+import { User, Calendar, Users, Hash, Trash2, Plus, Minus } from 'lucide-react'
 import { toast } from 'sonner'
 import reservationApi from '@/apis/reservation.api'
-import userApi from '@/apis/user.api'
 import tableApi from '@/apis/table.api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import MenuSelector from '@/components/MenuSelector/MenuSelector'
@@ -28,8 +27,7 @@ interface CartItem {
 }
 
 export default function CreateReservationModal({ isOpen, onClose, onSuccess }: CreateReservationModalProps) {
-  const [customerSearch, setCustomerSearch] = useState('')
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+  const [guestName, setGuestName] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   
   const [formData, setFormData] = useState({
@@ -41,27 +39,12 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
   })
 
   // --- Queries ---
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => userApi.getAllCustomers(),
-    select: (res) => res.data?.data || [],
-    enabled: isOpen
-  })
-
   const { data: tableData } = useQuery({
     queryKey: ['tables'],
     queryFn: () => tableApi.getAllTables(),
     enabled: isOpen
   })
   const tables = tableData?.data?.data || []
-
-  const filteredCustomers = useMemo(() => {
-    if (!customerSearch.trim()) return []
-    return customers.filter((c: any) => 
-      (c.firstName + ' ' + c.lastName).toLowerCase().includes(customerSearch.toLowerCase()) ||
-      c.phone.includes(customerSearch)
-    ).slice(0, 5)
-  }, [customers, customerSearch])
 
   // --- Handlers ---
   const handleSelectItem = (item: MenuCardItem, type: 'item' | 'combo') => {
@@ -98,11 +81,10 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
   const createMutation = useMutation({
     mutationFn: async () => {
       // 1. Create Reservation
-      const res = await reservationApi.createReservation({
+      const res = await reservationApi.createWalkInReservationByStaff({
         ...formData,
         tableId: parseInt(formData.tableId),
-        customerId: selectedCustomer.id,
-        status: 'CONFIRMED'
+        guestName: guestName.trim()
       })
       const reservationId = res.data.data.reservationId
       
@@ -130,8 +112,7 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
 
   const handleClose = () => {
     onClose()
-    setSelectedCustomer(null)
-    setCustomerSearch('')
+    setGuestName('')
     setCart([])
     setFormData({
       date: new Date().toISOString().split('T')[0],
@@ -148,64 +129,23 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
     <Modal isOpen={isOpen} onClose={handleClose} title='Tạo đặt bàn & Chọn món đặt trước' maxWidth='max-w-7xl'>
       <div className='flex flex-col lg:flex-row gap-8 min-h-[600px] max-h-[85vh]'>
         
-        {/* Left Column: Customer & Reservation Info */}
+        {/* Left Column: Guest & Reservation Info */}
         <div className='w-full lg:w-1/3 flex flex-col gap-6 border-r border-border pr-0 lg:pr-8 overflow-y-auto overflow-x-hidden scrollbar-hide'>
            <div className='space-y-4'>
               <h3 className='text-lg font-bold flex items-center gap-2'>
                 <div className='bg-primary/10 p-2 rounded-lg'><User className='w-5 h-5 text-primary'/></div>
-                Khách hàng
+                Khách vãng lai
               </h3>
-              
-              {!selectedCustomer ? (
-                <div className='relative'>
-                  <Input 
-                    placeholder='Tìm tên hoặc SĐT khách...'
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    className='pl-9 h-11'
-                  />
-                  <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-                  
-                  {customerSearch && (
-                    <div className='absolute z-20 w-full mt-1 bg-card border border-border rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2'>
-                       {filteredCustomers.length > 0 ? filteredCustomers.map((c: any) => (
-                         <div 
-                          key={c.id} 
-                          className='p-4 hover:bg-primary/5 cursor-pointer transition-colors border-b border-border last:border-0 group'
-                          onClick={() => {
-                            setSelectedCustomer(c)
-                            setCustomerSearch('')
-                          }}
-                         >
-                            <p className='font-bold text-sm group-hover:text-primary transition-colors'>{c.firstName} {c.lastName}</p>
-                            <p className='text-xs text-muted-foreground flex justify-between'>
-                              <span>{c.phone}</span>
-                              <span className='italic'>{c.email}</span>
-                            </p>
-                         </div>
-                       )) : (
-                        <div className='p-8 text-center'>
-                          <User className='w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-20' />
-                          <p className='text-sm text-muted-foreground'>Không tìm thấy khách hàng này</p>
-                        </div>
-                       )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className='bg-primary/5 border border-primary/20 rounded-2xl p-4 flex justify-between items-center animate-in fade-in zoom-in-95'>
-                  <div className='flex items-center gap-3'>
-                    <div className='w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold'>
-                      {selectedCustomer.firstName[0]}
-                    </div>
-                    <div>
-                      <p className='font-bold text-primary leading-tight'>{selectedCustomer.firstName} {selectedCustomer.lastName}</p>
-                      <p className='text-xs text-muted-foreground'>{selectedCustomer.phone}</p>
-                    </div>
-                  </div>
-                  <Button variant='ghost' size='sm' onClick={() => setSelectedCustomer(null)} className='h-8 text-[10px] text-red-500 hover:bg-red-50 font-bold uppercase tracking-wider'>Thay đổi</Button>
-                </div>
-              )}
+
+              <div className='space-y-1.5'>
+                <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Tên khách</label>
+                <Input
+                  placeholder='Ví dụ: Nguyễn Văn A'
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className='h-11'
+                />
+              </div>
            </div>
 
            <div className='space-y-4'>
@@ -265,7 +205,7 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
               </div>
               <Button 
                 onClick={() => createMutation.mutate()} 
-                disabled={!selectedCustomer || !formData.tableId || createMutation.isPending}
+                disabled={!guestName.trim() || !formData.tableId || createMutation.isPending}
                 className='w-full h-16 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest'
               >
                 {createMutation.isPending ? 'Đang khởi tạo...' : 'XÁC NHẬN ĐẶT BÀN'}

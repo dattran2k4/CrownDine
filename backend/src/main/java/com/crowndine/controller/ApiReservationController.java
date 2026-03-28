@@ -68,9 +68,19 @@ public class ApiReservationController {
     @PostMapping("/create")
     public ApiResponse createReservation(@Valid @RequestBody ReservationCreateRequest request, Principal principal) {
         return ApiResponse.builder()
-                .status(201)
+                .status(200)
                 .message("Created reservation successfully")
-                .data(reservationLifecycleService.createReservation(principal.getName(), request))
+                .data(reservationLifecycleService.createReservationByCustomer(principal.getName(), request))
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/staff-create")
+    public ApiResponse createWalkInReservationByStaff(@Valid @RequestBody StaffReservationCreateRequest request, Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Created reservation successfully")
+                .data(reservationLifecycleService.createWalkInReservationByStaff(principal.getName(), request))
                 .build();
     }
 

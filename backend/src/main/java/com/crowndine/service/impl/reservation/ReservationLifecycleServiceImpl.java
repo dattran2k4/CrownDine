@@ -3,7 +3,9 @@ package com.crowndine.service.impl.reservation;
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
+import com.crowndine.common.utils.CodeUtils;
 import com.crowndine.dto.request.ReservationCreateRequest;
+import com.crowndine.dto.request.StaffReservationCreateRequest;
 import com.crowndine.dto.request.ReservationUpdateTableRequest;
 import com.crowndine.dto.response.ReservationCreateResponse;
 import com.crowndine.exception.InvalidDataException;
@@ -21,7 +23,6 @@ import com.crowndine.service.reservation.ReservationLifecycleService;
 import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.event.ReservationCancelledEvent;
 import com.crowndine.service.reservation.event.ReservationConfirmedEvent;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,7 +30,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,60 +47,19 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ReservationCreateResponse createReservation(String username, ReservationCreateRequest request) {
+    public ReservationCreateResponse createReservationByCustomer(String username, ReservationCreateRequest request) {
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
-        LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
-        reservationTimePolicy.validateStartTime(startDateTime);
+        User customer = getUserByUserName(username);
+        return createReservationInternal(request, customer, null, null, EReservationStatus.PENDING, startDateTime);
+    }
 
-        User user;
-        if (request.getCustomerId() != null) {
-            user = userRepository.findById(request.getCustomerId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng"));
-        } else {
-            user = getUserByUserName(username);
-        }
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ReservationCreateResponse createWalkInReservationByStaff(String staffUsername, StaffReservationCreateRequest request) {
+        LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
+        User staff = getUserByUserName(staffUsername);
 
-        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
-
-        validateTableForReservation(table, request.getGuestNumber());
-
-        reservationAvailabilityService.ensureTableAvailable(request.getDate(), request.getStartTime(), table.getId());
-
-        Reservation reservation = new Reservation();
-        reservation.setDate(request.getDate());
-        reservation.setStartTime(request.getStartTime());
-        reservation.setEndTime(endDateTime.toLocalTime());
-        reservation.setCheckedOutAt(null);
-        reservation.setGuestNumber(request.getGuestNumber());
-        reservation.setNote(request.getNote());
-
-        if (request.getStatus() != null) {
-            try {
-                reservation.setStatus(EReservationStatus.valueOf(request.getStatus()));
-                if (reservation.getStatus() == EReservationStatus.CONFIRMED) {
-                    reservation.setExpiratedAt(null);
-                } else {
-                    reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
-                }
-            } catch (IllegalArgumentException e) {
-                reservation.setStatus(EReservationStatus.PENDING);
-                reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
-            }
-        } else {
-            reservation.setStatus(EReservationStatus.PENDING);
-            reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
-        }
-
-        reservation.setUser(user);
-        reservation.setCode(UUID.randomUUID().toString());
-        reservation.setTable(table);
-
-        Reservation saved = reservationRepository.save(reservation);
-        log.info("Reservation has been saved with id: {}", saved.getId());
-
-        ReservationCreateResponse response = new ReservationCreateResponse();
-        response.setReservationId(saved.getId());
-        response.setReservationCode(saved.getCode());
-        return response;
+        return createReservationInternal(request, null, staff, request.getGuestName().trim(), EReservationStatus.CONFIRMED, startDateTime);
     }
 
     @Override
@@ -266,14 +225,55 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
     }
 
+    private ReservationCreateResponse createReservationInternal(ReservationCreateRequest request, User customer,
+                                                                User createdByStaff, String guestName,
+                                                                EReservationStatus initialStatus, LocalDateTime startDateTime) {
+        LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
+        reservationTimePolicy.validateStartTime(startDateTime);
+
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
+
+        validateTableForReservation(table, request.getGuestNumber());
+        reservationAvailabilityService.ensureTableAvailable(request.getDate(), request.getStartTime(), table.getId());
+
+        Reservation reservation = new Reservation();
+        reservation.setDate(request.getDate());
+        reservation.setStartTime(request.getStartTime());
+        reservation.setEndTime(endDateTime.toLocalTime());
+        reservation.setCheckedOutAt(null);
+        reservation.setGuestNumber(request.getGuestNumber());
+        reservation.setNote(request.getNote());
+        reservation.setUser(customer);
+        reservation.setCreatedByStaff(createdByStaff);
+        reservation.setGuestName(guestName);
+        reservation.setCode(CodeUtils.generateReservationCode());
+        reservation.setTable(table);
+        applyInitialStatus(reservation, initialStatus);
+
+        Reservation saved = reservationRepository.save(reservation);
+        log.info("Reservation has been saved with id: {}", saved.getId());
+
+        ReservationCreateResponse response = new ReservationCreateResponse();
+        response.setReservationId(saved.getId());
+        response.setReservationCode(saved.getCode());
+        return response;
+    }
+
+    private void applyInitialStatus(Reservation reservation, EReservationStatus initialStatus) {
+        reservation.setStatus(initialStatus);
+        if (initialStatus == EReservationStatus.CONFIRMED) {
+            reservation.setExpiratedAt(null);
+            return;
+        }
+
+        reservation.setExpiratedAt(LocalDateTime.now().plusMinutes(HOLD_TABLE_MINUTES));
+    }
+
     private void cancelReservationWithStatus(Reservation reservation, EReservationStatus targetStatus) {
         reservation.setStatus(targetStatus);
         reservation.setCheckedOutAt(null);
         reservation.setExpiratedAt(null);
         reservationRepository.save(reservation);
-        eventPublisher.publishEvent(new ReservationCancelledEvent(
-                reservation.getId(),
-                reservation.getOrder() != null ? reservation.getOrder().getId() : null
-        ));
+        eventPublisher.publishEvent(new ReservationCancelledEvent(reservation.getId(), reservation.getOrder() != null ? reservation.getOrder().getId() : null));
     }
 }

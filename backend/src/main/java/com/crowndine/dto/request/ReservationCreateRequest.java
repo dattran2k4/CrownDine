@@ -6,13 +6,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Getter
-@Setter
 public class ReservationCreateRequest {
 
     @NotNull(message = "Ngày đặt bàn không được để trống")
@@ -35,7 +33,4 @@ public class ReservationCreateRequest {
     @Size(max = 255, message = "Ghi chú không được vượt quá 255 ký tự")
     private String note;
 
-    private Long customerId;
-
-    private String status;
 }

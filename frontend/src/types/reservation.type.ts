@@ -7,9 +7,11 @@ export interface ReservationCreateRequest {
   startTime: string // HH:mm
   guestNumber: number
   tableId: number
-  customerId?: number | null
-  status?: string
   note?: string
+}
+
+export interface StaffReservationCreateRequest extends ReservationCreateRequest {
+  guestName: string
 }
 
 export interface ReservationCreateResponse {
@@ -89,6 +91,9 @@ export type PreOrderCartItem = PreOrderEntry & { quantity: number; note?: string
 export interface ReservationHistoryResponse {
   reservationId?: number
   reservationCode?: string | null
+  customerName?: string | null
+  guestName?: string | null
+  createdByStaffName?: string | null
   date: string
   startTime: string
   endTime: string
@@ -107,6 +112,8 @@ export interface StaffReservationResponse {
   id: number
   code: string
   customerName: string
+  guestName?: string | null
+  createdByStaffName?: string | null
   phone: string
   email: string
   date: string

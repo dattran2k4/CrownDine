@@ -6,12 +6,12 @@ import lombok.Getter;
 @Getter
 public class ChangePasswordRequest {
 
-    @NotBlank(message = "Mật khẩu cũ không được để trống")
+    @NotBlank(message = "{validation.change_password.old_password.not_blank}")
     private String oldPassword;
 
-    @NotBlank(message = "Mật khẩu mới không được để trống")
+    @NotBlank(message = "{validation.change_password.new_password.not_blank}")
     private String newPassword;
 
-    @NotBlank(message = "Mật khẩu mới xác nhận không được để trống")
+    @NotBlank(message = "{validation.change_password.confirm_new_password.not_blank}")
     private String confirmNewPassword;
 }

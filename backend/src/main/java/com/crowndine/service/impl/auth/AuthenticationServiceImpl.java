@@ -92,7 +92,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String refreshToken = request.getHeader("X-Refresh-Token");
 
         if (!StringUtils.hasText(refreshToken)) {
-            throw new InvalidDataException("Refresh token is empty");
+            throw new InvalidDataException("auth.refresh_token_empty");
         }
 
         // Kiem tra JWT
@@ -102,11 +102,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Token token = tokenService.getByRefreshToken(refreshToken);
 
         if (Boolean.TRUE.equals(token.getIsRevoked())) {
-            throw new InvalidDataException("Token is revoked");
+            throw new InvalidDataException("auth.token_revoked");
         }
 
         if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Refresh token expired");
+            throw new InvalidDataException("auth.refresh_token_expired");
         }
 
         User user = userRepository.findByUsername(username)
@@ -137,7 +137,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String refreshToken = request.getHeader("X-Refresh-Token");
 
         if (!StringUtils.hasText(refreshToken)) {
-            throw new InvalidDataException("Token missing or empty");
+            throw new InvalidDataException("auth.token_missing");
         }
 
         // Kiem tra JWT
@@ -154,19 +154,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         log.info("Processing register for user: {}", request.getUsername());
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("Mật khẩu xác nhận không khớp");
+            throw new InvalidDataException("auth.confirm_password_mismatch");
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new InvalidDataException("Tài khoản đã tồn tại");
+            throw new InvalidDataException("auth.username_exists");
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new InvalidDataException("Email đã tồn tại");
+            throw new InvalidDataException("auth.email_exists");
         }
 
         if (userRepository.existsByPhone(request.getPhone())) {
-            throw new InvalidDataException("Số điện thoại đã tồn tại");
+            throw new InvalidDataException("auth.phone_exists");
         }
 
         String randomCode = UUID.randomUUID().toString();
@@ -199,7 +199,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public String forgotPassword(ForgotPasswordRequest request) {
         log.info("Processing forgot password for user: {}", request.getEmail());
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản"));
+                .orElseThrow(() -> new UsernameNotFoundException("auth.account_not_found"));
 
         String randomCode = UUID.randomUUID().toString();
         user.setVerificationCode(randomCode);
@@ -219,7 +219,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         log.info("Processing verify code for register");
 
         User user = userRepository.findByVerificationCode(verifyCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
+                .orElseThrow(() -> new ResourceNotFoundException("auth.user_not_found_by_verification_code"));
 
         if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
             log.error("Verification code expired for user {}", user.getUsername());
@@ -244,7 +244,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void resetPassword(String verifyCode, ResetPasswordRequest request) {
 
         User user = userRepository.findByVerificationCode(verifyCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
+                .orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));
 
         if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             log.error("Verification code expired for user {}", user.getUsername());

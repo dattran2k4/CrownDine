@@ -5,9 +5,9 @@ import lombok.Getter;
 
 @Getter
 public class ResetPasswordRequest {
-    @NotBlank(message = "Mật khẩu mới không được để trống")
+    @NotBlank(message = "{validation.reset_password.password.not_blank}")
     private String password;
 
-    @NotBlank(message = "Xác nhận mật khẩu mới không được để trống")
+    @NotBlank(message = "{validation.reset_password.confirm_password.not_blank}")
     private String confirmPassword;
 }

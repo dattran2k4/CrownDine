@@ -105,7 +105,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
 
     @Override
     public List<MyVoucherResponse> getMyAvailableVouchers(String username) {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
 
         return userVoucherRepository.findAvailableByCustomerId(user.getId(), LocalDateTime.now())
                 .stream()
@@ -115,7 +115,7 @@ public class UserVoucherServiceImpl implements UserVoucherService {
 
     @Override
     public List<MyVoucherResponse> getAvailableVouchersByCustomerId(Long customerId) {
-        User user = userRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
 
         return userVoucherRepository.findAvailableByCustomerId(user.getId(), LocalDateTime.now())
                 .stream()
@@ -127,18 +127,18 @@ public class UserVoucherServiceImpl implements UserVoucherService {
     @Transactional(rollbackFor = Exception.class)
     public Voucher consumeVoucher(String code, String username) {
         String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
-        Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("Mã voucher không hợp lệ"));
+        Voucher voucher = voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new InvalidDataException("voucher.invalid_code"));
 
         boolean isPersonal = !voucher.getUserVouchers().isEmpty();
 
         if (isPersonal) {
             if (username == null) {
-                throw new InvalidDataException("Voucher này là voucher cá nhân, vui lòng thêm khách hàng vào đơn để sử dụng");
+                throw new InvalidDataException("order.voucher.personal_requires_customer_for_payment");
             }
-            User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
 
             UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId())
-                    .orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
+                    .orElseThrow(() -> new InvalidDataException("voucher.not_assigned_to_user"));
             validateUserVoucherAvailability(userVoucher);
 
             int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
@@ -183,13 +183,13 @@ public class UserVoucherServiceImpl implements UserVoucherService {
 
     private void validateUserVoucherAvailability(UserVoucher userVoucher) {
         if (userVoucher.getExpiredAt() != null && !userVoucher.getExpiredAt().isAfter(LocalDateTime.now())) {
-            throw new InvalidDataException("Voucher đã hết hạn");
+            throw new InvalidDataException("voucher.expired");
         }
 
         int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
         Integer usageLimit = userVoucher.getUsageLimit();
         if (usageLimit != null && usageCount >= usageLimit) {
-            throw new InvalidDataException("Voucher đã hết lượt sử dụng");
+            throw new InvalidDataException("voucher.usage_exhausted");
         }
     }
 

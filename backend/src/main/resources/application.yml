@@ -7,6 +7,9 @@ app:
 spring:
   application:
     name: backend-service
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
   profiles:
     active: "@spring.profiles.active@"
 

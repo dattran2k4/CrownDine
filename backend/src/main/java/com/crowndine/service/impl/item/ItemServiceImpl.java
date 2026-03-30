@@ -8,7 +8,6 @@ import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Category;
 import com.crowndine.model.Item;
 import com.crowndine.repository.CategoryRepository;
-import com.crowndine.repository.ComboItemRepository;
 import com.crowndine.repository.ItemRepository;
 import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.service.item.ItemService;
@@ -32,7 +31,6 @@ import java.util.List;
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
-    private final ComboItemRepository comboItemRepository;
     private final FeedbackRepository feedbackRepository;
 
     @Override

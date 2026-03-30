@@ -11,14 +11,11 @@ import com.crowndine.model.Role;
 import com.crowndine.model.Token;
 import com.crowndine.model.User;
 import com.crowndine.repository.RoleRepository;
-import com.crowndine.repository.TokenRepository;
 import com.crowndine.repository.UserRepository;
-import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.AuthenticationService;
 import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
-import com.crowndine.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -44,7 +41,6 @@ import java.util.*;
 @Slf4j(topic = "AUTH-SERVICE")
 public class AuthenticationServiceImpl implements AuthenticationService {
 
-    private final UserService userService;
     @Value("${endpoint.confirmUser}")
     private String endPointConfirmUser;
 
@@ -54,12 +50,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
-    private final TokenRepository tokenRepository;
     private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
-    private final CustomUserDetailsService customUserDetailsService;
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -275,11 +269,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
         log.info("Verifying Google OIDC ID Token using Spring Security OAuth2");
-        
+
         try {
             // Using Spring Security's NimbusJwtDecoder to verify Google ID Token (OIDC)
             NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation("https://accounts.google.com").build();
-            
+
             Jwt jwt = jwtDecoder.decode(request.getToken());
 
             // Validate Audience (your Client ID)
@@ -297,12 +291,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             // Logic to find or create user remains the same
             Optional<User> userOptional = userRepository.findByGoogleId(googleId);
             User user;
-            
+
             if (userOptional.isPresent()) {
                 user = userOptional.get();
             } else {
                 userOptional = userRepository.findByEmail(email);
-                
+
                 if (userOptional.isPresent()) {
                     user = userOptional.get();
                     user.setGoogleId(googleId);
@@ -313,16 +307,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 } else {
                     user = new User();
                     user.setEmail(email);
-                    user.setUsername(email); 
+                    user.setUsername(email);
                     user.setFirstName(firstName != null ? firstName : "User");
                     user.setLastName(lastName != null ? lastName : "Google");
                     user.setGoogleId(googleId);
                     user.setAvatarUrl(pictureUrl);
                     user.setStatus(EUserStatus.ACTIVE);
-                    
+
                     Role role = roleRepository.findByName(ERole.USER);
                     user.setRoles(new HashSet<>(List.of(role)));
-                    
+
                     userRepository.save(user);
                 }
             }
@@ -338,7 +332,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .refreshToken(refreshToken)
                     .username(user.getUsername())
                     .build();
-                    
+
         } catch (Exception e) {
             log.error("Error during Google OAuth2 Nimbus verification: ", e);
             throw new InvalidDataException("Google authentication failed: " + e.getMessage());

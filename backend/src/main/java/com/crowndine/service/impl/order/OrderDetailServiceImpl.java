@@ -2,9 +2,7 @@ package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.common.enums.EOrderStatus;
-import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.request.UpdateOrderDetailRequest;
 import com.crowndine.dto.response.UpdateStatusOrderDetailResponse;
 import com.crowndine.exception.InvalidDataException;

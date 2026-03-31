@@ -142,12 +142,9 @@ export default function Menu() {
         list.sort((a, b) => (b.item.averageRating || 0) - (a.item.averageRating || 0))
         break
       case 'sold':
-        // soldCount is available on item type if extended, check MenuCardItem type.
-        // Assuming soldCount exists or default to 0
         list.sort((a, b) => ((b.item as any).soldCount || 0) - ((a.item as any).soldCount || 0))
         break
       default:
-        // 'Recommended' - could be by newest or specific flag (tags include NEW or BEST_SELLER)
         list.sort((a, b) => {
           const scoreA = (a.item.tags?.includes('BEST_SELLER') ? 2 : 0) + (a.item.tags?.includes('NEW') ? 1 : 0)
           const scoreB = (b.item.tags?.includes('BEST_SELLER') ? 2 : 0) + (b.item.tags?.includes('NEW') ? 1 : 0)
@@ -216,20 +213,20 @@ export default function Menu() {
             priceRange={priceRange}
             onPriceChange={handlePriceRangeChange}
             maxPrice={maxPrice}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         </div>
 
-        {/* Mobile Filter Toggle (Optional - Có thể thêm nút bấm để mở modal filter trên mobile) */}
+        {/* Mobile Filter */}
         <div className='mb-6 lg:hidden'>
-          {/* Tạm thời hiển thị ô search đơn giản trên mobile */}
           <input
             type='text'
             placeholder='Search food...'
             className='border-border bg-card w-full rounded-lg border p-3'
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchQueryChange}
           />
-          {/* List category ngang cho mobile */}
           <div className='scrollbar-hide mt-4 flex gap-2 overflow-x-auto pb-2'>
             {categoryNames.map((cat) => (
               <button
@@ -241,14 +238,9 @@ export default function Menu() {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* --- RIGHT COLUMN: GRID ITEMS + COMBOS --- */}
-        <div className='lg:col-span-3'>
-          <div className='mb-6 flex items-center justify-between'>
-
+          <div className='mt-4'>
             <select
-              className='bg-card border-border focus:border-primary cursor-pointer rounded-lg border px-3 py-2 text-sm outline-none'
+              className='bg-card border-border focus:border-primary w-full cursor-pointer rounded-lg border px-3 py-2 text-sm outline-none'
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -258,6 +250,13 @@ export default function Menu() {
               <option value='rating'>Top Rated</option>
               <option value='sold'>Best Sellers</option>
             </select>
+          </div>
+        </div>
+
+        {/* --- RIGHT COLUMN: GRID ITEMS + COMBOS --- */}
+        <div className='lg:col-span-3'>
+          <div className='mb-6 flex items-center justify-between'>
+            <p className='text-muted-foreground'>Showing {displayList.length} results</p>
           </div>
           {paginatedList.length > 0 ? (
             <>
@@ -272,7 +271,7 @@ export default function Menu() {
                 ))}
               </div>
 
-              {/* Render Pagination controls */}
+              {/* Pagination */}
               {totalPages > 1 && (
                 <div className='mt-10'>
                   <Pagination>
@@ -315,7 +314,6 @@ export default function Menu() {
               )}
             </>
           ) : (
-            // Empty State
             <div className='bg-card/50 border-border rounded-xl border border-dashed py-20 text-center'>
               <p className='text-muted-foreground text-xl font-bold'>No items found</p>
               <p className='text-muted-foreground mt-2 text-sm'>Try adjusting your filters or search query.</p>

@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react'
 
 interface MenuFilterProps {
   categories: string[]
@@ -9,6 +9,8 @@ interface MenuFilterProps {
   priceRange: [number, number]
   onPriceChange: (min: number, max: number) => void
   maxPrice: number
+  sortBy: string
+  onSortChange: (sort: string) => void
 }
 
 const MenuFilter = ({
@@ -19,12 +21,22 @@ const MenuFilter = ({
   onSearchChange,
   priceRange,
   onPriceChange,
-  maxPrice
+  maxPrice,
+  sortBy,
+  onSortChange
 }: MenuFilterProps) => {
-  const currentMax = priceRange[1] === 10000000 || priceRange[1] === 0 ? maxPrice : priceRange[1]
-
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
+  }
+
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(Number(e.target.value), priceRange[1] - 50)
+    onPriceChange(value, priceRange[1])
+  }
+
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(Number(e.target.value), priceRange[0] + 50)
+    onPriceChange(priceRange[0], value)
   }
 
   return (
@@ -46,7 +58,25 @@ const MenuFilter = ({
         </div>
       </div>
 
-      {/* 2. Categories */}
+      {/* 2. Sorting */}
+      <div>
+        <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
+          <ArrowUpDown size={20} className='text-primary' /> Sort By
+        </h3>
+        <select
+          className='bg-input border-border focus:border-primary cursor-pointer w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all focus:ring-1 focus:ring-primary'
+          value={sortBy}
+          onChange={(e) => onSortChange(e.target.value)}
+        >
+          <option value='default'>Recommended</option>
+          <option value='price_asc'>Price: Low to High</option>
+          <option value='price_desc'>Price: High to Low</option>
+          <option value='rating'>Top Rated</option>
+          <option value='sold'>Best Sellers</option>
+        </select>
+      </div>
+
+      {/* 3. Categories */}
       <div>
         <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
           <SlidersHorizontal size={20} className='text-primary' /> Categories
@@ -92,26 +122,51 @@ const MenuFilter = ({
         </div>
       </div>
 
-      {/* 3. Price Filter (Slider) */}
+      {/* 4. Price Filter (Improved Double Range Slider) */}
       <div>
-        <div className='mb-4 flex items-center justify-between'>
-          <h3 className='text-lg font-bold'>Price Range</h3>
-          <span className='text-primary text-xs font-semibold'>{formatCurrency(currentMax)}</span>
-        </div>
-        <div className='space-y-4'>
+        <h3 className='mb-6 text-lg font-bold'>Price Range</h3>
+        <div className='relative h-6 w-full'>
+          {/* Custom Track */}
+          <div className='absolute top-2 left-0 h-1.5 w-full rounded-full bg-gray-200'></div>
+          <div
+            className='absolute top-2 h-1.5 rounded-full bg-primary'
+            style={{
+              left: `${(priceRange[0] / maxPrice) * 100}%`,
+              width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`
+            }}
+          ></div>
+          
+          {/* Min Input */}
           <input
             type='range'
             min={0}
             max={maxPrice}
-            step={1000}
-            value={currentMax}
-            onChange={(e) => onPriceChange(0, Number(e.target.value))}
-            className='h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary'
+            step={25000}
+            value={priceRange[0]}
+            onChange={handleMinChange}
+            className='pointer-events-none absolute top-1.5 left-0 h-2 w-full appearance-none bg-transparent outline-none ring-0 focus:ring-0 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md'
           />
-          <div className='flex justify-between text-[10px] text-gray-500'>
-            <span>0đ</span>
-            <span>{formatCurrency(maxPrice)}</span>
-          </div>
+          {/* Max Input */}
+          <input
+            type='range'
+            min={0}
+            max={maxPrice}
+            step={25000}
+            value={priceRange[1]}
+            onChange={handleMaxChange}
+            className='pointer-events-none absolute top-1.5 left-0 h-2 w-full appearance-none bg-transparent outline-none ring-0 focus:ring-0 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md'
+           style={{ zIndex: priceRange[1] > maxPrice * 0.9 ? 5 : 4 }}
+          />
+        </div>
+
+        <div className='mt-6 flex items-center justify-between text-[10px] sm:text-xs text-gray-500'>
+           <div className='bg-primary/10 rounded px-2 py-1 font-bold text-primary shadow-sm'>
+              {formatCurrency(priceRange[0])}
+           </div>
+           <span className='font-bold opacity-30'>-</span>
+           <div className='bg-primary/10 rounded px-2 py-1 font-bold text-primary shadow-sm'>
+              {formatCurrency(priceRange[1])}
+           </div>
         </div>
       </div>
     </div>

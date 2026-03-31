@@ -1,7 +1,7 @@
 spring:
   config:
     activate:
-      on-profile: prod
+      on-profile: dev
   devtools:
     add-properties: true
   datasource:
@@ -17,7 +17,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    locations: classpath:db/migration
+    locations: classpath:dev/db/migration
   jpa:
     show-sql: false
     hibernate:
@@ -50,11 +50,18 @@ spring:
             model: gemini-2.5-flash
             temperature: 0.7
 
+
 springdoc:
   api-docs:
-    enabled: false
+    enabled: true
   swagger-ui:
-    enabled: false
+    enabled: true
+openapi:
+  service:
+    api-docs: backend-service
+    server: http://localhost:${server.port}
+    title: Backend service
+    version: 1.0.0
 
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
@@ -66,6 +73,10 @@ jwt:
   refresh-key-expiration: 604800000
   # 10 phút
   reset-password-key-expiration: 600000
+
+logging:
+  level:
+    org.flywaydb: DEBUG
 
 #Clooudinary
 cloudinary:
@@ -81,9 +92,16 @@ payos:
   return-url: http://localhost:5173/thanh-toan/thanh-cong
   cancel-url: http://localhost:5173/thanh-toan/that-bai
 
-logging:
-  level:
-    org.hibernate.SQL: WARN
-    org.hibernate.orm.jdbc.bind: WARN
-    org.springframework.jdbc: WARN
-    com.zaxxer.hikari: INFO
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
+  model: models/gemini-2.0-flash-001
+
+#OpenRouter
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY}

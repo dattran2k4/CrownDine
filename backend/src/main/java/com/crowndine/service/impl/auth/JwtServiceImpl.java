@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +37,12 @@ public class JwtServiceImpl implements JwtService {
 
     @Value("${jwt.refresh-key-expiration}")
     private long refreshExpiration;
+
+    @Value("${jwt.reset-password-key}")
+    private String resetPasswordKey;
+
+    @Value("${jwt.reset-password-key-expiration}")
+    private long resetPasswordExpiration;
 
     @Override
     public String extractUsername(String token, ETokenType type) {
@@ -77,6 +81,9 @@ public class JwtServiceImpl implements JwtService {
             case REFRESH_TOKEN -> {
                 return Keys.hmacShaKeyFor(refreshKey.getBytes());
             }
+            case RESET_PASSWORD_TOKEN -> {
+                return Keys.hmacShaKeyFor(resetPasswordKey.getBytes());
+            }
             default -> throw new InvalidDataException("auth.token_type_not_found");
         }
     }
@@ -89,6 +96,11 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String generateRefreshToken(String username, List<String> authorities) {
         return buildToken(username, authorities, refreshExpiration, ETokenType.REFRESH_TOKEN);
+    }
+
+    @Override
+    public String generateResetPasswordToken(String username) {
+        return buildToken(username, List.of(), resetPasswordExpiration, ETokenType.RESET_PASSWORD_TOKEN);
     }
 
     private String buildToken(String username, List<String> authorities, long expiration, ETokenType type) {

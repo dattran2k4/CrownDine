@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,7 +36,7 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @JsonIgnore
     private String password;
 
-    @Column(name = "email", unique = true, nullable = false, length = 255)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
     @Column(name = "first_name", nullable = false, length = 50)
@@ -116,10 +117,12 @@ public class User extends AbstractEntity<Long> implements UserDetails {
         return EUserStatus.ACTIVE.equals(status);
     }
 
+    @Serial
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
     }
 
+    @Serial
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
     }

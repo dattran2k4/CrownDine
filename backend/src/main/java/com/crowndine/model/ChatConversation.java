@@ -14,7 +14,7 @@ import java.util.List;
 @Table(name = "chat_conversations")
 public class ChatConversation extends AbstractEntity<Long> {
 
-    @Column(name = "title", length = 255)
+    @Column(name = "title")
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)

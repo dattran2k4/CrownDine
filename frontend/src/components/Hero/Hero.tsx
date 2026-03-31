@@ -39,7 +39,7 @@ const Hero = () => {
 
             {/* Buttons */}
             <div className='mb-12 flex flex-col gap-4 sm:flex-row'>
-              <a href='#reservation'>
+              <a href='reservation'>
                 <Button className='bg-primary hover:bg-primary/90 btn-lift border-primary rounded-full border-2 px-8 py-6 text-base font-semibold text-white'>
                   Đặt Bàn
                 </Button>

@@ -40,7 +40,5 @@ public interface OrderService {
 
     Order getOrder(Long id);
 
-    void markAsPaid(Order order);
-
     List<OrderResponse> getKitchenOrders();
 }

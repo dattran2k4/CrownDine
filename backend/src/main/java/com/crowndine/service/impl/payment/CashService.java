@@ -5,14 +5,13 @@ import com.crowndine.common.enums.EPaymentStatus;
 import com.crowndine.dto.request.PaymentRequest;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.model.Order;
-import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.OrderPaymentService;
 import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import com.crowndine.service.order.OrderService;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -20,11 +19,11 @@ import java.util.Map;
 @Service("cash")
 @Slf4j(topic = "CASH-SERVICE")
 public class CashService extends AbstractPaymentStrategy {
-    private final OrderService orderService;
+    private final OrderPaymentService orderPaymentService;
 
-    public CashService(PaymentPreparationService paymentPreparationService, OrderService orderService) {
+    public CashService(PaymentPreparationService paymentPreparationService, OrderPaymentService orderPaymentService) {
         super(paymentPreparationService);
-        this.orderService = orderService;
+        this.orderPaymentService = orderPaymentService;
     }
 
     @Override
@@ -53,7 +52,7 @@ public class CashService extends AbstractPaymentStrategy {
             throw new InvalidDataException("Cash payment chỉ áp dụng cho đơn hàng");
         }
 
-        orderService.markAsPaid(order);
+        orderPaymentService.markOrderAsPaid(order);
         log.info("Cash payment created, code={}, amount={}", prepared.payment().getCode(), amountToPay);
         return "Đã tạo thành công số tiền thành toán là " + amountToPay;
     }

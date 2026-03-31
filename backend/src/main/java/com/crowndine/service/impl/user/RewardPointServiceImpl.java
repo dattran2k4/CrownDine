@@ -30,7 +30,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -114,10 +113,10 @@ public class RewardPointServiceImpl implements RewardPointService {
     @Override
     public PageResponse<PointHistoryResponse> getMyPointHistory(String username, int page, int size) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PointHistory> historyPage = pointHistoryRepository.findByUserId(user.getId(), pageable);
-        
+
         List<PointHistoryResponse> data = historyPage.getContent().stream()
                 .map(history -> PointHistoryResponse.builder()
                         .id(history.getId())

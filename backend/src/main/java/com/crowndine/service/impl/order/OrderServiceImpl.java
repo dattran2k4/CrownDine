@@ -17,7 +17,6 @@ import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderVoucherService;
-import com.crowndine.service.order.event.OrderPaidEvent;
 import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.common.utils.CodeUtils;
 import org.springframework.beans.BeanUtils;
@@ -52,8 +51,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailService orderDetailService;
     private final OrderStatusService orderStatusService;
     private final OrderVoucherService orderVoucherService;
-    private final UserVoucherService userVoucherService;
-    private final ApplicationEventPublisher eventPublisher;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
 
@@ -285,27 +282,6 @@ public class OrderServiceImpl implements OrderService {
         order.setUser(customer);
         orderRepository.save(order);
         log.info("Mapped user {} to order {}", customerId, orderId);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void markAsPaid(Order order) {
-        if (order.getStatus() == EOrderStatus.COMPLETED) {
-            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.",
-                    order.getId());
-            return;
-        }
-
-        if (order.getVoucher() != null) {
-            String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-            orderVoucherService.validateVoucherForOrder(order.getId(), order.getVoucher().getCode(), customerUsername);
-            Voucher consumedVoucher = userVoucherService.consumeVoucher(order.getVoucher().getCode(), customerUsername);
-            order.setVoucher(consumedVoucher);
-        }
-
-        orderStatusService.transitionOrderStatus(order, EOrderStatus.COMPLETED);
-        eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
-        log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
     }
 
     @Override

@@ -53,7 +53,7 @@ public class JwtServiceImpl implements JwtService {
     private Claims extractAllClaims(String token, ETokenType tokenType) {
 
         if (StringUtils.isBlank(token)) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_MISSING, "Token không được cung cấp hoặc rỗng.");
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_MISSING);
         }
         try {
             return Jwts.parserBuilder()
@@ -63,9 +63,9 @@ public class JwtServiceImpl implements JwtService {
                     .getBody();
 
         } catch (ExpiredJwtException e) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_EXPIRED, "Token đã hết hạn", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_EXPIRED, e);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_INVALID, "Token không hợp lệ", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_INVALID, e);
         }
     }
 
@@ -77,7 +77,7 @@ public class JwtServiceImpl implements JwtService {
             case REFRESH_TOKEN -> {
                 return Keys.hmacShaKeyFor(refreshKey.getBytes());
             }
-            default -> throw new InvalidDataException("Token type not found");
+            default -> throw new InvalidDataException("auth.token_type_not_found");
         }
     }
 

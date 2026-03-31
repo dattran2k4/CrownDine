@@ -70,11 +70,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         getUserByUserName(username);
 
         if (reservation.getStatus() == EReservationStatus.CHECKED_IN) {
-            throw new InvalidDataException("Đặt bàn này đã được check-in");
+            throw new InvalidDataException("reservation.already_checked_in");
         }
 
         if (reservation.getStatus() != EReservationStatus.CONFIRMED) {
-            throw new InvalidDataException("Chỉ có thể check-in đặt bàn ở trạng thái CONFIRMED");
+            throw new InvalidDataException("reservation.check_in_only_confirmed");
         }
 
         reservation.setStatus(EReservationStatus.CHECKED_IN);
@@ -98,7 +98,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         validateReservationForUser(reservation, user);
 
         if (reservation.getStatus() != EReservationStatus.PENDING && reservation.getStatus() != EReservationStatus.CONFIRMED) {
-            throw new InvalidDataException("Không thể hủy đặt bàn ở trạng thái này");
+            throw new InvalidDataException("reservation.cancel_invalid_state");
         }
 
         cancelReservationWithStatus(reservation, EReservationStatus.CANCELLED);
@@ -114,7 +114,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         getUserByUserName(username);
 
         if (reservation.getStatus() != EReservationStatus.PENDING && reservation.getStatus() != EReservationStatus.CONFIRMED) {
-            throw new InvalidDataException("Chỉ có thể hủy đặt bàn ở trạng thái PENDING hoặc CONFIRMED");
+            throw new InvalidDataException("reservation.cancel_only_pending_or_confirmed");
         }
 
         cancelReservationWithStatus(reservation, EReservationStatus.CANCELLED);
@@ -130,7 +130,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         getUserByUserName(username);
 
         if (reservation.getStatus() != EReservationStatus.CONFIRMED) {
-            throw new InvalidDataException("Chỉ có thể đánh dấu no-show cho đặt bàn ở trạng thái CONFIRMED");
+            throw new InvalidDataException("reservation.no_show_only_confirmed");
         }
 
         cancelReservationWithStatus(reservation, EReservationStatus.NO_SHOW);
@@ -146,12 +146,12 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         getUserByUserName(username);
 
         if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
-            throw new InvalidDataException("Chỉ có thể hoàn thành đặt bàn ở trạng thái CHECKED_IN");
+            throw new InvalidDataException("reservation.complete_only_checked_in");
         }
 
         Order order = reservation.getOrder();
         if (order != null && order.getStatus() != EOrderStatus.COMPLETED) {
-            throw new InvalidDataException("Chỉ có thể hoàn thành đặt bàn khi đơn hàng đã hoàn tất thanh toán");
+            throw new InvalidDataException("reservation.complete_requires_paid_order");
         }
 
         reservation.setStatus(EReservationStatus.COMPLETED);
@@ -172,10 +172,10 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         validateReservationForUser(reservation, user);
 
         if (reservation.getStatus() != EReservationStatus.PENDING) {
-            throw new InvalidDataException("Chỉ có thể thay đổi bàn khi đặt bàn ở trạng thái PENDING");
+            throw new InvalidDataException("reservation.update_table_only_pending");
         }
 
-        RestaurantTable newTable = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
+        RestaurantTable newTable = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("table.not_found"));
 
         validateTableForReservation(newTable, reservation.getGuestNumber());
 
@@ -193,11 +193,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private void validateTableForReservation(RestaurantTable table, Integer guestNumber) {
 
         if (table.getStatus() == ETableStatus.UNAVAILABLE) {
-            throw new InvalidDataException("Bàn không khả dụng");
+            throw new InvalidDataException("reservation.table_unavailable");
         }
 
         if (table.getCapacity() != null && table.getCapacity() < guestNumber) {
-            throw new InvalidDataException("Số lượng khách vượt quá sức chứa của bàn");
+            throw new InvalidDataException("reservation.table_capacity_exceeded");
         }
     }
 
@@ -212,16 +212,16 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private Reservation getReservationById(Long reservationId) {
-        return reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        return reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("reservation.not_found"));
     }
 
     private User getUserByUserName(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
         if (reservation.getUser() == null || !reservation.getUser().getId().equals(user.getId())) {
-            throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
+            throw new InvalidDataException("reservation.access_denied");
         }
     }
 
@@ -231,7 +231,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
         reservationTimePolicy.validateStartTime(startDateTime);
 
-        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn"));
+        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("table.not_found"));
 
         validateTableForReservation(table, request.getGuestNumber());
         reservationAvailabilityService.ensureTableAvailable(request.getDate(), request.getStartTime(), table.getId());

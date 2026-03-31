@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 public class OrderApplyVoucherRequest {
 
-    @NotBlank(message = "Mã voucher không được để trống")
+    @NotBlank(message = "{validation.voucher.code.not_blank}")
     private String code;
 }

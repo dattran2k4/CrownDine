@@ -31,7 +31,7 @@ import java.util.Locale;
 @Slf4j(topic = "ORDER-VOUCHER-SERVICE")
 public class OrderVoucherServiceImpl implements OrderVoucherService {
 
-    private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
+    private static final String ORDER_NOT_FOUND_MESSAGE = "order.not_found";
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
@@ -49,27 +49,27 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
         Order order = getOrderById(orderId);
 
         if (order.getUser() != null && username != null && !order.getUser().getUsername().equals(username)) {
-            throw new InvalidDataException("Đơn hàng này không phải của user");
+            throw new InvalidDataException("order.voucher.order_not_owned_by_user");
         }
 
         if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
+            throw new InvalidDataException("order.voucher.cannot_apply_to_final_order");
         }
 
         if (order.getOrderDetails().isEmpty()) {
-            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
+            throw new InvalidDataException("order.voucher.order_has_no_items");
         }
 
         BigDecimal totalOrder = calculationService.calculateTotalOrder(order.getOrderDetails());
         if (totalOrder.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
+            throw new InvalidDataException("order.voucher.order_total_must_be_positive");
         }
 
         String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
         Voucher voucher = voucherService.getVoucherByCode(normalizedCode);
 
         if (voucher.getMinValue() != null && totalOrder.compareTo(voucher.getMinValue()) < 0) {
-            throw new InvalidDataException("Đơn hàng chưa đạt giá trị tối thiểu để áp voucher");
+            throw new InvalidDataException("order.voucher.min_value_not_met");
         }
 
         boolean isPersonal = !voucher.getUserVouchers().isEmpty();
@@ -78,11 +78,11 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
 
         if (isPersonal) {
             if (username == null) {
-                throw new InvalidDataException("Voucher này là voucher cá nhân, vui lòng thêm thông tin khách hàng vào đơn");
+                throw new InvalidDataException("order.voucher.personal_requires_customer");
             }
 
-            User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("Voucher chưa được gán cho người dùng"));
+            User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+            UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("voucher.not_assigned_to_user"));
 
             validateUserVoucherAvailability(userVoucher);
             usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
@@ -114,11 +114,11 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
         Order order = getOrderById(orderId);
 
         if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
+            throw new InvalidDataException("order.voucher.cannot_apply_to_final_order");
         }
 
         if (order.getOrderDetails().isEmpty()) {
-            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
+            throw new InvalidDataException("order.voucher.order_has_no_items");
         }
 
         String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
@@ -149,11 +149,11 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
         Order order = getOrderById(orderId);
 
         if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể gỡ voucher cho đơn đã hoàn tất hoặc đã hủy");
+            throw new InvalidDataException("order.voucher.cannot_remove_from_final_order");
         }
 
         if (order.getVoucher() == null) {
-            throw new InvalidDataException("Đơn hàng chưa áp voucher");
+            throw new InvalidDataException("order.voucher.order_has_no_voucher");
         }
 
         order.setVoucher(null);
@@ -221,13 +221,13 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
 
     private void validateUserVoucherAvailability(UserVoucher userVoucher) {
         if (userVoucher.getExpiredAt() != null && !userVoucher.getExpiredAt().isAfter(LocalDateTime.now())) {
-            throw new InvalidDataException("Voucher đã hết hạn");
+            throw new InvalidDataException("voucher.expired");
         }
 
         int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
         Integer usageLimit = userVoucher.getUsageLimit();
         if (usageLimit != null && usageCount >= usageLimit) {
-            throw new InvalidDataException("Voucher đã hết lượt sử dụng");
+            throw new InvalidDataException("voucher.usage_exhausted");
         }
     }
 }

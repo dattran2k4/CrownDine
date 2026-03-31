@@ -10,6 +10,6 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GoogleLoginRequest {
-    @NotBlank(message = "Token cannot be blank")
+    @NotBlank(message = "{validation.google_login.token.not_blank}")
     String token;
 }

@@ -8,10 +8,10 @@ import lombok.Getter;
 @Getter
 public class VoucherValidateRequest {
 
-    @NotBlank(message = "Mã voucher không được để trống")
+    @NotBlank(message = "{validation.voucher.code.not_blank}")
     private String code;
 
-    @NotNull(message = "Order id không được để trống")
-    @Min(value = 1, message = "Order id phải lớn hơn 0")
+    @NotNull(message = "{validation.voucher.order_id.not_null}")
+    @Min(value = 1, message = "{validation.voucher.order_id.min}")
     private Long orderId;
 }

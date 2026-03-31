@@ -20,6 +20,7 @@ public class Token extends AbstractEntity<Long> {
 
     @Column(name = "username")
     private String username;
+
     @Column(columnDefinition = "TEXT")
     private String token;
 

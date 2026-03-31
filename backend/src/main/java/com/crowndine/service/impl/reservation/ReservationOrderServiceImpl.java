@@ -2,6 +2,7 @@ package com.crowndine.service.impl.reservation;
 
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
+import com.crowndine.common.enums.ERole;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.response.OrderDetailHistoryResponse;
@@ -115,7 +116,11 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
-        if (reservation.getUser() == null || !reservation.getUser().getId().equals(user.getId())) {
+        boolean isOwner = reservation.getUser() != null && reservation.getUser().getId().equals(user.getId());
+        boolean hasPrivilege = user.getRoles().stream()
+                .anyMatch(role -> role.getName() == ERole.STAFF || role.getName() == ERole.ADMIN);
+
+        if (!isOwner && !hasPrivilege) {
             throw new InvalidDataException("Không có quyền thao tác đặt bàn này");
         }
     }

@@ -19,7 +19,6 @@ import Profile from '@/pages/Profile'
 import VerifyRegister from '@/pages/VerifyRegister/VerifyRegister'
 import { ProtectedRoute, RejectedRoute, AdminRoute, StaffRoute } from '@/routes/RouteGuard'
 import StaffLayout from './layouts/StaffLayout/StaffLayout'
-import FloorPlan from './pages/Staffs/FloorPlan'
 import ReservationList from './pages/Staffs/ReservationList'
 import OrderManagement from './pages/Staffs/OrderManagement'
 import KitchenDisplay from './pages/Staffs/KitchenDisplay'
@@ -121,15 +120,11 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to='floor-plan' replace />
+            element: <Navigate to='cashier' replace />
           },
           {
             path: 'cashier',
             element: <Cashier />
-          },
-          {
-            path: 'floor-plan',
-            element: <FloorPlan />
           },
           {
             path: 'reservation-list',

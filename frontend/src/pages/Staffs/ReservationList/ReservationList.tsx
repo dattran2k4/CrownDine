@@ -1,8 +1,5 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-
 import { useMutation, useQuery } from '@tanstack/react-query'
 import reservationApi from '@/apis/reservation.api'
 import orderApi from '@/apis/order.api'
@@ -12,35 +9,31 @@ import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import type { StaffReservationResponse } from '@/types/reservation.type'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { PlusCircle } from 'lucide-react'
+import { PlusCircle, Search, Check } from 'lucide-react'
 import CreateReservationModal from './components/CreateReservationModal'
+import ReservationCalendarView from './components/ReservationCalendarView'
+import { Input } from '@/components/ui/input'
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-500/10 text-yellow-600 font-bold',
-  CONFIRMED: 'bg-blue-500/10 text-blue-600 font-bold',
-  CHECKED_IN: 'bg-green-500/10 text-green-600 font-bold',
-  COMPLETED: 'bg-slate-500/10 text-slate-600 font-bold',
-  CANCELLED: 'bg-red-500/10 text-red-600 font-bold',
-  NO_SHOW: 'bg-gray-500/10 text-gray-600 font-bold'
-}
+type ViewMode = 'LIST' | 'CALENDAR'
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'CHỜ XÁC NHẬN',
-  CONFIRMED: 'ĐÃ XÁC NHẬN',
-  CHECKED_IN: 'ĐÃ ĐẾN',
-  COMPLETED: 'HOÀN THÀNH',
-  CANCELLED: 'ĐÃ HUỶ',
-  NO_SHOW: 'KHÔNG ĐẾN'
+  PENDING: 'Chờ xác nhận',
+  CONFIRMED: 'Đã xác nhận',
+  CHECKED_IN: 'Đã nhận bàn',
+  COMPLETED: 'Hoàn thành',
+  CANCELLED: 'Đã huỷ',
+  NO_SHOW: 'Không đến'
 }
 
 const ReservationList = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const [viewMode, setViewMode] = useState<ViewMode>('CALENDAR')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ['staff-reservations', statusFilter],
     queryFn: () => reservationApi.getAllReservations({ status: statusFilter || undefined, size: 100 }),
     select: (res) => res.data?.data?.data || []
@@ -48,10 +41,7 @@ const ReservationList = () => {
 
   const checkInMutation = useMutation({
     mutationFn: async (reservation: StaffReservationResponse) => {
-      // 1. Check in the reservation
       await reservationApi.checkInReservation(reservation.id, user?.id)
-      
-      // 2. Only create a new order if none exists (prevents double-order error)
       if (!reservation.orderId) {
         await orderApi.openOrderForReservation(reservation.id, { items: [] }, user?.id)
       }
@@ -59,8 +49,6 @@ const ReservationList = () => {
     onSuccess: () => {
       toast.success('Check in và tạo đơn thành công')
       queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-      queryClient.invalidateQueries({ queryKey: ['orders-active'] })
-      queryClient.invalidateQueries({ queryKey: ['tables'] })
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Không thể check in đặt bàn')
@@ -72,35 +60,9 @@ const ReservationList = () => {
     onSuccess: () => {
       toast.success('Huỷ đặt bàn thành công')
       queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Không thể huỷ đặt bàn')
     }
   })
 
-  const noShowMutation = useMutation({
-    mutationFn: (reservationId: number) => reservationApi.noShowReservation(reservationId),
-    onSuccess: () => {
-      toast.success('Đã cập nhật trạng thái không đến')
-      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Không thể cập nhật no-show')
-    }
-  })
-
-  const completeMutation = useMutation({
-    mutationFn: (reservationId: number) => reservationApi.completeReservation(reservationId),
-    onSuccess: () => {
-      toast.success('Hoàn thành đặt bàn thành công')
-      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Không thể hoàn thành đặt bàn')
-    }
-  })
-
-  // Tìm kiếm cục bộ theo mã hoặc tên
   const filteredReservations = (data || []).filter((r: StaffReservationResponse) => {
     const searchLower = searchTerm.toLowerCase()
     return (
@@ -110,291 +72,212 @@ const ReservationList = () => {
     )
   })
 
-  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
-
-  const toggleExpand = (id: string | number) => {
-    setExpandedCards((prev) => ({
-      ...prev,
-      [id]: !prev[id]
-    }))
-  }
-
-  if (isLoading) return <div className="p-6 text-center">Đang tải danh sách đặt bàn...</div>
-
   return (
-    <div className='bg-background text-foreground min-h-screen px-4 pt-10 pb-20 md:px-8'>
-      {/* Header Page */}
-      <div className='mx-auto mb-10 max-w-7xl text-center'>
-        <p className='text-primary mb-2 text-sm font-bold tracking-widest uppercase'>• Reservation Management</p>
-        <h1 className='text-foreground mb-4 text-4xl font-bold md:text-5xl'>Danh sách đặt bàn</h1>
-        <p className='text-muted-foreground mx-auto max-w-2xl'>
-          Quản lý danh sách đặt bàn và gọi món trước của khách hàng.
-        </p>
-        <div className="mt-8 flex justify-center">
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-primary text-primary-foreground font-bold px-8 py-6 rounded-xl hover:scale-105 transition-transform shadow-lg shadow-primary/20 flex items-center gap-2 text-lg"
-            >
-              <PlusCircle className="w-6 h-6" />
-              TẠO ĐƠN ĐẶT BÀN MỚI
-            </Button>
-        </div>
-      </div>
-
-      <div className='mx-auto max-w-5xl'>
-        {/* Top Bar / Filters */}
-        <div className='mb-8 flex flex-wrap gap-4'>
-          <div className='flex-1 min-w-[300px]'>
-            <Input 
-              className='bg-card border-border h-11 focus-visible:ring-primary focus-visible:ring-1 rounded-lg' 
-              placeholder='Tìm theo tên, sđt hoặc mã đặt bàn...' 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className='flex gap-4'>
-            <select 
-              className='bg-card border-border focus:border-primary h-11 cursor-pointer rounded-lg border px-3 text-sm outline-none'
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value=''>Tất cả trạng thái</option>
-              {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-            <Button 
-              variant='outline'
-              className='h-11 bg-card hover:bg-accent hover:text-accent-foreground border-border rounded-lg px-6 font-medium transition-colors' 
-              onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
-            >
-              Xóa lọc
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Reservation Cards List */}
-      <div className='space-y-6 mx-auto max-w-5xl'>
-        {filteredReservations.length === 0 && (
-          <div className="bg-card/50 border-border rounded-xl border border-dashed py-20 text-center">
-            <p className="text-muted-foreground text-xl font-bold">Không tìm thấy đơn đặt bàn nào!</p>
-          </div>
-        )}
-        {filteredReservations.map((reservation: StaffReservationResponse) => {
-          const items = reservation.orderDetails?.filter((od: any) => od.item != null) || []
-          const combos = reservation.orderDetails?.filter((od: any) => od.combo != null) || []
-          const totalPreOrder = items.length + combos.length
-          const isExpanded = expandedCards[reservation.id]
-          const hasOrder = reservation.orderId != null
-
-          const renderActionButton = () => {
-            if (reservation.status === 'PENDING') {
-              return (
-                <div className='flex flex-wrap justify-end gap-2'>
-                  <button
-                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => cancelMutation.mutate(reservation.id)}
-                    disabled={cancelMutation.isPending}
-                  >
-                    Huỷ
-                  </button>
-                </div>
-              )
-            }
-
-            if (reservation.status === 'CONFIRMED') {
-              return (
-                <div className='flex flex-wrap justify-end gap-2'>
-                  <button
-                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => checkInMutation.mutate(reservation)}
-                    disabled={checkInMutation.isPending}
-                  >
-                    Check in
-                  </button>
-                  <button
-                    className='bg-muted text-foreground hover:bg-accent flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => noShowMutation.mutate(reservation.id)}
-                    disabled={noShowMutation.isPending}
-                  >
-                    No-show
-                  </button>
-                  <button
-                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => cancelMutation.mutate(reservation.id)}
-                    disabled={cancelMutation.isPending}
-                  >
-                    Huỷ
-                  </button>
-                </div>
-              )
-            }
-
-            if (reservation.status === 'CHECKED_IN' && hasOrder) {
-              return (
-                <div className='flex flex-wrap justify-end gap-2'>
-                  <button
-                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => navigate('/staff/order-management', { state: { selectedOrderId: reservation.orderId } })}
-                  >
-                    Xem món
-                  </button>
-                  <button
-                    className='bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => completeMutation.mutate(reservation.id)}
-                    disabled={completeMutation.isPending}
-                  >
-                    Hoàn thành
-                  </button>
-                </div>
-              )
-            }
-
-            if (reservation.status === 'CHECKED_IN' && !hasOrder) {
-              return (
-                <div className='flex flex-wrap justify-end gap-2'>
-                  <button
-                    className='bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => navigate('/staff/order-management', { state: { reservationId: reservation.id, createFromReservation: true } })}
-                  >
-                    Gọi món
-                  </button>
-                  <button
-                    className='bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors'
-                    onClick={() => completeMutation.mutate(reservation.id)}
-                    disabled={completeMutation.isPending}
-                  >
-                    Hoàn thành
-                  </button>
-                </div>
-              )
-            }
-
-            return null
-          }
-
-          return (
-            <div key={reservation.id} className='bg-card border-border hover:border-primary/50 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md mb-6'>
-              {/* Content Area */}
-              <div className='flex flex-1 flex-col p-5'>
-                <div className='mb-6 flex justify-between items-start'>
-                  <div>
-                    <h2 className='text-foreground text-xl font-bold mb-2'>{reservation.customerName}</h2>
-                    <div className='mb-2'>
-                      <span className={clsx('text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide', STATUS_COLORS[reservation.status] || 'bg-slate-100 text-slate-700 font-bold')}>
-                        {STATUS_LABELS[reservation.status] || reservation.status}
-                      </span>
-                    </div>
-                    <div className='text-sm text-muted-foreground'>
-                      #{reservation.code?.substring(0, 8).toUpperCase()} • {reservation.phone || 'N/A'}
-                    </div>
-                  </div>
-                  {renderActionButton()}
-                </div>
-
-                {/* Info Grid */}
-                <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-6'>
-                  <div>
-                    <p className='text-xs text-muted-foreground mb-1'>Ngày & Giờ</p>
-                    <p className='text-foreground text-sm font-medium'>
-                      {reservation.date ? new Date(reservation.date).toLocaleDateString() : 'N/A'} {reservation.startTime?.substring(0, 5)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className='text-xs text-muted-foreground mb-1'>Số khách</p>
-                    <p className='text-foreground text-sm font-medium'>{reservation.guestNumber} khách</p>
-                  </div>
-                  <div>
-                    <p className='text-xs text-muted-foreground mb-1'>Bàn</p>
-                    <p className='text-foreground text-sm font-medium'>{reservation.tableName || 'Chưa xếp bàn'}</p>
-                  </div>
-                  <div>
-                    <p className='text-xs text-muted-foreground mb-1'>Liên hệ</p>
-                    <p className='text-muted-foreground text-sm'>{reservation.email || 'N/A'}</p>
-                  </div>
-                </div>
-
-                {/* Note */}
-                {reservation.note && (
-                  <div className='bg-muted/50 rounded-lg p-3 mb-6'>
-                    <p className='text-sm text-muted-foreground'>
-                      <span className='font-semibold mr-1'>Ghi chú:</span> {reservation.note}
-                    </p>
-                  </div>
-                )}
-
-                {/* Pre-order Section */}
-                {totalPreOrder > 0 && (
-                  <div className='border-border rounded-lg border mt-2 overflow-hidden'>
-                    {/* Accordion Header */}
-                    <div 
-                      className='bg-muted/30 p-4 flex justify-between items-center cursor-pointer hover:bg-muted/50 transition-colors'
-                      onClick={() => toggleExpand(reservation.id)}
-                    >
-                      <div className='flex items-center gap-2'>
-                        <span className='font-semibold text-sm text-foreground'>Món đặt trước</span>
-                        {isExpanded ? <ChevronUp className='w-4 h-4 text-muted-foreground' /> : <ChevronDown className='w-4 h-4 text-muted-foreground' />}
-                      </div>
-                      <div className='text-xs text-muted-foreground hidden sm:block'>
-                        Nhấn để xem chi tiết
-                      </div>
-                      <div>
-                        <span className='bg-primary/10 text-primary text-xs font-bold px-2.5 py-1.5 rounded-full'>
-                          {totalPreOrder} món
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Accordion Content */}
-                    {isExpanded && (
-                      <div className='p-5 bg-card border-t border-border space-y-6'>
-                        {/* Món lẻ */}
-                        {items.length > 0 && (
-                          <div>
-                            <h3 className='text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4'>
-                              Món lẻ
-                            </h3>
-                            <div className='space-y-3'>
-                              {items.map((od: any) => (
-                                <div key={od.id} className='flex justify-between items-center py-2 border-b border-border/50 last:border-0'>
-                                  <span className='text-sm font-medium text-foreground'>{od.item?.name}</span>
-                                  <span className='text-muted-foreground text-sm'>
-                                    x{od.quantity}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Combo */}
-                        {combos.length > 0 && (
-                          <div>
-                            <h3 className='text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4'>
-                              Combo / Set Menu
-                            </h3>
-                            <div className='space-y-3'>
-                              {combos.map((od: any) => (
-                                <div key={od.id} className='flex justify-between items-center py-2 border-b border-border/50 last:border-0'>
-                                  <span className='text-sm font-medium text-foreground'>{od.combo?.name}</span>
-                                  <span className='text-muted-foreground text-sm'>
-                                    x{od.quantity}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+    <div className='flex min-h-screen bg-slate-50/50'>
+      {/* 1. SIDEBAR (Left) */}
+      <aside className='w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col flex-shrink-0'>
+         <div className='p-6 border-b border-slate-100 bg-slate-50/10'>
+            <h2 className='text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2'>
+               <Search size={14} /> Bộ lọc nâng cao
+            </h2>
+         </div>
+         
+         <div className='p-6 space-y-8 overflow-y-auto'>
+            {/* Search group */}
+            <div>
+               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1'>Tìm kiếm</label>
+               <Input 
+                  className='h-10 bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary'
+                  placeholder='Tên, SĐT, mã đơn...'
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+               />
             </div>
-          )
-        })}
-      </div>
+
+            {/* Status checkboxes */}
+            <div>
+               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1'>Trạng thái</label>
+               <div className='space-y-2.5'>
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                    <label key={k} className='flex items-center gap-3 cursor-pointer group'>
+                       <input 
+                         type='checkbox' 
+                         className='w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer'
+                         checked={statusFilter === k || !statusFilter}
+                         onChange={() => setStatusFilter(statusFilter === k ? '' : k)}
+                       />
+                       <span className='text-sm text-slate-600 group-hover:text-slate-900 transition-colors'>{v}</span>
+                    </label>
+                  ))}
+               </div>
+            </div>
+
+            {/* Table count */}
+            <div className='pt-6 border-t border-slate-100'>
+               <label className='block text-[10px] font-bold text-slate-400 uppercase mb-3 px-1'>Hiển thị</label>
+               <select className='w-full h-10 bg-slate-50 border-slate-200 rounded-lg text-sm px-2 outline-none cursor-pointer'>
+                  <option>15 bản ghi</option>
+                  <option>30 bản ghi</option>
+                  <option>50 bản ghi</option>
+               </select>
+            </div>
+         </div>
+      </aside>
+
+      {/* 2. MAIN CONTENT (Right) */}
+      <main className='flex-1 flex flex-col min-w-0'>
+        {/* Dark Blue Header Dashboard */}
+        <header className='h-14 bg-[#003C71] flex items-center justify-between px-6 text-white shadow-md z-40'>
+           <div className='flex items-center gap-6 h-full'>
+              <h1 className='text-sm font-black tracking-widest uppercase'>Đặt bàn</h1>
+              <nav className='flex h-full pt-2'>
+                 <button 
+                   onClick={() => setViewMode('CALENDAR')}
+                   className={clsx(
+                     'px-6 h-full font-bold text-xs uppercase tracking-wider transition-all rounded-t-lg flex items-center gap-2',
+                     viewMode === 'CALENDAR' ? 'bg-slate-50 text-[#003C71]' : 'text-white/60 hover:text-white'
+                   )}
+                 >
+                   Theo lịch
+                 </button>
+                 <button 
+                    onClick={() => setViewMode('LIST')}
+                    className={clsx(
+                      'px-6 h-full font-bold text-xs uppercase tracking-wider transition-all rounded-t-lg flex items-center gap-2',
+                      viewMode === 'LIST' ? 'bg-slate-50 text-[#003C71]' : 'text-white/60 hover:text-white'
+                    )}
+                 >
+                   Theo danh sách
+                 </button>
+              </nav>
+           </div>
+           
+           <div className='flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider'>
+              <span className='opacity-60'>Chi nhánh trung tâm</span>
+              <div className='w-px h-3 bg-white/20'></div>
+              <span className='bg-primary/20 px-3 py-1 rounded-full border border-white/10'>Staff: {user?.firstName}</span>
+           </div>
+        </header>
+
+        {/* Workspace Panel */}
+        <div className='flex-1 p-6 overflow-hidden flex flex-col'>
+           {viewMode === 'CALENDAR' ? (
+             <ReservationCalendarView onOpenCreateModal={() => setIsCreateModalOpen(true)} />
+           ) : (
+             <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full'>
+                {/* Table Top Actions */}
+                <div className='p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30'>
+                   <div className='flex items-center gap-3'>
+                      <input type='checkbox' className='w-4 h-4 rounded border-slate-300' />
+                      <span className='text-[10px] font-black text-slate-400 uppercase tracking-widest'>Tất cả</span>
+                   </div>
+                   <div className='flex gap-2'>
+                      <Button 
+                         onClick={() => setIsCreateModalOpen(true)}
+                         className='bg-primary gap-2 h-9 text-xs font-bold px-4 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform'
+                      >
+                         <PlusCircle size={14} /> TẠO ĐẶT BÀN (F1)
+                      </Button>
+                   </div>
+                </div>
+
+                {/* Main Table Interface */}
+                <div className='flex-1 overflow-auto bg-white'>
+                   <table className='w-full text-left border-collapse'>
+                      <thead className='sticky top-0 bg-slate-50 border-b border-slate-200 z-10'>
+                         <tr>
+                            <th className='p-4 w-10'></th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Mã đặt bàn</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Giờ đến</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Khách hàng</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Điện thoại</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Số khách</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Phòng/bàn</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter'>Trạng thái</th>
+                            <th className='p-4 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap tracking-tighter text-center'>Ghi chú</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {filteredReservations.map((res: StaffReservationResponse) => (
+                            <tr key={res.id} className='border-b border-slate-100 hover:bg-slate-50/50 transition-colors group'>
+                               <td className='p-4'><input type='checkbox' className='rounded border-slate-300' /></td>
+                               <td className='p-4 font-bold text-primary text-sm'>#{res.code?.substring(0, 8).toUpperCase()}</td>
+                               <td className='p-4 text-xs font-semibold text-slate-500'>
+                                  <div className='font-bold text-slate-700'>{res.startTime.substring(0, 5)}</div>
+                                  <div className='text-[10px]'>{res.date}</div>
+                               </td>
+                               <td className='p-4 font-bold text-slate-700 text-sm'>{res.customerName}</td>
+                               <td className='p-4 text-xs text-slate-500 font-medium'>{res.phone || 'N/A'}</td>
+                               <td className='p-4 font-black text-slate-700 text-sm text-center'>{res.guestNumber}</td>
+                               <td className='p-4 text-xs font-bold text-slate-600'>{res.tableName || 'Chưa xếp'}</td>
+                               <td className='p-4'>
+                                  <div className='flex items-center gap-2'>
+                                     <div className={clsx(
+                                       'w-1.5 h-1.5 rounded-full ring-2 ring-offset-1',
+                                       res.status === 'PENDING' ? 'bg-yellow-500 ring-yellow-400/30' : 
+                                       res.status === 'CONFIRMED' ? 'bg-blue-500 ring-blue-400/30' :
+                                       res.status === 'CHECKED_IN' ? 'bg-emerald-500 ring-emerald-400/30' : 
+                                       res.status === 'CANCELLED' ? 'bg-red-500 ring-red-400/30' : 'bg-slate-400 ring-slate-300/30'
+                                     )}></div>
+                                     <span className='text-[10px] font-black text-slate-500 uppercase whitespace-nowrap'>
+                                        {STATUS_LABELS[res.status] || res.status}
+                                     </span>
+                                  </div>
+                               </td>
+                               <td className='p-4'>
+                                  <div className='flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                     {res.status === 'CONFIRMED' && (
+                                       <button 
+                                          onClick={() => checkInMutation.mutate(res)}
+                                          className='p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-md transition-all shadow-sm' 
+                                          title='Check-in'
+                                       >
+                                          <Check size={14} />
+                                       </button>
+                                     )}
+                                     <button 
+                                        className='p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-md transition-all shadow-sm'
+                                        title='Cập nhật'
+                                        onClick={() => navigate('/staff/order-management', { state: { reservationId: res.id } })}
+                                     >
+                                        <Search size={14} />
+                                     </button>
+                                     <button 
+                                        onClick={() => cancelMutation.mutate(res.id)}
+                                        className='p-1.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-md transition-all shadow-sm' 
+                                        title='Huỷ'
+                                     >
+                                        ✕
+                                     </button>
+                                  </div>
+                               </td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                   
+                   {filteredReservations.length === 0 && (
+                      <div className='py-24 text-center'>
+                         <p className='text-slate-300 font-black uppercase tracking-widest text-sm italic'>Dữ liệu trống</p>
+                      </div>
+                   )}
+                </div>
+
+                {/* Pagination Status Bar */}
+                <div className='p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest'>
+                   <div className='flex items-center gap-1.5'>
+                      <button className='w-5 h-5 border border-slate-200 rounded flex items-center justify-center hover:bg-white'>‹</button>
+                      <button className='w-5 h-5 bg-primary text-white rounded flex items-center justify-center shadow-md'>1</button>
+                      <button className='w-5 h-5 border border-slate-200 rounded flex items-center justify-center hover:bg-white'>2</button>
+                      <button className='w-5 h-5 border border-slate-200 rounded flex items-center justify-center hover:bg-white'>›</button>
+                   </div>
+                   <div>Hiển thị {filteredReservations.length} kết quả</div>
+                </div>
+             </div>
+           )}
+        </div>
+      </main>
+
       <CreateReservationModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)}

@@ -3,6 +3,7 @@ package com.crowndine.service.impl.reservation;
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
+import com.crowndine.common.enums.ERole;
 import com.crowndine.common.utils.CodeUtils;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.request.StaffReservationCreateRequest;
@@ -220,7 +221,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
-        if (reservation.getUser() == null || !reservation.getUser().getId().equals(user.getId())) {
+        boolean isOwner = reservation.getUser() != null && reservation.getUser().getId().equals(user.getId());
+        boolean hasPrivilege = user.getRoles().stream()
+                .anyMatch(role -> role.getName() == ERole.STAFF || role.getName() == ERole.ADMIN);
+
+        if (!isOwner && !hasPrivilege) {
             throw new InvalidDataException("reservation.access_denied");
         }
     }

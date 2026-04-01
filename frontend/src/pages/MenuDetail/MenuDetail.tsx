@@ -14,7 +14,7 @@ import path from '@/constants/path'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useFavoriteStore } from '@/stores/useFavoriteStore'
 import { ArrowLeft, ShoppingCart, Star, Heart } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 
 type TabType = 'description' | 'comboItems' | 'reviews'
 
@@ -39,7 +39,7 @@ export default function MenuDetail() {
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault()
     if (!isAuthenticated) {
-      toast.info('Vui lòng đăng nhập để sử dụng tính năng này')
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này')
       return
     }
 

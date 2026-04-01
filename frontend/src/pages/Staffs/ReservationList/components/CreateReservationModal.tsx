@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { User, Calendar, Users, Hash, Trash2, Plus, Minus } from 'lucide-react'
+import { User, Calendar, Users, Hash, Trash2, Plus, Minus, ChevronRight, ChevronLeft, ShoppingCart, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import reservationApi from '@/apis/reservation.api'
 import tableApi from '@/apis/table.api'
@@ -10,6 +10,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import MenuSelector from '@/components/MenuSelector/MenuSelector'
 import type { MenuCardItem } from '@/types/item.type'
 import { formatCurrency, generateTimeSlots, isDateTimeInPast } from '@/utils/utils'
+import clsx from 'clsx'
 
 interface CreateReservationModalProps {
   isOpen: boolean
@@ -26,8 +27,12 @@ interface CartItem {
   imageUrl: string
 }
 
+type ModalTab = 'INFO' | 'MENU'
+
 export default function CreateReservationModal({ isOpen, onClose, onSuccess }: CreateReservationModalProps) {
+  const [activeTab, setActiveTab] = useState<ModalTab>('INFO')
   const [guestName, setGuestName] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   
   const [formData, setFormData] = useState(() => {
@@ -86,15 +91,14 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      // 1. Create Reservation
       const res = await reservationApi.createWalkInReservationByStaff({
         ...formData,
         tableId: parseInt(formData.tableId),
-        guestName: guestName.trim()
+        guestName: guestName.trim(),
+        guestPhone: guestPhone.trim()
       })
       const reservationId = res.data.data.reservationId
       
-      // 2. Add Items sequentially to ensure they are all added
       if (cart.length > 0) {
         for (const item of cart) {
           await reservationApi.addItemToReservation(reservationId, {
@@ -118,7 +122,9 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
 
   const handleClose = () => {
     onClose()
+    setActiveTab('INFO')
     setGuestName('')
+    setGuestPhone('')
     setCart([])
     const d = new Date().toISOString().split('T')[0]
     const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
@@ -135,172 +141,229 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
   const totalPrice = cart.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title='Tạo đặt bàn & Chọn món đặt trước' maxWidth='max-w-7xl'>
-      <div className='flex flex-col lg:flex-row gap-8 min-h-[600px] max-h-[85vh]'>
+    <Modal isOpen={isOpen} onClose={handleClose} title='Tạo đặt bàn cho khách vãng lai' maxWidth='max-w-6xl'>
+      <div className='flex flex-col min-h-[650px] max-h-[85vh] -mt-4'>
         
-        {/* Left Column: Guest & Reservation Info */}
-        <div className='w-full lg:w-1/3 flex flex-col gap-6 border-r border-border pr-0 lg:pr-8 overflow-y-auto overflow-x-hidden scrollbar-hide'>
-           <div className='space-y-4'>
-              <h3 className='text-lg font-bold flex items-center gap-2'>
-                <div className='bg-primary/10 p-2 rounded-lg'><User className='w-5 h-5 text-primary'/></div>
-                Khách vãng lai
-              </h3>
-
-              <div className='space-y-1.5'>
-                <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Tên khách</label>
-                <Input
-                  placeholder='Ví dụ: Nguyễn Văn A'
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className='h-11'
-                />
-              </div>
-           </div>
-
-           <div className='space-y-4'>
-              <h3 className='text-lg font-bold flex items-center gap-2'>
-                <div className='bg-primary/10 p-2 rounded-lg'><Calendar className='w-5 h-5 text-primary'/></div>
-                Chi tiết đặt chỗ
-              </h3>
-              
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-1.5'>
-                  <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Ngày đến</label>
-                  <Input 
-                    type='date' 
-                    className='h-11' 
-                    value={formData.date} 
-                    onChange={e => {
-                      const newDate = e.target.value
-                      const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
-                      const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(newDate, slot))
-                      setFormData({ ...formData, date: newDate, startTime: nextValidTime || '' })
-                    }} 
-                  />
-                </div>
-                <div className='space-y-1.5'>
-                  <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Giờ đến</label>
-                  <Input type='time' className='h-11' value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} />
-                </div>
-              </div>
-
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-1.5'>
-                  <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Số lượng khách</label>
-                  <div className='relative'>
-                    <Users className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-                    <Input type='number' min={1} max={20} className='pl-9 h-11' value={formData.guestNumber} onChange={e => {
-                      const val = parseInt(e.target.value) || 1
-                      setFormData({ ...formData, guestNumber: Math.min(20, Math.max(1, val)) })
-                    }} />
-                  </div>
-                </div>
-                <div className='space-y-1.5'>
-                  <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Bàn phục vụ</label>
-                  <div className='relative'>
-                    <Hash className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-                    <select
-                      className='w-full h-11 pl-9 rounded-md border border-input bg-card text-sm focus:ring-1 focus:ring-primary outline-none py-2'
-                      value={formData.tableId}
-                      onChange={e => setFormData({ ...formData, tableId: e.target.value })}
-                    >
-                      <option value=''>Chọn bàn</option>
-                      {tables.map((t: any) => (
-                        <option key={t.id} value={t.id}>{t.name} (Sức chứa: {t.capacity})</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className='space-y-1.5'>
-                <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Ghi chú nội bộ</label>
-                <Input placeholder='Yêu cầu đặc biệt...' className='h-11' value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} />
-              </div>
-           </div>
-
-           {/* Summary Section */}
-           <div className='mt-auto pt-6 border-t border-border flex flex-col gap-4 sticky bottom-0 bg-card'>
-              <div className='flex justify-between items-center text-xl'>
-                <span className='font-medium text-muted-foreground'>Tạm tính:</span>
-                <span className='font-black text-primary'>{formatCurrency(totalPrice)}</span>
-              </div>
-              <Button 
-                onClick={() => createMutation.mutate()} 
-                disabled={!guestName.trim() || !formData.tableId || createMutation.isPending}
-                className='w-full h-16 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest'
-              >
-                {createMutation.isPending ? 'Đang khởi tạo...' : 'XÁC NHẬN ĐẶT BÀN'}
-              </Button>
-           </div>
+        {/* Tab Navigation */}
+        <div className='flex border-b border-border bg-muted/10 rounded-t-xl overflow-hidden'>
+           <button 
+             onClick={() => setActiveTab('INFO')}
+             className={clsx(
+               'flex-1 py-4 text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-b-2',
+               activeTab === 'INFO' ? 'border-primary text-primary bg-white shadow-sm' : 'border-transparent text-muted-foreground hover:bg-muted/30'
+             )}
+           >
+              <Info size={16} /> Thông tin khách hàng
+           </button>
+           <button 
+             onClick={() => setActiveTab('MENU')}
+             className={clsx(
+               'flex-1 py-4 text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-b-2',
+               activeTab === 'MENU' ? 'border-primary text-primary bg-white shadow-sm' : 'border-transparent text-muted-foreground hover:bg-muted/30'
+             )}
+           >
+              <ShoppingCart size={16} /> Thực đơn đặt trước
+              {cart.length > 0 && <span className='bg-primary text-white px-2 py-0.5 rounded-full text-[9px]'>{cart.length}</span>}
+           </button>
         </div>
 
-        {/* Right Column: Menu Selection */}
-        <div className='flex-1 flex flex-col gap-6 h-full overflow-hidden'>
-           <div className='flex justify-between items-center'>
-             <div>
-               <h3 className='text-3xl font-black uppercase tracking-tighter'>Thực đơn đặt trước</h3>
-               <p className='text-xs text-muted-foreground tracking-wide font-medium'>Khách có thể đặt món trước để nhà hàng chuẩn bị sớm hơn.</p>
-             </div>
-             <div className='bg-primary/10 text-primary text-xs font-black px-4 py-2 rounded-full uppercase tracking-wider'>
-                {cart.length} món dự kiến
-             </div>
-           </div>
-
-           <div className='flex flex-1 gap-6 overflow-hidden'>
-              {/* Menu List */}
-              <div className='flex-1 h-full overflow-hidden bg-muted/20 border border-border rounded-[2rem] p-5 shadow-inner'>
-                 <MenuSelector onSelectItem={handleSelectItem} />
-              </div>
-
-              {/* Advanced Cart */}
-              <div className='w-80 bg-card border border-border rounded-[2rem] flex flex-col overflow-hidden shadow-2xl'>
-                 <div className='p-6 border-b border-border bg-muted/10 flex items-center justify-between'>
-                    <div className='flex items-center gap-2'>
-                       <Users className='w-4 h-4 text-primary' />
-                       <span className='font-black text-xs uppercase tracking-widest'>Giỏ hàng</span>
-                    </div>
-                    {cart.length > 0 && (
-                      <button onClick={() => setCart([])} className='text-[10px] text-red-500 font-bold uppercase hover:underline'>Dọn sạch</button>
-                    )}
-                 </div>
-                 
-                 <div className='flex-1 overflow-y-auto p-4 space-y-5 scrollbar-thin'>
-                    {cart.length === 0 ? (
-                      <div className='h-full flex flex-col items-center justify-center text-center p-6 opacity-30 gap-4'>
-                         <div className='w-16 h-16 rounded-full border-4 border-dashed border-muted-foreground flex items-center justify-center'>
-                            <Plus className='w-8 h-8 text-muted-foreground' />
-                         </div>
-                         <p className='text-xs font-bold uppercase tracking-wide'>Vui lòng thêm món<br/>từ thực đơn</p>
+        {/* Tab Content */}
+        <div className='flex-1 overflow-hidden flex flex-col p-8'>
+           
+           {/* TAB 1: INFORMATION */}
+           {activeTab === 'INFO' && (
+             <div className='max-w-2xl mx-auto w-full space-y-10 animate-in fade-in slide-in-from-bottom-2'>
+                <div className='space-y-6'>
+                   <h4 className='text-[10px] font-black text-primary uppercase tracking-widest border-b border-primary/20 pb-2 flex items-center gap-2'>
+                      <User size={14} /> Danh tính khách hàng
+                   </h4>
+                   <div className='grid grid-cols-2 gap-8'>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Tên người đại diện <span className='text-red-500'>*</span></label>
+                        <Input
+                          placeholder='Ví dụ: Nguyễn Văn A'
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          className='h-12 bg-slate-50/50 border-slate-200 focus:ring-1 focus:ring-primary rounded-xl'
+                        />
                       </div>
-                    ) : cart.map(item => (
-                      <div key={`${item.type}-${item.id}`} className='group animate-in slide-in-from-right-2 fade-in'>
-                         <div className='flex justify-between items-start mb-2'>
-                            <span className='text-sm font-bold line-clamp-2 flex-1 leading-tight group-hover:text-primary transition-colors'>{item.name}</span>
-                            <button onClick={() => removeItem(item.id, item.type)} className='ml-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all'>
-                               <Trash2 className='w-3.5 h-3.5' />
-                            </button>
-                         </div>
-                         <div className='flex justify-between items-center'>
-                            <span className='text-sm text-primary font-black'>{formatCurrency(item.price)}</span>
-                            <div className='flex items-center gap-3 bg-muted rounded-full px-3 py-1.5 shadow-sm'>
-                               <button onClick={() => updateQuantity(item.id, item.type, -1)} className='hover:text-primary active:scale-75 transition-transform'><Minus className='w-3 h-3'/></button>
-                               <span className='text-xs w-4 text-center font-black'>{item.quantity}</span>
-                               <button onClick={() => updateQuantity(item.id, item.type, 1)} className='hover:text-primary active:scale-75 transition-transform'><Plus className='w-3 h-3'/></button>
-                            </div>
-                         </div>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Số điện thoại <span className='text-red-500'>*</span></label>
+                        <Input
+                          placeholder='Ví dụ: 0912345678'
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          className='h-12 bg-slate-50/50 border-slate-200 focus:ring-1 focus:ring-primary rounded-xl'
+                        />
                       </div>
-                    ))}
-                 </div>
-
-                 {cart.length > 0 && (
-                   <div className='p-6 bg-primary/5 border-t border-border'>
-                      <p className='text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-1'>Thành tiền món</p>
-                      <p className='text-2xl font-black text-primary'>{formatCurrency(totalPrice)}</p>
                    </div>
-                 )}
-              </div>
-           </div>
+                </div>
+
+                <div className='space-y-6'>
+                   <h4 className='text-[10px] font-black text-primary uppercase tracking-widest border-b border-primary/20 pb-2 flex items-center gap-2'>
+                      <Calendar size={14} /> Lịch hẹn & Vị trí
+                   </h4>
+                   <div className='grid grid-cols-2 gap-8'>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Ngày đến</label>
+                        <Input 
+                          type='date' 
+                          className='h-12 bg-slate-50/50 border-slate-200 rounded-xl' 
+                          value={formData.date} 
+                          onChange={e => {
+                            const newDate = e.target.value
+                            const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+                            const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(newDate, slot))
+                            setFormData({ ...formData, date: newDate, startTime: nextValidTime || '' })
+                          }} 
+                        />
+                      </div>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Giờ đến</label>
+                        <Input 
+                          type='time' 
+                          className='h-12 bg-slate-50/50 border-slate-200 rounded-xl' 
+                          value={formData.startTime} 
+                          onChange={e => setFormData({ ...formData, startTime: e.target.value })} 
+                        />
+                      </div>
+                   </div>
+
+                   <div className='grid grid-cols-2 gap-8'>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Số người tham gia</label>
+                        <div className='relative'>
+                           <Users className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400' />
+                           <Input 
+                             type='number' 
+                             className='h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl' 
+                             min={1}
+                             value={formData.guestNumber} 
+                             onChange={e => {
+                               const val = parseInt(e.target.value) || 1
+                               setFormData({ ...formData, guestNumber: Math.min(20, Math.max(1, val)) })
+                             }} 
+                           />
+                        </div>
+                      </div>
+                      <div className='space-y-2'>
+                        <label className='text-xs font-bold text-slate-500'>Chọn bàn <span className='text-red-500'>*</span></label>
+                        <div className='relative'>
+                           <Hash className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400' />
+                           <select
+                              className='w-full h-12 pl-11 pr-4 bg-slate-50/50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-1 focus:ring-primary appearance-none'
+                              value={formData.tableId}
+                              onChange={e => setFormData({ ...formData, tableId: e.target.value })}
+                           >
+                              <option value=''>Trong danh sách bàn khả dụng...</option>
+                              {tables.map((t: any) => (
+                                <option key={t.id} value={t.id}>{t.name} (Sức chứa: {t.capacity} người)</option>
+                              ))}
+                           </select>
+                        </div>
+                      </div>
+                   </div>
+
+                   <div className='space-y-2'>
+                      <label className='text-xs font-bold text-slate-500'>Yêu cầu đặc biệt (Ghi chú)</label>
+                      <Input 
+                        placeholder='Ví dụ: Sinh nhật, bàn cửa sổ, không ăn cay...' 
+                        className='h-12 bg-slate-50/50 border-slate-200 rounded-xl' 
+                        value={formData.note} 
+                        onChange={e => setFormData({ ...formData, note: e.target.value })} 
+                      />
+                   </div>
+                </div>
+
+                <div className='pt-10 flex justify-center'>
+                   <Button 
+                      onClick={() => setActiveTab('MENU')}
+                      className='h-14 px-12 gap-3 bg-primary hover:bg-primary/90 text-sm font-black rounded-full shadow-lg shadow-primary/20 transition-all hover:scale-105 uppercase tracking-widest'
+                   >
+                      Tiếp theo: Chọn món <ChevronRight size={18} />
+                   </Button>
+                </div>
+             </div>
+           )}
+
+           {/* TAB 2: MENU SELECTION */}
+           {activeTab === 'MENU' && (
+             <div className='flex-1 flex gap-8 overflow-hidden animate-in fade-in slide-in-from-right-4'>
+                {/* Product List Selector */}
+                <div className='flex-1 h-full bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden p-6 shadow-inner'>
+                   <div className='mb-4 flex justify-between items-center px-2'>
+                      <h5 className='text-[10px] font-black uppercase text-primary tracking-[0.2em]'>Danh sách thực đơn</h5>
+                      <span className='text-[10px] font-bold text-slate-400 italic'>Click để chọn món vào giỏ hàng</span>
+                   </div>
+                   <div className='h-[calc(100%-2rem)]'>
+                      <MenuSelector onSelectItem={handleSelectItem} />
+                   </div>
+                </div>
+
+                {/* Selected Items Cart */}
+                <div className='w-80 flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl'>
+                   <div className='p-6 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between'>
+                      <div className='flex items-center gap-2'>
+                        <ShoppingCart className='w-4 h-4 text-primary' />
+                        <span className='text-[10px] font-black uppercase tracking-widest text-slate-600'>Đơn đặt trước</span>
+                      </div>
+                      {cart.length > 0 && (
+                        <button onClick={() => setCart([])} className='text-[9px] font-black uppercase text-red-500 hover:underline'>Xoá hết</button>
+                      )}
+                   </div>
+
+                   <div className='flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin'>
+                      {cart.length === 0 ? (
+                        <div className='h-full flex flex-col items-center justify-center text-center p-8 opacity-20 filter grayscale scale-90'>
+                           <ShoppingCart className='w-12 h-12 mb-4 text-slate-400' />
+                           <p className='text-[10px] font-black uppercase tracking-widest leading-loose'>Chưa có món ăn<br/>được chọn</p>
+                        </div>
+                      ) : cart.map(item => (
+                        <div key={`${item.type}-${item.id}`} className='bg-slate-50/50 p-3 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:border-primary/20'>
+                           <div className='flex justify-between items-start gap-2 mb-2'>
+                              <p className='text-xs font-bold text-slate-800 line-clamp-1 flex-1'>{item.name}</p>
+                              <button onClick={() => removeItem(item.id, item.type)} className='text-slate-300 hover:text-red-500'>
+                                 <Trash2 size={12} />
+                              </button>
+                           </div>
+                           <div className='flex justify-between items-center'>
+                              <span className='text-[11px] font-black text-primary'>{formatCurrency(item.price)}</span>
+                              <div className='flex items-center gap-2 bg-white rounded-lg border border-slate-100 p-1'>
+                                 <button onClick={() => updateQuantity(item.id, item.type, -1)} className='w-5 h-5 flex items-center justify-center hover:text-primary'><Minus size={10}/></button>
+                                 <span className='text-xs font-black min-w-[14px] text-center'>{item.quantity}</span>
+                                 <button onClick={() => updateQuantity(item.id, item.type, 1)} className='w-5 h-5 flex items-center justify-center hover:text-primary'><Plus size={10}/></button>
+                              </div>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+
+                   <div className='p-6 bg-primary/5 border-t border-slate-100 space-y-4'>
+                      <div className='flex justify-between items-end'>
+                         <span className='text-[9px] font-black uppercase text-slate-400'>Tổng tiền hàng</span>
+                         <span className='text-xl font-black text-primary tracking-tight'>{formatCurrency(totalPrice)}</span>
+                      </div>
+                      <div className='flex gap-3'>
+                         <Button 
+                            variant='outline'
+                            onClick={() => setActiveTab('INFO')}
+                            className='flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest border-slate-200'
+                         >
+                            <ChevronLeft size={14} /> Quay lại
+                         </Button>
+                         <Button 
+                            onClick={() => createMutation.mutate()}
+                            disabled={!guestName.trim() || !guestPhone.trim() || !formData.tableId || createMutation.isPending}
+                            className='flex-[2] h-12 rounded-xl bg-primary shadow-lg shadow-primary/20 text-[10px] font-black uppercase tracking-[0.2em] transition-transform active:scale-95'
+                         >
+                            {createMutation.isPending ? 'Đang gửi...' : 'HOÀN TẤT'}
+                         </Button>
+                      </div>
+                   </div>
+                </div>
+             </div>
+           )}
+
         </div>
       </div>
     </Modal>

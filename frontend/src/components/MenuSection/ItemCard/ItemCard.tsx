@@ -4,7 +4,7 @@ import { useFavoriteStore } from '@/stores/useFavoriteStore'
 import type { MenuCardItem } from '@/types/item.type'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
 import { Eye, Heart } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 
 interface Props {
   item: MenuCardItem
@@ -24,7 +24,7 @@ const ItemCard = ({ item, isCombo = false, onViewDetails }: Props) => {
     e.stopPropagation()
 
     if (!isAuthenticated) {
-      toast.info('Vui lòng đăng nhập để sử dụng tính năng này')
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này')
       return
     }
 

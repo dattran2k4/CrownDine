@@ -3,6 +3,7 @@ package com.crowndine.service.impl.reservation;
 import com.crowndine.common.enums.EOrderStatus;
 import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ETableStatus;
+import com.crowndine.common.enums.ERole;
 import com.crowndine.common.utils.CodeUtils;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.request.StaffReservationCreateRequest;
@@ -50,7 +51,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     public ReservationCreateResponse createReservationByCustomer(String username, ReservationCreateRequest request) {
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User customer = getUserByUserName(username);
-        return createReservationInternal(request, customer, null, null, EReservationStatus.PENDING, startDateTime);
+        return createReservationInternal(request, customer, null, null, null, EReservationStatus.PENDING, startDateTime);
     }
 
     @Override
@@ -59,7 +60,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User staff = getUserByUserName(staffUsername);
 
-        return createReservationInternal(request, null, staff, request.getGuestName().trim(), EReservationStatus.CONFIRMED, startDateTime);
+        return createReservationInternal(request, null, staff, request.getGuestName().trim(), request.getGuestPhone(), EReservationStatus.CONFIRMED, startDateTime);
     }
 
     @Override
@@ -220,13 +221,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private void validateReservationForUser(Reservation reservation, User user) {
-        if (reservation.getUser() == null || !reservation.getUser().getId().equals(user.getId())) {
+        boolean isOwner = reservation.getUser() != null && reservation.getUser().getId().equals(user.getId());
+        boolean hasPrivilege = user.getRoles().stream()
+                .anyMatch(role -> role.getName() == ERole.STAFF || role.getName() == ERole.ADMIN);
+
+        if (!isOwner && !hasPrivilege) {
             throw new InvalidDataException("reservation.access_denied");
         }
     }
 
     private ReservationCreateResponse createReservationInternal(ReservationCreateRequest request, User customer,
-                                                                User createdByStaff, String guestName,
+                                                                User createdByStaff, String guestName, String guestPhone,
                                                                 EReservationStatus initialStatus, LocalDateTime startDateTime) {
         LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
         reservationTimePolicy.validateStartTime(startDateTime);
@@ -246,6 +251,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.setUser(customer);
         reservation.setCreatedByStaff(createdByStaff);
         reservation.setGuestName(guestName);
+        reservation.setGuestPhone(guestPhone);
         reservation.setCode(CodeUtils.generateReservationCode());
         reservation.setTable(table);
         applyInitialStatus(reservation, initialStatus);

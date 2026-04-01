@@ -136,6 +136,7 @@ CREATE TABLE `reservations` (
                                 `date` date DEFAULT NULL,
                                 `end_time` time DEFAULT NULL,
                                 `guest_number` int DEFAULT NULL,
+                                `guest_phone` VARCHAR(15) NULL,
                                 `start_time` time DEFAULT NULL,
                                 `created_at` datetime(6) DEFAULT NULL,
                                 `customer_id` bigint DEFAULT NULL,

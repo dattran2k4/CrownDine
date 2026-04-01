@@ -12,10 +12,11 @@ import type { Table } from '@/types/table.type'
 
 interface ReservationCalendarViewProps {
   onOpenCreateModal: () => void
+  onSelectReservation: (res: StaffReservationResponse) => void
 }
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8) // 08:00 to 22:00
-const COLUMN_WIDTH = 120 // px per hour
+const COLUMN_WIDTH = 80 // px per hour
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   CONFIRMED: { label: 'Đã xếp bàn', color: 'bg-green-500' },
@@ -25,7 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Đã hủy', color: 'bg-red-500' }
 }
 
-const ReservationCalendarView = ({ onOpenCreateModal }: ReservationCalendarViewProps) => {
+const ReservationCalendarView = ({ onOpenCreateModal, onSelectReservation }: ReservationCalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -101,7 +102,7 @@ const ReservationCalendarView = ({ onOpenCreateModal }: ReservationCalendarViewP
   if (isTablesLoading) return <div className='p-10 text-center'>Đang tải sơ đồ bàn...</div>
 
   return (
-    <div className='flex flex-col h-full bg-white text-slate-800 rounded-xl overflow-hidden border border-slate-200 shadow-sm'>
+    <div className='flex flex-col h-full bg-white text-slate-800 overflow-hidden'>
       {/* 1. Sub-Header Toolbar */}
       <div className='flex items-center justify-between p-3 bg-slate-50 border-b border-slate-200'>
         <div className='flex items-center gap-4'>
@@ -153,7 +154,7 @@ const ReservationCalendarView = ({ onOpenCreateModal }: ReservationCalendarViewP
       </div>
 
       {/* 2. Legend / Filters */}
-      <div className='flex flex-wrap items-center gap-6 px-6 py-2.5 bg-white border-b border-slate-100 text-[9px] font-black uppercase text-slate-400 tracking-wider'>
+      <div className='flex flex-wrap items-center gap-6 px-6 py-2.5 bg-white border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-wider shadow-sm z-20'>
          {Object.entries(STATUS_CONFIG).map(([key, config]) => (
             <div key={key} className='flex items-center gap-2'>
                <div className={clsx('w-3 h-3 rounded-sm', config.color)}></div>
@@ -199,7 +200,7 @@ const ReservationCalendarView = ({ onOpenCreateModal }: ReservationCalendarViewP
                   const tableReservations = (filteredReservations || []).filter((r: StaffReservationResponse) => r.tableName === table.name)
                   
                   return (
-                    <div key={table.id} className='flex border-b border-slate-200 group hover:bg-white transition-colors h-14'>
+                    <div key={table.id} className='flex border-b border-slate-200 group hover:bg-white transition-colors h-13'>
                        {/* Left Table Label */}
                        <div className='w-48 flex-shrink-0 bg-white p-3 font-semibold text-sm border-r border-slate-200 flex items-center gap-2 shadow-sm'>
                           <div className='w-2 h-2 rounded-full bg-slate-200 group-hover:bg-primary transition-colors'></div>
@@ -225,6 +226,7 @@ const ReservationCalendarView = ({ onOpenCreateModal }: ReservationCalendarViewP
                              return (
                                <div 
                                  key={res.id}
+                                 onClick={() => onSelectReservation(res)}
                                  style={{ 
                                     left: `${offset}px`,
                                     width: `${width - 4}px`,

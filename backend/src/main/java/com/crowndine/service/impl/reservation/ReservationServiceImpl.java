@@ -130,6 +130,7 @@ public class ReservationServiceImpl implements ReservationService {
             response.setEmail(reservation.getUser().getEmail());
         } else {
             response.setCustomerName(reservation.getGuestName());
+            response.setPhone(reservation.getGuestPhone());
         }
         response.setGuestName(reservation.getGuestName());
         response.setCreatedByStaffName(reservation.getCreatedByStaff() != null ? reservation.getCreatedByStaff().getFullName() : null);

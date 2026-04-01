@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { PlusCircle, Search, Check } from 'lucide-react'
 import CreateReservationModal from './components/CreateReservationModal'
 import ReservationCalendarView from './components/ReservationCalendarView'
+import ReservationDetailModal from './components/ReservationDetailModal'
 import { Input } from '@/components/ui/input'
 
 type ViewMode = 'LIST' | 'CALENDAR'
@@ -32,6 +33,7 @@ const ReservationList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState<StaffReservationResponse | null>(null)
 
   const { data } = useQuery({
     queryKey: ['staff-reservations', statusFilter],
@@ -73,9 +75,9 @@ const ReservationList = () => {
   })
 
   return (
-    <div className='flex min-h-screen bg-slate-50/50'>
+    <div className='flex min-h-screen bg-white'>
       {/* 1. SIDEBAR (Left) */}
-      <aside className='w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col flex-shrink-0'>
+      <aside className='w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col flex-shrink-0 z-30'>
          <div className='p-6 border-b border-slate-100 bg-slate-50/10'>
             <h2 className='text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2'>
                <Search size={14} /> Bộ lọc nâng cao
@@ -126,16 +128,16 @@ const ReservationList = () => {
 
       {/* 2. MAIN CONTENT (Right) */}
       <main className='flex-1 flex flex-col min-w-0'>
-        {/* Dark Blue Header Dashboard */}
-        <header className='h-14 bg-[#003C71] flex items-center justify-between px-6 text-white shadow-md z-40'>
-           <div className='flex items-center gap-6 h-full'>
-              <h1 className='text-sm font-black tracking-widest uppercase'>Đặt bàn</h1>
-              <nav className='flex h-full pt-2'>
+        {/* Workspace Dashboard Header (Dark Blue) */}
+        <header className='h-14 bg-[#003C71] flex items-center justify-between text-white shadow-md z-40 px-0'>
+           <div className='flex items-center h-full'>
+              <h1 className='text-sm font-black tracking-widest uppercase px-6 border-r border-white/10 h-full flex items-center'>Đặt bàn</h1>
+              <nav className='flex h-full'>
                  <button 
                    onClick={() => setViewMode('CALENDAR')}
                    className={clsx(
-                     'px-6 h-full font-bold text-xs uppercase tracking-wider transition-all rounded-t-lg flex items-center gap-2',
-                     viewMode === 'CALENDAR' ? 'bg-slate-50 text-[#003C71]' : 'text-white/60 hover:text-white'
+                     'px-8 h-full font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border-b-2',
+                     viewMode === 'CALENDAR' ? 'bg-white/10 border-white text-white shadow-inner' : 'border-transparent text-white/40 hover:text-white/80'
                    )}
                  >
                    Theo lịch
@@ -143,8 +145,8 @@ const ReservationList = () => {
                  <button 
                     onClick={() => setViewMode('LIST')}
                     className={clsx(
-                      'px-6 h-full font-bold text-xs uppercase tracking-wider transition-all rounded-t-lg flex items-center gap-2',
-                      viewMode === 'LIST' ? 'bg-slate-50 text-[#003C71]' : 'text-white/60 hover:text-white'
+                      'px-8 h-full font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border-b-2',
+                      viewMode === 'LIST' ? 'bg-white/10 border-white text-white shadow-inner' : 'border-transparent text-white/40 hover:text-white/80'
                     )}
                  >
                    Theo danh sách
@@ -152,19 +154,22 @@ const ReservationList = () => {
               </nav>
            </div>
            
-           <div className='flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider'>
+           <div className='flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider pr-6'>
               <span className='opacity-60'>Chi nhánh trung tâm</span>
               <div className='w-px h-3 bg-white/20'></div>
               <span className='bg-primary/20 px-3 py-1 rounded-full border border-white/10'>Staff: {user?.firstName}</span>
            </div>
         </header>
 
-        {/* Workspace Panel */}
-        <div className='flex-1 p-6 overflow-hidden flex flex-col'>
+        {/* Workspace Panel - No padding for Edge-to-Edge look */}
+        <div className='flex-1 overflow-hidden flex flex-col bg-white'>
            {viewMode === 'CALENDAR' ? (
-             <ReservationCalendarView onOpenCreateModal={() => setIsCreateModalOpen(true)} />
+             <ReservationCalendarView 
+               onOpenCreateModal={() => setIsCreateModalOpen(true)} 
+               onSelectReservation={(res) => setSelectedReservation(res)}
+             />
            ) : (
-             <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full'>
+             <div className='bg-white flex-1 overflow-hidden flex flex-col h-full border-b border-slate-200'>
                 {/* Table Top Actions */}
                 <div className='p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30'>
                    <div className='flex items-center gap-3'>
@@ -199,7 +204,11 @@ const ReservationList = () => {
                       </thead>
                       <tbody>
                          {filteredReservations.map((res: StaffReservationResponse) => (
-                            <tr key={res.id} className='border-b border-slate-100 hover:bg-slate-50/50 transition-colors group'>
+                            <tr 
+                               key={res.id} 
+                               onClick={() => setSelectedReservation(res)}
+                               className='border-b border-slate-100 hover:bg-slate-50/50 transition-colors group cursor-pointer'
+                            >
                                <td className='p-4'><input type='checkbox' className='rounded border-slate-300' /></td>
                                <td className='p-4 font-bold text-primary text-sm'>#{res.code?.substring(0, 8).toUpperCase()}</td>
                                <td className='p-4 text-xs font-semibold text-slate-500'>
@@ -282,6 +291,15 @@ const ReservationList = () => {
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })}
+      />
+
+      <ReservationDetailModal
+        isOpen={!!selectedReservation}
+        onClose={() => setSelectedReservation(null)}
+        reservation={selectedReservation}
+        onCheckIn={(res) => checkInMutation.mutate(res)}
+        onCancel={(id) => cancelMutation.mutate(id)}
+        isMutating={checkInMutation.isPending || cancelMutation.isPending}
       />
     </div>
   )

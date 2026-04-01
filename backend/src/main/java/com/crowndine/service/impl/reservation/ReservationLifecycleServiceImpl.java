@@ -51,7 +51,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     public ReservationCreateResponse createReservationByCustomer(String username, ReservationCreateRequest request) {
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User customer = getUserByUserName(username);
-        return createReservationInternal(request, customer, null, null, EReservationStatus.PENDING, startDateTime);
+        return createReservationInternal(request, customer, null, null, null, EReservationStatus.PENDING, startDateTime);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User staff = getUserByUserName(staffUsername);
 
-        return createReservationInternal(request, null, staff, request.getGuestName().trim(), EReservationStatus.CONFIRMED, startDateTime);
+        return createReservationInternal(request, null, staff, request.getGuestName().trim(), request.getGuestPhone(), EReservationStatus.CONFIRMED, startDateTime);
     }
 
     @Override
@@ -231,7 +231,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private ReservationCreateResponse createReservationInternal(ReservationCreateRequest request, User customer,
-                                                                User createdByStaff, String guestName,
+                                                                User createdByStaff, String guestName, String guestPhone,
                                                                 EReservationStatus initialStatus, LocalDateTime startDateTime) {
         LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
         reservationTimePolicy.validateStartTime(startDateTime);
@@ -251,6 +251,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.setUser(customer);
         reservation.setCreatedByStaff(createdByStaff);
         reservation.setGuestName(guestName);
+        reservation.setGuestPhone(guestPhone);
         reservation.setCode(CodeUtils.generateReservationCode());
         reservation.setTable(table);
         applyInitialStatus(reservation, initialStatus);

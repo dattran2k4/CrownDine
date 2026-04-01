@@ -44,12 +44,12 @@ const MenuFilter = ({
       {/* 1. Search Box */}
       <div>
         <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
-          <Search size={20} className='text-primary' /> Search
+          <Search size={20} className='text-primary' /> Tìm kiếm
         </h3>
         <div className='relative'>
           <input
             type='text'
-            placeholder='Search food name...'
+            placeholder='Tìm tên món ăn...'
             value={searchQuery}
             onChange={onSearchChange}
             className='bg-input border-border focus:border-primary focus:ring-primary w-full rounded-lg border py-2 pr-4 pl-10 transition-all outline-none focus:ring-1'
@@ -61,25 +61,25 @@ const MenuFilter = ({
       {/* 2. Sorting */}
       <div>
         <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
-          <ArrowUpDown size={20} className='text-primary' /> Sort By
+          <ArrowUpDown size={20} className='text-primary' /> Sắp xếp
         </h3>
         <select
           className='bg-input border-border focus:border-primary cursor-pointer w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all focus:ring-1 focus:ring-primary'
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
         >
-          <option value='default'>Recommended</option>
-          <option value='price_asc'>Price: Low to High</option>
-          <option value='price_desc'>Price: High to Low</option>
-          <option value='rating'>Top Rated</option>
-          <option value='sold'>Best Sellers</option>
+          <option value='default'>Đề xuất</option>
+          <option value='price_asc'>Giá: Thấp đến Cao</option>
+          <option value='price_desc'>Giá: Cao đến Thấp</option>
+          <option value='rating'>Đánh giá cao</option>
+          <option value='sold'>Bán chạy nhất</option>
         </select>
       </div>
 
       {/* 3. Categories */}
       <div>
         <h3 className='mb-4 flex items-center gap-2 text-lg font-bold'>
-          <SlidersHorizontal size={20} className='text-primary' /> Categories
+          <SlidersHorizontal size={20} className='text-primary' /> Danh mục
         </h3>
         <div className='space-y-2'>
           {categories.map((cat) => {
@@ -124,7 +124,7 @@ const MenuFilter = ({
 
       {/* 4. Price Filter (Improved Double Range Slider) */}
       <div>
-        <h3 className='mb-6 text-lg font-bold'>Price Range</h3>
+        <h3 className='mb-6 text-lg font-bold'>Khoảng giá</h3>
         <div className='relative h-6 w-full'>
           {/* Custom Track */}
           <div className='absolute top-2 left-0 h-1.5 w-full rounded-full bg-gray-200'></div>

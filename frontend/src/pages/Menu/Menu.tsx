@@ -23,7 +23,7 @@ const ITEMS_PER_PAGE = 12
 export default function Menu() {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['All'])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['Tất cả'])
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]) // Will be updated by useEffect
   const [sortBy, setSortBy] = useState('default')
 
@@ -68,12 +68,12 @@ export default function Menu() {
     [combos]
   )
 
-  const categoryNames = useMemo(() => ['All', ...categories.map((c) => c.name), 'Combo'], [categories])
+  const categoryNames = useMemo(() => ['Tất cả', ...categories.map((c) => c.name), 'Combo'], [categories])
 
   const filteredItems = useMemo(() => {
     return itemsWithCategory.filter((item) => {
-      const matchCategory =
-        selectedCategories.includes('All') || (item.category && selectedCategories.includes(item.category))
+        const matchCategory =
+          selectedCategories.includes('Tất cả') || (item.category && selectedCategories.includes(item.category))
       const matchSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       const currentPrice = Number(item.priceAfterDiscount ?? item.price)
       const matchPrice =
@@ -99,7 +99,7 @@ export default function Menu() {
     return combosAsCardItems.filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase())
 
-      let matchCategory = selectedCategories.includes('All') || selectedCategories.includes('Combo')
+      let matchCategory = selectedCategories.includes('Tất cả') || selectedCategories.includes('Combo')
 
       const currentPrice = Number(c.priceAfterDiscount ?? c.price)
       const matchPrice =
@@ -165,9 +165,9 @@ export default function Menu() {
   // Reset to first page when filtering
   const handleCategoryChange = (cat: string) => {
     setSelectedCategories((prev) => {
-      if (cat === 'All') return ['All']
-      const newCats = prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev.filter((c) => c !== 'All'), cat]
-      return newCats.length === 0 ? ['All'] : newCats
+      if (cat === 'Tất cả') return ['Tất cả']
+      const newCats = prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev.filter((c) => c !== 'Tất cả'), cat]
+      return newCats.length === 0 ? ['Tất cả'] : newCats
     })
     setCurrentPage(1)
   }
@@ -194,10 +194,10 @@ export default function Menu() {
     <div className='bg-background text-foreground min-h-screen px-4 pt-10 pb-20 md:px-8'>
       {/* Header Page */}
       <div className='mx-auto mb-10 max-w-7xl text-center'>
-        <p className='text-primary mb-2 text-sm font-bold tracking-widest uppercase'>• Order Now</p>
-        <h1 className='mb-4 text-4xl font-bold md:text-5xl'>Discover Our Menu</h1>
+        <p className='text-primary mb-2 text-sm font-bold tracking-widest uppercase'>• Đặt món ngay</p>
+        <h1 className='mb-4 text-4xl font-bold md:text-5xl'>Khám phá thực đơn</h1>
         <p className='text-muted-foreground mx-auto max-w-2xl'>
-          Explore our wide range of delicious dishes, from fresh starters to exquisite main courses.
+          Thưởng thức thế giới ẩm thực phong phú với các món ăn hấp dẫn, từ các món khai vị tươi ngon đến các món chính đặc sắc.
         </p>
       </div>
 
@@ -222,7 +222,7 @@ export default function Menu() {
         <div className='mb-6 lg:hidden'>
           <input
             type='text'
-            placeholder='Search food...'
+            placeholder='Tìm món ăn...'
             className='border-border bg-card w-full rounded-lg border p-3'
             value={searchQuery}
             onChange={handleSearchQueryChange}
@@ -244,11 +244,11 @@ export default function Menu() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value='default'>Sort by: Recommended</option>
-              <option value='price_asc'>Price: Low to High</option>
-              <option value='price_desc'>Price: High to Low</option>
-              <option value='rating'>Top Rated</option>
-              <option value='sold'>Best Sellers</option>
+              <option value='default'>Sắp xếp: Đề xuất</option>
+              <option value='price_asc'>Giá: Thấp đến Cao</option>
+              <option value='price_desc'>Giá: Cao đến Thấp</option>
+              <option value='rating'>Đánh giá cao</option>
+              <option value='sold'>Bán chạy nhất</option>
             </select>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function Menu() {
         {/* --- RIGHT COLUMN: GRID ITEMS + COMBOS --- */}
         <div className='lg:col-span-3'>
           <div className='mb-6 flex items-center justify-between'>
-            <p className='text-muted-foreground'>Showing {displayList.length} results</p>
+            <p className='text-muted-foreground'>Hiển thị {displayList.length} kết quả</p>
           </div>
           {paginatedList.length > 0 ? (
             <>
@@ -315,17 +315,17 @@ export default function Menu() {
             </>
           ) : (
             <div className='bg-card/50 border-border rounded-xl border border-dashed py-20 text-center'>
-              <p className='text-muted-foreground text-xl font-bold'>No items found</p>
-              <p className='text-muted-foreground mt-2 text-sm'>Try adjusting your filters or search query.</p>
+              <p className='text-muted-foreground text-xl font-bold'>Không tìm thấy món ăn nào</p>
+              <p className='text-muted-foreground mt-2 text-sm'>Vui lòng điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.</p>
               <button
                 onClick={() => {
                   setSearchQuery('')
-                  setSelectedCategories(['All'])
+                  setSelectedCategories(['Tất cả'])
                   setPriceRange([0, maxPrice])
                 }}
                 className='text-primary mt-4 font-bold hover:underline'
               >
-                Clear all filters
+                Xóa tất cả bộ lọc
               </button>
             </div>
           )}

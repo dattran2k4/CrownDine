@@ -233,6 +233,13 @@ VALUES (2, 1, NOW(), NOW()),
        (3, 1, NOW(), NOW());
 
 
+INSERT INTO restaurant_tables (id, name, capacity, status, created_at, updated_at)
+VALUES (1, 'Bàn 1', 4, 'AVAILABLE', NOW(), NOW()),
+       (2, 'Bàn 2', 4, 'AVAILABLE', NOW(), NOW()),
+       (3, 'Bàn 3', 4, 'AVAILABLE', NOW(), NOW()),
+       (4, 'Bàn 4', 4, 'AVAILABLE', NOW(), NOW());
+
+
 -- STANDALONE ORDERS
 INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at) VALUES
 (1, 1, NULL, 1, NULL, 328000.00, 0, 328000.00, 'COMPLETED', NOW(), NOW()),
@@ -249,7 +256,7 @@ INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id
 (6, 2, NULL, 4, NULL, 320000.00, 0, 320000.00, 'COMPLETED', CONCAT(CURDATE(), ' 15:20:00'), CONCAT(CURDATE(), ' 15:20:00')),
 (7, 3, NULL, 1, NULL, 850000.00, 0, 850000.00, 'COMPLETED', CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),
 (8, 1, NULL, 2, NULL, 620000.00, 0, 620000.00, 'COMPLETED', CONCAT(CURDATE(), ' 21:10:00'), CONCAT(CURDATE(), ' 21:10:00')),
-(9, 2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'COMPLETED',    CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
+(9, 2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'COMPLETED', CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
 
 -- 2. HÔM QUA (YESTERDAY): Các mốc thời gian từ 8g-22g
 INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, status, created_at, updated_at) VALUES

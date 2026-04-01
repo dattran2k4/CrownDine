@@ -9,7 +9,7 @@ import tableApi from '@/apis/table.api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import MenuSelector from '@/components/MenuSelector/MenuSelector'
 import type { MenuCardItem } from '@/types/item.type'
-import { formatCurrency } from '@/utils/utils'
+import { formatCurrency, generateTimeSlots, isDateTimeInPast } from '@/utils/utils'
 import clsx from 'clsx'
 
 interface CreateReservationModalProps {
@@ -35,12 +35,18 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
   const [guestPhone, setGuestPhone] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    startTime: '18:00',
-    guestNumber: 2,
-    tableId: '',
-    note: ''
+  const [formData, setFormData] = useState(() => {
+    const d = new Date().toISOString().split('T')[0]
+    const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+    const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(d, slot))
+    
+    return {
+      date: d,
+      startTime: nextValidTime || '',
+      guestNumber: 2,
+      tableId: '',
+      note: ''
+    }
   })
 
   // --- Queries ---
@@ -120,9 +126,12 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
     setGuestName('')
     setGuestPhone('')
     setCart([])
+    const d = new Date().toISOString().split('T')[0]
+    const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+    const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(d, slot))
     setFormData({
-      date: new Date().toISOString().split('T')[0],
-      startTime: '18:00',
+      date: d,
+      startTime: nextValidTime || '',
       guestNumber: 2,
       tableId: '',
       note: ''
@@ -201,7 +210,12 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
                           type='date' 
                           className='h-12 bg-slate-50/50 border-slate-200 rounded-xl' 
                           value={formData.date} 
-                          onChange={e => setFormData({ ...formData, date: e.target.value })} 
+                          onChange={e => {
+                            const newDate = e.target.value
+                            const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+                            const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(newDate, slot))
+                            setFormData({ ...formData, date: newDate, startTime: nextValidTime || '' })
+                          }} 
                         />
                       </div>
                       <div className='space-y-2'>
@@ -225,7 +239,10 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
                              className='h-12 pl-11 bg-slate-50/50 border-slate-200 rounded-xl' 
                              min={1}
                              value={formData.guestNumber} 
-                             onChange={e => setFormData({ ...formData, guestNumber: parseInt(e.target.value) })} 
+                             onChange={e => {
+                               const val = parseInt(e.target.value) || 1
+                               setFormData({ ...formData, guestNumber: Math.min(20, Math.max(1, val)) })
+                             }} 
                            />
                         </div>
                       </div>

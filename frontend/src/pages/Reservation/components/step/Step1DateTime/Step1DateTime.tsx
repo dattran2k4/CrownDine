@@ -22,14 +22,11 @@ const Step1DateTime = ({
   plannedEndTime,
   timeSlots
 }: Props) => {
-  // Reset startTime nếu giờ hiện tại đã qua khi date thay đổi
+  // Tự động set giờ về thời gian khả dụng đầu tiên (vd: 09:00 cho ngày trong tương lai) khi đổi ngày
   useEffect(() => {
-    if (isDateTimeInPast(date, startTime)) {
-      const nextValidTime = timeSlots.find((slot) => !isDateTimeInPast(date, slot))
-
-      if (nextValidTime) {
-        setStartTime(nextValidTime)
-      }
+    const nextValidTime = timeSlots.find((slot) => !isDateTimeInPast(date, slot))
+    if (nextValidTime) {
+      setStartTime(nextValidTime)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, timeSlots])
@@ -45,14 +42,16 @@ const Step1DateTime = ({
           <div className='flex w-fit items-center gap-4 rounded-lg border bg-white p-1'>
             <button
               onClick={() => setGuests(Math.max(1, guests - 1))}
-              className='h-10 w-10 rounded text-lg font-bold hover:bg-gray-100'
+              disabled={guests <= 1}
+              className='h-10 w-10 rounded text-lg font-bold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
             >
               -
             </button>
             <span className='w-12 text-center text-xl font-bold'>{guests}</span>
             <button
-              onClick={() => setGuests(guests + 1)}
-              className='h-10 w-10 rounded text-lg font-bold hover:bg-gray-100'
+              onClick={() => setGuests(Math.min(20, guests + 1))}
+              disabled={guests >= 20}
+              className='h-10 w-10 rounded text-lg font-bold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
             >
               +
             </button>

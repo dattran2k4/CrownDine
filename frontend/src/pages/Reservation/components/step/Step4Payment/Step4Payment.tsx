@@ -2,6 +2,7 @@ import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import { formatCurrency } from '@/utils/utils'
 import { CreditCard, XCircle, Utensils, Loader2, Info } from 'lucide-react'
 import type { OrderDetailResponse } from '@/types/reservation.type'
+import { toast } from 'react-toastify'
 import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 import type { UserSummary } from '@/types/profile.type'
@@ -97,7 +98,7 @@ const Step4Payment = ({
             <CountdownTimer
               expiratedAt={expiratedAt}
               onExpire={() => {
-                alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                toast.error('Hết phiên giao dịch! Vui lòng đặt lại.')
                 window.location.reload()
               }}
             />

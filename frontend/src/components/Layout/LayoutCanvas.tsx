@@ -294,7 +294,7 @@ export default function LayoutCanvas({
               key={t.id}
               table={t}
               editable={editable}
-              selected={t.id === selectedId || selectedTableIds?.includes(t.id)}
+              selected={selectedTableIds !== undefined ? selectedTableIds.includes(t.id) : t.id === selectedId}
               onPointerDown={e => onMoveStart(e, a.areaId, t)}
               onResizeStart={(e, dir) =>
                 onResizeStart(e, a.areaId, t, dir)

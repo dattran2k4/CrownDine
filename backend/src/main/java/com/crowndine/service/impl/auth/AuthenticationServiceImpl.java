@@ -3,9 +3,11 @@ package com.crowndine.service.impl.auth;
 import com.crowndine.common.enums.ERole;
 import com.crowndine.common.enums.ETokenType;
 import com.crowndine.common.enums.EUserStatus;
+import com.crowndine.common.enums.ErrorCode;
 import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.exception.InvalidDataException;
+import com.crowndine.exception.JwtAuthenticationException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Role;
 import com.crowndine.model.Token;
@@ -196,22 +198,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public String forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
         log.info("Processing forgot password for user: {}", request.getEmail());
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("auth.account_not_found"));
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        if (userOptional.isEmpty()) {
+            log.info("Forgot password requested for non-existent email {}", request.getEmail());
+            return;
+        }
 
-        String randomCode = UUID.randomUUID().toString();
-        user.setVerificationCode(randomCode);
-        user.setVerificationExpiration(LocalDateTime.now().plusMinutes(5));
+        User user = userOptional.get();
 
-        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser,
-                randomCode);
+        String resetPasswordToken = jwtService.generateResetPasswordToken(user.getUsername());
+        mailService.sendResetPasswordLink(request.getEmail(), endPointResetPassword, resetPasswordToken);
 
-        userRepository.save(user);
-
-        log.info("User {} has been sended email to reset password", user.getUsername());
-        return null;
+        log.info("User {} has been sent email to reset password", user.getUsername());
     }
 
     @Override
@@ -240,24 +240,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    public void verifyResetPasswordToken(String token) {
+        getUserFromResetPasswordToken(token);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetPassword(String verifyCode, ResetPasswordRequest request) {
-
-        User user = userRepository.findByVerificationCode(verifyCode)
-                .orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));
-
-        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-            log.error("Verification code expired for user {}", user.getUsername());
-            return;
-        }
+    public void resetPassword(String token, ResetPasswordRequest request) {
+        User user = getUserFromResetPasswordToken(token);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            log.error("Passwords confirm do not match for user {}", user.getUsername());
-            return;
+            throw new InvalidDataException("auth.confirm_password_mismatch");
         }
 
-        user.setVerificationCode(null);
-        user.setVerificationExpiration(null);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
@@ -337,6 +332,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             log.error("Error during Google OAuth2 Nimbus verification: ", e);
             throw new InvalidDataException("Google authentication failed: " + e.getMessage());
         }
+    }
+
+    private User getUserFromResetPasswordToken(String token) {
+        String username;
+        try {
+            username = jwtService.extractUsername(token, ETokenType.RESET_PASSWORD_TOKEN);
+        } catch (JwtAuthenticationException e) {
+            if (e.getErrorCode() == ErrorCode.TOKEN_EXPIRED) {
+                throw new InvalidDataException("auth.reset_password_token_expired");
+            }
+            throw new InvalidDataException("auth.reset_password_token_invalid");
+        }
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));
+
+        jwtService.isTokenValid(token, ETokenType.RESET_PASSWORD_TOKEN, user);
+        return user;
     }
 
 }

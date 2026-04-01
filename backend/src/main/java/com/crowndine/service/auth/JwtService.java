@@ -12,5 +12,7 @@ public interface JwtService {
 
     String generateRefreshToken(String username, List<String> authorities);
 
+    String generateResetPasswordToken(String username);
+
     boolean isTokenValid(String token, ETokenType type, UserDetails userDetails);
 }

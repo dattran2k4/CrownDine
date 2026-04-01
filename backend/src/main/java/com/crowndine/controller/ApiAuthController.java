@@ -3,6 +3,7 @@ package com.crowndine.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -87,13 +88,31 @@ public class ApiAuthController {
     @PostMapping("forgot-password")
     public ApiResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         log.info("Forgot password request for email: {}", request.getEmail());
-        return null;
+        authenticationService.forgotPassword(request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("If the account exists, a reset password email has been sent")
+                .build();
     }
 
-    // Verify code + doi mat khau moi
+    @GetMapping("reset-password")
+    public ApiResponse verifyResetPasswordToken(@RequestParam String token) {
+        log.info("Verify reset password token request");
+        authenticationService.verifyResetPasswordToken(token);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Reset password token is valid")
+                .build();
+    }
+
+    @PostMapping("reset-password")
     public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request,
-            @RequestParam String verifyCode) {
-        log.info("Reset Password request for user, verify code: {}", verifyCode);
-        return null;
+            @RequestParam String token) {
+        log.info("Reset Password request");
+        authenticationService.resetPassword(token, request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Reset password successfully")
+                .build();
     }
 }

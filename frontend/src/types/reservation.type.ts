@@ -12,6 +12,7 @@ export interface ReservationCreateRequest {
 
 export interface StaffReservationCreateRequest extends ReservationCreateRequest {
   guestName: string
+  guestPhone: string
 }
 
 export interface ReservationCreateResponse {

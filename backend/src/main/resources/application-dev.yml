@@ -66,10 +66,13 @@ openapi:
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
+  reset-password-key: pKj6Yk3A2tR9mNv5QeL1sWx8BzUd4Hf0JcVa7Pn2XmQ=
   # 15 phút
   access-key-expiration: 900000
   # 7 ngày
   refresh-key-expiration: 604800000
+  # 10 phút
+  reset-password-key-expiration: 600000
 
 logging:
   level:

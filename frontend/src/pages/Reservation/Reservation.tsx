@@ -18,6 +18,7 @@ import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
 import { setPaymentResultToSession } from '@/utils/paymentResultStorage'
+import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
 import { useSearchParams } from 'react-router-dom'
 
@@ -26,6 +27,10 @@ export default function Reservation() {
   const [searchParams] = useSearchParams()
 
   const [currentStep, setCurrentStep] = useState(1)
+
+  // Modal state
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
+  const [isCapacityWarningOpen, setIsCapacityWarningOpen] = useState(false)
 
   // Data State
   const [guests, setGuests] = useState(() => {
@@ -39,7 +44,12 @@ export default function Reservation() {
 
   const [startTime, setStartTime] = useState(() => {
     const st = searchParams.get('startTime')
-    return st || '18:00'
+    if (st) return st
+
+    const d = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+    const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(d, slot))
+    return nextValidTime || ''
   })
   const duration = 240
   const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
@@ -124,7 +134,7 @@ export default function Reservation() {
               }
             } else {
               console.warn("AI AutoBook - Không tìm thấy bàn khả dụng:", tableNameParam)
-              alert(`Rất tiếc, bàn do AI chọn (${tableNameParam}) hiện đã được đặt hoặc không khả dụng. Vui lòng tự chọn bàn khác nhé!`)
+              toast.error(`Rất tiếc, bàn do AI chọn (${tableNameParam}) hiện đã được đặt hoặc không khả dụng. Vui lòng tự chọn bàn khác nhé!`)
               setCurrentStep(2) // Đưa người dùng về màn hình tự chọn bàn
             }
           }
@@ -199,22 +209,27 @@ export default function Reservation() {
     }
     const isSameTable = selectedTable?.id === table.id
     if (isSameTable) {
-      // Nếu bàn đã được chọn, bỏ chọn nó
-      setSelectedTable(null)
-      // Cancel reservation cũ nếu đã có (vì đã bỏ chọn bàn)
+      // Nếu bàn đã được chọn, gọi API hủy trước khi cập nhật state để tránh race condition
       if (reservationId) {
         try {
+          setIsCreatingReservation(true)
           await reservationApi.cancelReservation(reservationId)
           setReservationId(null)
           setReservationCode(null)
           setExpiratedAt(null)
+          setSelectedTable(null)
         } catch (error) {
           console.error('Failed to cancel reservation:', error)
-          // Vẫn xóa reservationId để tránh lỗi UI, nhưng log lỗi
+          // Vẫn xóa reservationId để tránh lỗi UI
           setReservationId(null)
           setReservationCode(null)
           setExpiratedAt(null)
+          setSelectedTable(null)
+        } finally {
+          setIsCreatingReservation(false)
         }
+      } else {
+        setSelectedTable(null)
       }
     } else {
       // Nếu chọn bàn mới, chỉ giữ lại bàn đó (thay thế bàn cũ nếu có)
@@ -234,7 +249,7 @@ export default function Reservation() {
           setSelectedTable(table)
         } catch (error) {
           console.error('Failed to update reservation table:', error)
-          alert('Không thể thay đổi bàn. Vui lòng thử lại.')
+          toast.error('Không thể thay đổi bàn. Vui lòng thử lại.')
           // Không thay đổi selectedTable để giữ nguyên bàn cũ
         } finally {
           setIsCreatingReservation(false)
@@ -261,7 +276,7 @@ export default function Reservation() {
             }
           } catch (error) {
             console.error('Failed to create temporary reservation:', error)
-            alert('Không thể giữ chỗ bàn. Vui lòng thử lại.')
+            toast.error('Không thể giữ chỗ bàn. Vui lòng thử lại.')
             // Nếu không tạo được reservation, bỏ chọn bàn
             setSelectedTable(null)
           } finally {
@@ -309,7 +324,7 @@ export default function Reservation() {
       }
     } catch (error) {
       console.error('Failed to add/update item:', error)
-      alert('Không thể thêm món. Vui lòng thử lại.')
+      toast.error('Không thể thêm món. Vui lòng thử lại.')
     }
   }
 
@@ -333,7 +348,7 @@ export default function Reservation() {
       setCartItems(cartItems.map((i) => (i.type === type && i.id === id ? { ...i, quantity: newQuantity } : i)))
     } catch (error) {
       console.error('Failed to update quantity:', error)
-      alert('Không thể cập nhật số lượng. Vui lòng thử lại.')
+      toast.error('Không thể cập nhật số lượng. Vui lòng thử lại.')
     }
   }
 
@@ -341,16 +356,48 @@ export default function Reservation() {
     setCartItems(cartItems.map((i) => (i.type === type && i.id === id ? { ...i, note } : i)))
   }
 
+  const proceedToStep3 = async () => {
+    setIsCapacityWarningOpen(false)
+    if (reservationId) {
+      setCurrentStep(3)
+      return
+    }
+
+    try {
+      setIsCreatingReservation(true)
+      const firstTable = selectedTable!
+      const response = await reservationApi.createReservation({
+        date,
+        startTime,
+        guestNumber: guests,
+        tableId: parseInt(firstTable.id),
+        note: ''
+      })
+
+      if (response.data.data) {
+        setReservationId(response.data.data.reservationId)
+        setReservationCode(response.data.data.reservationCode)
+        setExpiratedAt(null)
+        setCurrentStep(3)
+      }
+    } catch (error) {
+      console.error('Failed to create reservation:', error)
+      toast.error('Không thể tạo đặt bàn. Vui lòng thử lại.')
+    } finally {
+      setIsCreatingReservation(false)
+    }
+  }
+
   const handleNext = async () => {
     // Step 1: Validation và chuyển sang Step 2
     if (currentStep === 1) {
       if (!startTime) {
-        alert('Vui lòng chọn giờ bắt đầu!')
+        toast.error('Vui lòng chọn giờ bắt đầu!')
         return
       }
 
       if (isDateTimeInPast(date, startTime)) {
-        alert('Thời gian bắt đầu không được trong quá khứ!')
+        toast.error('Thời gian bắt đầu không được trong quá khứ!')
         return
       }
 
@@ -361,7 +408,7 @@ export default function Reservation() {
     // Step 2: Validation, tạo reservation và chuyển sang Step 3
     if (currentStep === 2) {
       if (!selectedTable) {
-        alert('Vui lòng chọn 1 bàn!')
+        toast.error('Vui lòng chọn 1 bàn!')
         return
       }
       if (selectedTable.capacity < guests) {
@@ -401,7 +448,7 @@ export default function Reservation() {
         }
       } catch (error) {
         console.error('Failed to create reservation:', error)
-        alert('Không thể tạo đặt bàn. Vui lòng thử lại.')
+        toast.error('Không thể tạo đặt bàn. Vui lòng thử lại.')
       } finally {
         setIsCreatingReservation(false)
       }
@@ -465,13 +512,13 @@ export default function Reservation() {
       setCartItems(cartItems.filter((i) => !(i.type === type && i.id === id)))
     } catch (error) {
       console.error('Failed to remove item:', error)
-      alert('Không thể xóa món. Vui lòng thử lại.')
+      toast.error('Không thể xóa món. Vui lòng thử lại.')
     }
   }
 
   const handlePayment = () => {
     if (!reservationCode) {
-      alert('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
+      toast.error('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
       return
     }
 
@@ -485,11 +532,12 @@ export default function Reservation() {
     })
   }
 
-  const handleCancel = async () => {
-    if (!window.confirm('Bạn có chắc muốn hủy đặt bàn? Bàn sẽ được giải phóng ngay lập tức.')) {
-      return
-    }
+  const handleCancel = () => {
+    setIsCancelModalOpen(true)
+  }
 
+  const confirmCancel = async () => {
+    setIsCancelModalOpen(false)
     // Cancel reservation nếu có
     if (reservationId) {
       try {
@@ -609,6 +657,60 @@ export default function Reservation() {
           </div>
         )}
       </div>
+
+      <Modal 
+        isOpen={isCancelModalOpen} 
+        onClose={() => setIsCancelModalOpen(false)} 
+        title="Xác nhận hủy đặt bàn"
+      >
+        <div className="text-gray-700">
+          <p>Bạn có chắc muốn hủy quá trình đặt bàn này không?</p>
+          <p className="text-sm mt-2 text-red-600 font-medium">Lưu ý: Bàn đang giữ sẽ được giải phóng ngay lập tức.</p>
+        </div>
+        <div className="mt-8 flex justify-end gap-3">
+          <button 
+            type="button" 
+            onClick={() => setIsCancelModalOpen(false)} 
+            className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-200"
+          >
+            Quay lại
+          </button>
+          <button 
+            type="button" 
+            onClick={confirmCancel} 
+            className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            Hủy đặt bàn
+          </button>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={isCapacityWarningOpen} 
+        onClose={() => setIsCapacityWarningOpen(false)} 
+        title="Sức chứa bàn không đủ"
+      >
+        <div className="text-gray-700">
+          <p>Sức chứa bàn đã chọn ({selectedTable?.capacity || 0}) nhỏ hơn số khách ({guests}).</p>
+          <p className="mt-2 text-sm text-gray-600">Bạn có chắc chắn muốn tiếp tục chọn bàn này không?</p>
+        </div>
+        <div className="mt-8 flex justify-end gap-3">
+          <button 
+            type="button" 
+            onClick={() => setIsCapacityWarningOpen(false)} 
+            className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-200"
+          >
+            Chọn lại bàn
+          </button>
+          <button 
+            type="button" 
+            onClick={proceedToStep3} 
+            className="px-5 py-2.5 bg-[#4caf50] text-write rounded-lg hover:bg-[#388e3c] transition-colors font-medium text-white"
+          >
+            Vẫn tiếp tục
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

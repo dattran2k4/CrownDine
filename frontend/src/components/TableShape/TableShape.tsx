@@ -43,23 +43,43 @@ export default function TableShape({
   // Xác định màu sắc dựa trên trạng thái và yêu cầu khách hàng
   let style: { fill: string; text: string } = STATUS_STYLE[statusKey] || STATUS_STYLE.AVAILABLE
   let seatColor: string = SEAT_COLOR[statusKey] || SEAT_COLOR.AVAILABLE
-  
-  // Bàn AVAILABLE, OCCUPIED, hoặc RESERVED -> màu xanh lá cây (có thể chọn)
+
+  // Biến viền mặc định cho bàn
+  let tableStroke = selected ? '#3b82f6' : 'none'
+  let tableStrokeWidth = selected ? 4 : 0
+  let tableFilter = selected ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none'
+
+  // Bàn AVAILABLE, OCCUPIED, hoặc RESERVED -> có thể tương tác
   if (statusKey === 'AVAILABLE' || statusKey === 'OCCUPIED' || statusKey === 'RESERVED') {
-    // Kiểm tra capacity cho bàn AVAILABLE
+    // Trạng thái Unavailable do khung giờ / khách
+    let isUnavailable = false;
+    let isFull = false;
     if (statusKey === 'AVAILABLE') {
-      // Bàn AVAILABLE nhưng capacity < guests hoặc đã được đặt -> màu đỏ
-      if (!isAvailableInTimeSlot || (guests !== undefined && capacity < guests)) {
-        style = { fill: '#d9534f', text: '#fff' } // Màu đỏ
-        seatColor = '#a83a31' // Màu đỏ đậm cho ghế
-      } else {
-        style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
-        seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
-      }
+      if (!isAvailableInTimeSlot) isUnavailable = true;
+      else if (guests !== undefined && capacity < guests) isFull = true;
+    }
+
+    if (isUnavailable) {
+      style = { fill: '#d9534f', text: '#fff' } // Đỏ
+      seatColor = '#a83a31'
+    } else if (isFull) {
+      style = { fill: '#f59e0b', text: '#fff' } // Vàng
+      seatColor = '#d97706'
     } else {
-      // Bàn OCCUPIED hoặc RESERVED -> màu xanh lá cây
-      style = { fill: '#4caf50', text: '#fff' } // Màu xanh lá cây
-      seatColor = '#2e7d32' // Màu xanh lá đậm cho ghế
+      // Khả dụng (hoặc OCCUPIED/RESERVED nhưng cho phép đặt chồng)
+      if (selected) {
+        style = { fill: '#4caf50', text: '#fff' } // Xanh lá
+        seatColor = '#2e7d32'
+        tableStroke = '#4caf50' 
+        tableStrokeWidth = 4
+        tableFilter = 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.6))'
+      } else {
+        style = { fill: '#ffffff', text: '#374151' } // Trắng
+        seatColor = '#9ca3af' // Xám
+        tableStroke = '#e5e7eb' // Viền trắng/xám
+        tableStrokeWidth = 2
+        tableFilter = 'none'
+      }
     }
   }
   // Bàn UNAVAILABLE hoặc các trường hợp khác -> giữ màu mặc định (xám hoặc đỏ)
@@ -227,7 +247,7 @@ export default function TableShape({
               cy={r}
               r={r + 4}
               fill="none"
-              stroke="#3b82f6"
+              stroke={tableStroke}
               strokeWidth={4}
               opacity={0.5}
             />
@@ -237,10 +257,10 @@ export default function TableShape({
           cy={r}
           r={r}
           fill={style.fill}
-            stroke={selected ? '#3b82f6' : 'none'}
-            strokeWidth={selected ? 4 : 0}
+            stroke={tableStroke}
+            strokeWidth={tableStrokeWidth}
             style={{
-              filter: selected ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none'
+              filter: tableFilter
             }}
           />
         </>
@@ -255,7 +275,7 @@ export default function TableShape({
               height={height + 8}
               rx={18}
               fill="none"
-              stroke="#3b82f6"
+              stroke={tableStroke}
               strokeWidth={4}
               opacity={0.5}
             />
@@ -265,10 +285,10 @@ export default function TableShape({
           height={height}
           rx={14}
           fill={style.fill}
-            stroke={selected ? '#3b82f6' : 'none'}
-            strokeWidth={selected ? 4 : 0}
+            stroke={tableStroke}
+            strokeWidth={tableStrokeWidth}
             style={{
-              filter: selected ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none'
+              filter: tableFilter
             }}
           />
         </>

@@ -68,7 +68,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
         const res = await layoutApi.getAvailableTables({
           date,
           startTime,
-          guestNumber: guests
+          guestNumber: 1 // Lấy tất cả bàn trống (sức chứa >= 1) để frontend tự phân loại vàng/đỏ
         })
         const availableIds = new Set(res.data.data.map((t: TableLayout) => t.id))
 
@@ -86,7 +86,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
       }
     }
     fetchAvailableTables()
-  }, [date, startTime, guests, selectedTable])
+  }, [date, startTime, guests])
 
   const handleSelectArea = (area: AreaLayout) => {
     setActiveAreaId(area.areaId)
@@ -329,10 +329,27 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
             </div>
           )}
         </div>
-        <div className='absolute right-0 bottom-6 left-0 text-center'>
-          <div className='inline-flex items-center gap-2 rounded-full border-2 border-gray-200/80 bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md'>
-            <div className='h-2.5 w-2.5 rounded-full bg-linear-to-r from-green-400 to-green-500 shadow-sm ring-2 ring-green-200'></div>
-            <span className='text-xs font-semibold text-gray-700'>Cửa ra vào</span>
+        <div className='absolute right-0 bottom-6 left-0 flex justify-center px-4'>
+          <div className='inline-flex flex-wrap items-center justify-center gap-3 rounded-full border-2 border-gray-200/80 bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md md:gap-4 md:px-6'>
+            <div className='flex items-center gap-2'>
+              <div className='h-3.5 w-3.5 rounded-xs bg-white border border-gray-300 shadow-sm'></div>
+              <span className='text-xs font-semibold text-gray-700'>Bàn khả dụng</span>
+            </div>
+            <div className='hidden h-4 w-px bg-gray-300 sm:block'></div>
+            <div className='flex items-center gap-2'>
+              <div className='h-3.5 w-3.5 rounded-xs bg-[#4caf50] shadow-sm'></div>
+              <span className='text-xs font-semibold text-gray-700'>Đang chọn</span>
+            </div>
+            <div className='hidden h-4 w-px bg-gray-300 sm:block'></div>
+            <div className='flex items-center gap-2'>
+              <div className='h-3.5 w-3.5 rounded-xs bg-[#d9534f] shadow-sm'></div>
+              <span className='text-xs font-semibold text-gray-700'>Đã được đặt</span>
+            </div>
+            <div className='hidden h-4 w-px bg-gray-300 md:block'></div>
+            <div className='flex items-center gap-2'>
+              <div className='h-3.5 w-3.5 rounded-xs bg-[#f59e0b] shadow-sm'></div>
+              <span className='text-xs font-semibold text-gray-700'>Không đủ chỗ</span>
+            </div>
           </div>
         </div>
       </div>

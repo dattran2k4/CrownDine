@@ -9,7 +9,7 @@ import tableApi from '@/apis/table.api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import MenuSelector from '@/components/MenuSelector/MenuSelector'
 import type { MenuCardItem } from '@/types/item.type'
-import { formatCurrency } from '@/utils/utils'
+import { formatCurrency, generateTimeSlots, isDateTimeInPast } from '@/utils/utils'
 
 interface CreateReservationModalProps {
   isOpen: boolean
@@ -30,12 +30,18 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
   const [guestName, setGuestName] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    startTime: '18:00',
-    guestNumber: 2,
-    tableId: '',
-    note: ''
+  const [formData, setFormData] = useState(() => {
+    const d = new Date().toISOString().split('T')[0]
+    const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+    const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(d, slot))
+    
+    return {
+      date: d,
+      startTime: nextValidTime || '',
+      guestNumber: 2,
+      tableId: '',
+      note: ''
+    }
   })
 
   // --- Queries ---
@@ -114,9 +120,12 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
     onClose()
     setGuestName('')
     setCart([])
+    const d = new Date().toISOString().split('T')[0]
+    const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+    const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(d, slot))
     setFormData({
-      date: new Date().toISOString().split('T')[0],
-      startTime: '18:00',
+      date: d,
+      startTime: nextValidTime || '',
       guestNumber: 2,
       tableId: '',
       note: ''
@@ -157,7 +166,17 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
               <div className='grid grid-cols-2 gap-4'>
                 <div className='space-y-1.5'>
                   <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Ngày đến</label>
-                  <Input type='date' className='h-11' value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
+                  <Input 
+                    type='date' 
+                    className='h-11' 
+                    value={formData.date} 
+                    onChange={e => {
+                      const newDate = e.target.value
+                      const allSlots = generateTimeSlots(9, 22, 30).filter((slot) => slot !== '22:00')
+                      const nextValidTime = allSlots.find((slot) => !isDateTimeInPast(newDate, slot))
+                      setFormData({ ...formData, date: newDate, startTime: nextValidTime || '' })
+                    }} 
+                  />
                 </div>
                 <div className='space-y-1.5'>
                   <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Giờ đến</label>
@@ -170,7 +189,10 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
                   <label className='text-[10px] font-bold uppercase text-muted-foreground tracking-widest'>Số lượng khách</label>
                   <div className='relative'>
                     <Users className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-                    <Input type='number' min={1} className='pl-9 h-11' value={formData.guestNumber} onChange={e => setFormData({ ...formData, guestNumber: parseInt(e.target.value) })} />
+                    <Input type='number' min={1} max={20} className='pl-9 h-11' value={formData.guestNumber} onChange={e => {
+                      const val = parseInt(e.target.value) || 1
+                      setFormData({ ...formData, guestNumber: Math.min(20, Math.max(1, val)) })
+                    }} />
                   </div>
                 </div>
                 <div className='space-y-1.5'>

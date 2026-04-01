@@ -4,6 +4,7 @@ import { Info, Minus, Plus, ShoppingCart, Trash2, PenLine } from 'lucide-react'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 import MenuSelector from '@/components/MenuSelector/MenuSelector'
 import type { MenuCardItem } from '@/types/item.type'
+import { toast } from 'react-toastify'
 
 /** Một mục có thể thêm vào giỏ (món hoặc combo) */
 type PreOrderEntry = Omit<PreOrderCartItem, 'quantity'>
@@ -44,7 +45,7 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, updateQuantity, onUpdateNot
               <CountdownTimer
                 expiratedAt={expiratedAt}
                 onExpire={() => {
-                  alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                  toast.error('Hết phiên giao dịch! Vui lòng đặt lại.')
                   window.location.reload()
                 }}
               />

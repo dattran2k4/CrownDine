@@ -42,6 +42,9 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "guest_name")
     private String guestName;
 
+    @Column(name = "guest_phone")
+    private String guestPhone;
+
     @Column(name = "expirated_at")
     private LocalDateTime expiratedAt;
 

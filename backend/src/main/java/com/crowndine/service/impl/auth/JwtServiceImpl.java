@@ -15,10 +15,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -47,6 +49,18 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String extractUsername(String token, ETokenType type) {
         return extractClaim(token, type, Claims::getSubject);
+    }
+
+    @Override
+    public String extractTokenId(String token, ETokenType type) {
+        return extractClaim(token, type, Claims::getId);
+    }
+
+    @Override
+    public Duration getRemainingValidity(String token, ETokenType type) {
+        Date expiration = extractExpiration(token, type);
+        long remainingMillis = expiration.getTime() - System.currentTimeMillis();
+        return remainingMillis > 0 ? Duration.ofMillis(remainingMillis) : Duration.ZERO;
     }
 
     private <T> T extractClaim(String token, ETokenType type, Function<Claims, T> claimsResolvers) {
@@ -109,6 +123,7 @@ public class JwtServiceImpl implements JwtService {
         claims.put("role", authorities);
         return Jwts.builder()
                 .setClaims(claims)
+                .setId(UUID.randomUUID().toString())
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))

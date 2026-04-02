@@ -16,6 +16,7 @@ import com.crowndine.repository.RoleRepository;
 import com.crowndine.repository.UserRepository;
 import com.crowndine.service.auth.AuthenticationService;
 import com.crowndine.service.auth.JwtService;
+import com.crowndine.service.auth.ResetPasswordTokenStateService;
 import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final ResetPasswordTokenStateService resetPasswordTokenStateService;
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -241,13 +243,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public void verifyResetPasswordToken(String token) {
-        getUserFromResetPasswordToken(token);
+        validateResetPasswordToken(token);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String token, ResetPasswordRequest request) {
-        User user = getUserFromResetPasswordToken(token);
+        User user = validateResetPasswordToken(token);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new InvalidDataException("auth.confirm_password_mismatch");
@@ -256,6 +258,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
+        resetPasswordTokenStateService.markAsUsed(jwtService.extractTokenId(token, ETokenType.RESET_PASSWORD_TOKEN), jwtService.getRemainingValidity(token, ETokenType.RESET_PASSWORD_TOKEN));
 
         log.info("Reset password successfully");
     }
@@ -334,7 +337,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    private User getUserFromResetPasswordToken(String token) {
+    private User validateResetPasswordToken(String token) {
         String username;
         try {
             username = jwtService.extractUsername(token, ETokenType.RESET_PASSWORD_TOKEN);
@@ -343,6 +346,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 throw new InvalidDataException("auth.reset_password_token_expired");
             }
             throw new InvalidDataException("auth.reset_password_token_invalid");
+        }
+
+        String tokenId = jwtService.extractTokenId(token, ETokenType.RESET_PASSWORD_TOKEN);
+        if (!StringUtils.hasText(tokenId) || resetPasswordTokenStateService.isUsed(tokenId)) {
+            throw new InvalidDataException("auth.reset_password_token_already_used");
         }
 
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));

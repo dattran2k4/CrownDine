@@ -211,6 +211,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = userOptional.get();
 
         String resetPasswordToken = jwtService.generateResetPasswordToken(user.getUsername());
+
+        //Set last reset token
+        resetPasswordTokenStateService.storeLatestTokenId(user.getUsername(), jwtService.extractTokenId(resetPasswordToken, ETokenType.RESET_PASSWORD_TOKEN),
+                jwtService.getRemainingValidity(resetPasswordToken, ETokenType.RESET_PASSWORD_TOKEN));
+
         mailService.sendResetPasswordLink(request.getEmail(), endPointResetPassword, resetPasswordToken);
 
         log.info("User {} has been sent email to reset password", user.getUsername());
@@ -258,7 +263,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
-        resetPasswordTokenStateService.markAsUsed(jwtService.extractTokenId(token, ETokenType.RESET_PASSWORD_TOKEN), jwtService.getRemainingValidity(token, ETokenType.RESET_PASSWORD_TOKEN));
+        resetPasswordTokenStateService.clearLatestToken(user.getUsername());
 
         log.info("Reset password successfully");
     }
@@ -349,11 +354,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         String tokenId = jwtService.extractTokenId(token, ETokenType.RESET_PASSWORD_TOKEN);
-        if (!StringUtils.hasText(tokenId) || resetPasswordTokenStateService.isUsed(tokenId)) {
-            throw new InvalidDataException("auth.reset_password_token_already_used");
-        }
-
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));
+        if (!resetPasswordTokenStateService.isLatestToken(user.getUsername(), tokenId)) {
+            throw new InvalidDataException("auth.reset_password_token_not_latest");
+        }
 
         jwtService.isTokenValid(token, ETokenType.RESET_PASSWORD_TOKEN, user);
         return user;

@@ -3,7 +3,9 @@ package com.crowndine.service.auth;
 import java.time.Duration;
 
 public interface ResetPasswordTokenStateService {
-    boolean isUsed(String tokenId);
+    void storeLatestTokenId(String username, String tokenId, Duration ttl);
 
-    void markAsUsed(String tokenId, Duration ttl);
+    boolean isLatestToken(String username, String tokenId);
+
+    void clearLatestToken(String username);
 }

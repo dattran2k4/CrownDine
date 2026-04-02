@@ -18,10 +18,17 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Configuration
 @EnableCaching
 public class RedisConfig {
+    private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(10);
+    private static final Duration ITEM_CACHE_TTL = Duration.ofHours(1);
+
+    private static final String ITEMS_CACHE = "items";
+    private static final String ITEM_BY_ID_CACHE = "item-by-id";
+    private static final String ITEM_BY_NAME_CACHE = "item-by-name";
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
@@ -41,16 +48,24 @@ public class RedisConfig {
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10))
+        RedisCacheConfiguration defaultCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(DEFAULT_CACHE_TTL)
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
                         new GenericJackson2JsonRedisSerializer(redisObjectMapper())
                 ));
 
+        RedisCacheConfiguration itemCacheConfiguration = defaultCacheConfiguration
+                .entryTtl(ITEM_CACHE_TTL);
+
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(cacheConfiguration)
+                .cacheDefaults(defaultCacheConfiguration)
+                .withInitialCacheConfigurations(Map.of(
+                        ITEMS_CACHE, itemCacheConfiguration,
+                        ITEM_BY_ID_CACHE, itemCacheConfiguration,
+                        ITEM_BY_NAME_CACHE, itemCacheConfiguration
+                ))
                 .transactionAware()
                 .build();
     }

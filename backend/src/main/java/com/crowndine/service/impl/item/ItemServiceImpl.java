@@ -13,6 +13,9 @@ import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.service.item.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,11 +32,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j(topic = "ITEM-SERVICE")
 public class ItemServiceImpl implements ItemService {
+    private static final String ITEMS_CACHE = "items";
+    private static final String ITEM_BY_ID_CACHE = "item-by-id";
+    private static final String ITEM_BY_NAME_CACHE = "item-by-name";
+
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
     private final FeedbackRepository feedbackRepository;
 
     @Override
+    @Cacheable(ITEMS_CACHE)
     public List<ItemResponse> getAlItems() {
         return itemRepository.findAll().stream().map(this::mapToResponse).toList();
     }
@@ -56,6 +64,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Cacheable(value = ITEM_BY_ID_CACHE, key = "#id")
     public ItemResponse getItemById(Long id) {
         Item item = getItemByIdOrThrow(id);
         return mapToResponse(item);
@@ -67,6 +76,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Cacheable(value = ITEM_BY_NAME_CACHE, key = "#name")
     public ItemResponse getItemByName(String name) {
         Item item = getItemByNameOrThrow(name);
         return mapToResponse(item);
@@ -78,6 +88,11 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = ITEMS_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_NAME_CACHE, allEntries = true)
+    })
     public ItemResponse createItem(ItemRequest itemRequest) {
         Category category = categoryRepository.findById(itemRequest.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy category với id: " + itemRequest.getCategoryId()));
@@ -101,6 +116,11 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = ITEMS_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_NAME_CACHE, allEntries = true)
+    })
     public ItemResponse updateItem(Long id, ItemRequest itemRequest) {
         Item item = getItemByIdOrThrow(id);
 
@@ -120,6 +140,11 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = ITEMS_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = ITEM_BY_NAME_CACHE, allEntries = true)
+    })
     public void deleteItem(Long id) {
         Item item = getItemByIdOrThrow(id);
         item.setStatus(EItemStatus.UNAVAILABLE);
@@ -155,4 +180,3 @@ public class ItemServiceImpl implements ItemService {
 
 
 }
-

@@ -18,6 +18,7 @@ export interface StaffReservationCreateRequest extends ReservationCreateRequest 
 export interface ReservationCreateResponse {
   reservationId: number
   reservationCode: string
+  expiratedAt: string | null
 }
 
 export interface OrderLineResponse {

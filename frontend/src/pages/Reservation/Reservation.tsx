@@ -55,6 +55,7 @@ export default function Reservation() {
   const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
 
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
+  const [reservedTableId, setReservedTableId] = useState<string | null>(null)
 
   const [cartItems, setCartItems] = useState<PreOrderCartItem[]>([])
 
@@ -128,8 +129,9 @@ export default function Reservation() {
               
               if (createRes.data.data) {
                 setReservationId(createRes.data.data.reservationId)
-                setReservationCode(createRes.data.data.code)
+                setReservationCode(createRes.data.data.reservationCode)
                 setExpiratedAt(createRes.data.data.expiratedAt)
+                setReservedTableId(matchedTable.id.toString())
                 setCurrentStep(parseInt(stepParam)) // Chuyển thẳng tới bước 3 hoặc 4
               }
             } else {
@@ -203,88 +205,10 @@ export default function Reservation() {
 
   // --- HANDLERS ---
   const toggleTable = async (table: Table) => {
-    // Nếu đã thanh toán, không cho phép thay đổi bàn
     if (isPaid) {
       return
     }
-    const isSameTable = selectedTable?.id === table.id
-    if (isSameTable) {
-      // Nếu bàn đã được chọn, gọi API hủy trước khi cập nhật state để tránh race condition
-      if (reservationId) {
-        try {
-          setIsCreatingReservation(true)
-          await reservationApi.cancelReservation(reservationId)
-          setReservationId(null)
-          setReservationCode(null)
-          setExpiratedAt(null)
-          setSelectedTable(null)
-        } catch (error) {
-          console.error('Failed to cancel reservation:', error)
-          // Vẫn xóa reservationId để tránh lỗi UI
-          setReservationId(null)
-          setReservationCode(null)
-          setExpiratedAt(null)
-          setSelectedTable(null)
-        } finally {
-          setIsCreatingReservation(false)
-        }
-      } else {
-        setSelectedTable(null)
-      }
-    } else {
-      // Nếu chọn bàn mới, chỉ giữ lại bàn đó (thay thế bàn cũ nếu có)
-      const previousTableId = selectedTable?.id
-      const previousReservationId = reservationId
-
-      // Nếu đã có reservation và chọn bàn khác → update tableId thay vì tạo mới
-      if (previousReservationId && previousTableId && previousTableId !== table.id) {
-        try {
-          setIsCreatingReservation(true)
-          // Update reservation table thay vì tạo mới
-          await reservationApi.updateReservationTable(previousReservationId, {
-            tableId: parseInt(table.id)
-          })
-
-          // Cập nhật state với bàn mới
-          setSelectedTable(table)
-        } catch (error) {
-          console.error('Failed to update reservation table:', error)
-          toast.error('Không thể thay đổi bàn. Vui lòng thử lại.')
-          // Không thay đổi selectedTable để giữ nguyên bàn cũ
-        } finally {
-          setIsCreatingReservation(false)
-        }
-      } else {
-        // Nếu chưa có reservation (lần đầu chọn bàn), tạo reservation mới
-        setSelectedTable(table)
-
-        if (!reservationId) {
-          try {
-            setIsCreatingReservation(true)
-            const response = await reservationApi.createReservation({
-              date,
-              startTime,
-              guestNumber: guests,
-              tableId: parseInt(table.id),
-              note: '' // Temporary reservation để lock bàn
-            })
-
-            if (response.data.data) {
-              setReservationId(response.data.data.reservationId)
-              setReservationCode(response.data.data.reservationCode)
-              setExpiratedAt(null)
-            }
-          } catch (error) {
-            console.error('Failed to create temporary reservation:', error)
-            toast.error('Không thể giữ chỗ bàn. Vui lòng thử lại.')
-            // Nếu không tạo được reservation, bỏ chọn bàn
-            setSelectedTable(null)
-          } finally {
-            setIsCreatingReservation(false)
-          }
-        }
-      }
-    }
+    setSelectedTable((current) => (current?.id === table.id ? null : table))
   }
 
   const handleAddToCart = async (entry: Omit<PreOrderCartItem, 'quantity'>) => {
@@ -358,31 +282,51 @@ export default function Reservation() {
 
   const proceedToStep3 = async () => {
     setIsCapacityWarningOpen(false)
-    if (reservationId) {
-      setCurrentStep(3)
+    await finalizeTableSelection()
+  }
+
+  const finalizeTableSelection = async () => {
+    if (!selectedTable) {
+      toast.error('Vui lòng chọn 1 bàn!')
       return
     }
 
     try {
       setIsCreatingReservation(true)
-      const firstTable = selectedTable!
+
+      if (reservationId) {
+        if (reservedTableId === selectedTable.id) {
+          setCurrentStep(3)
+          return
+        }
+
+        await reservationApi.updateReservationTable(reservationId, {
+          tableId: parseInt(selectedTable.id)
+        })
+
+        setReservedTableId(selectedTable.id)
+        setCurrentStep(3)
+        return
+      }
+
       const response = await reservationApi.createReservation({
         date,
         startTime,
         guestNumber: guests,
-        tableId: parseInt(firstTable.id),
+        tableId: parseInt(selectedTable.id),
         note: ''
       })
 
       if (response.data.data) {
         setReservationId(response.data.data.reservationId)
         setReservationCode(response.data.data.reservationCode)
-        setExpiratedAt(null)
+        setExpiratedAt(response.data.data.expiratedAt)
+        setReservedTableId(selectedTable.id)
         setCurrentStep(3)
       }
     } catch (error) {
-      console.error('Failed to create reservation:', error)
-      toast.error('Không thể tạo đặt bàn. Vui lòng thử lại.')
+      console.error('Failed to finalize table selection:', error)
+      toast.error('Không thể giữ chỗ bàn. Vui lòng thử lại.')
     } finally {
       setIsCreatingReservation(false)
     }
@@ -420,38 +364,7 @@ export default function Reservation() {
           return
       }
 
-      // Nếu đã có reservationId, reservation đã được tạo khi chọn bàn
-      // Chỉ cần chuyển sang Step 3 (reservation đã có thời gian giữ 10 phút từ khi tạo)
-      if (reservationId) {
-        setCurrentStep(3)
-        return
-      }
-
-      // Trường hợp này không nên xảy ra vì reservation đã được tạo khi chọn bàn
-      // Nhưng để an toàn, vẫn tạo reservation nếu chưa có
-      try {
-        setIsCreatingReservation(true)
-        const firstTable = selectedTable
-        const response = await reservationApi.createReservation({
-          date,
-          startTime,
-          guestNumber: guests,
-          tableId: parseInt(firstTable.id),
-          note: ''
-        })
-
-        if (response.data.data) {
-          setReservationId(response.data.data.reservationId)
-          setReservationCode(response.data.data.reservationCode)
-          setExpiratedAt(null)
-          setCurrentStep(3)
-        }
-      } catch (error) {
-        console.error('Failed to create reservation:', error)
-        toast.error('Không thể tạo đặt bàn. Vui lòng thử lại.')
-      } finally {
-        setIsCreatingReservation(false)
-      }
+      await finalizeTableSelection()
       return
     }
 

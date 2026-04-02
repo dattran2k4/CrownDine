@@ -262,6 +262,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         ReservationCreateResponse response = new ReservationCreateResponse();
         response.setReservationId(saved.getId());
         response.setReservationCode(saved.getCode());
+        response.setExpiratedAt(saved.getExpiratedAt());
         return response;
     }
 

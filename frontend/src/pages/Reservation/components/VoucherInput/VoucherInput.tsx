@@ -2,10 +2,9 @@ import voucherApi from '@/apis/voucher.api'
 import userVoucherApi from '@/apis/userVoucher.api'
 import type { VoucherValidateRequest, VoucherValidateResponse } from '@/types/voucher.type'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Loader2, TicketPercent, CheckCircle2, ChevronRight } from 'lucide-react'
+import { Loader2, TicketPercent, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'react-toastify'
-import { Modal } from '@/components/ui/modal'
 
 interface Props {
   orderId?: number
@@ -16,34 +15,38 @@ interface Props {
 export default function VoucherInput({ orderId, disabled = false, onPreviewChange }: Props) {
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [validatingCode, setValidatingCode] = useState('')
 
-  // Lấy danh sách voucher khả dụng
   const { data: myVouchersResponse, isLoading: isLoadingVouchers } = useQuery({
     queryKey: ['my-vouchers'],
     queryFn: () => userVoucherApi.getMyVouchers(),
-    enabled: isModalOpen // Chỉ fetch khi mở modal
+    enabled: !disabled
   })
 
   const myVouchers = myVouchersResponse?.data?.data || []
 
   const { mutate: validateVoucher, isPending: isValidatingVoucher } = useMutation({
     mutationFn: (body: VoucherValidateRequest) => voucherApi.validateVoucher(body),
+    onMutate: (variables) => {
+      setValidatingCode(variables.code.trim().toUpperCase())
+    },
     onSuccess: (response) => {
       const data = response.data.data
       setVoucherPreview(data)
       setVoucherCode(data.code)
       onPreviewChange(data)
+      setValidatingCode('')
     },
     onError: () => {
       setVoucherPreview(null)
       onPreviewChange(null)
       setVoucherCode('')
+      setValidatingCode('')
     }
   })
 
   const handleValidateVoucher = (codeToValidate?: string) => {
-    const code = (codeToValidate || voucherCode).trim()
+    const code = (codeToValidate || voucherCode).trim().toUpperCase()
 
     if (!code) {
       toast.error('Vui lòng chọn mã voucher.')
@@ -55,8 +58,17 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
       return
     }
 
+    if (voucherPreview?.code?.toUpperCase() === code) {
+      setVoucherCode(code)
+      return
+    }
+
+    if (isValidatingVoucher && validatingCode === code) {
+      return
+    }
+
     validateVoucher({
-      code: code,
+      code,
       orderId
     })
   }
@@ -64,6 +76,7 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
   const handleClearVoucher = () => {
     setVoucherCode('')
     setVoucherPreview(null)
+    setValidatingCode('')
     onPreviewChange(null)
   }
 
@@ -75,47 +88,143 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
         </div>
         <div>
           <h4 className='text-base font-bold text-gray-900'>Khuyến mãi & Ưu đãi</h4>
-          <p className='text-sm text-gray-500 mt-0.5 leading-relaxed'>Áp dụng các mã giảm giá hệ thống tặng để tiết kiệm chi phí.</p>
+          <p className='text-sm text-gray-500 mt-0.5 leading-relaxed'>Ưu tiên chọn nhanh voucher khả dụng của bạn, hoặc nhập tay mã khác nếu cần.</p>
         </div>
       </div>
 
-      <div className='flex flex-col gap-3 md:flex-row'>
-        <button
-          type='button'
-          onClick={() => setIsModalOpen(true)}
-          disabled={disabled || isValidatingVoucher}
-          className='group flex-1 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 px-5 py-4 text-left font-medium tracking-wide text-gray-700 transition-all hover:border-orange-500 hover:bg-orange-50 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/10 disabled:opacity-70 disabled:cursor-not-allowed'
-        >
-          <div className="flex items-center gap-3">
-            {isValidatingVoucher ? (
-              <span className='flex items-center gap-3 text-orange-600'>
-                <Loader2 className='h-5 w-5 animate-spin' /> Đang kiểm tra mã...
-              </span>
-            ) : voucherCode ? (
-              <span className="flex items-center gap-2.5 font-bold text-orange-600 text-base">
-                <CheckCircle2 className="h-5 w-5" /> 
-                <span className="uppercase tracking-wider">Mã đã chọn: {voucherCode}</span>
-              </span>
-            ) : (
-              <span className="text-gray-500 text-sm group-hover:text-orange-600 font-semibold transition-colors">
-                Nhấn để chọn mã ưu đãi khả dụng...
-              </span>
-            )}
+      <div className='rounded-2xl border border-orange-100 bg-orange-50/40 p-4'>
+        <div className='flex items-center justify-between gap-3'>
+          <div>
+            <p className='text-sm font-semibold text-gray-800'>Voucher khả dụng</p>
+            <p className='mt-1 text-xs text-gray-500'>Chọn nhanh để hệ thống kiểm tra và áp dụng cho đơn hiện tại.</p>
           </div>
-          {!isValidatingVoucher && !voucherCode && (
-             <ChevronRight className='h-5 w-5 text-gray-400 group-hover:text-orange-500 transition-colors' />
+          {voucherCode && !isValidatingVoucher && (
+            <button
+              type='button'
+              onClick={handleClearVoucher}
+              className='inline-flex shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-red-500 hover:border-red-200'
+            >
+              Gỡ bỏ
+            </button>
           )}
-        </button>
+        </div>
 
-        {voucherCode && !isValidatingVoucher && (
+        <div className='mt-4'>
+          {isLoadingVouchers ? (
+            <div className='flex items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white/70 p-6 text-orange-600'>
+              <Loader2 className='h-5 w-5 animate-spin' />
+            </div>
+          ) : myVouchers.length === 0 ? (
+            <div className='rounded-xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-500'>
+              Bạn chưa có voucher khả dụng nào. Bạn vẫn có thể nhập tay mã voucher ở bên dưới.
+            </div>
+          ) : (
+            <div className='grid gap-3'>
+              {myVouchers.map((v) => {
+                const normalizedVoucherCode = v.voucherCode.toUpperCase()
+                const isSelected = voucherCode.toUpperCase() === normalizedVoucherCode
+                const isAlreadyApplied = voucherPreview?.code?.toUpperCase() === normalizedVoucherCode
+                const isCurrentlyValidating = isValidatingVoucher && validatingCode === normalizedVoucherCode
+
+                return (
+                  <button
+                    key={v.assignmentId}
+                    type='button'
+                    disabled={disabled || (isValidatingVoucher && !isSelected)}
+                    onClick={() => {
+                      setVoucherCode(normalizedVoucherCode)
+                      handleValidateVoucher(normalizedVoucherCode)
+                    }}
+                    className={`w-full rounded-xl border px-4 py-4 text-left transition-all ${
+                      isSelected
+                        ? 'border-orange-500 bg-orange-50 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow-sm'
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    <div className='flex items-start justify-between gap-3'>
+                      <div className='min-w-0 flex-1'>
+                        <div className='flex flex-wrap items-center gap-2'>
+                          <span className='font-bold text-gray-900'>{v.voucherName}</span>
+                          <span className='rounded bg-orange-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-orange-700'>
+                            {normalizedVoucherCode}
+                          </span>
+                        </div>
+                        <p className='mt-1 text-sm text-gray-500'>
+                          {v.description || 'Voucher khả dụng cho đơn hàng phù hợp điều kiện.'}
+                        </p>
+                        <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500'>
+                          <span>
+                            Điều kiện tối thiểu:{' '}
+                            {v.minValue
+                              ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v.minValue)
+                              : 'Không có'}
+                          </span>
+                          <span>Đã dùng {v.usageCount}/{v.usageLimit ?? '∞'} lần</span>
+                        </div>
+                      </div>
+                      {isCurrentlyValidating ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700'>
+                          <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                          Đang kiểm tra
+                        </span>
+                      ) : isAlreadyApplied ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700'>
+                          <CheckCircle2 className='h-3.5 w-3.5' />
+                          Đã áp dụng
+                        </span>
+                      ) : isSelected ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700'>
+                          <CheckCircle2 className='h-3.5 w-3.5' />
+                          Đã chọn
+                        </span>
+                      ) : (
+                        <span className='inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600'>
+                          Chọn nhanh
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className='mt-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4'>
+        <label className='block text-sm font-semibold text-gray-800'>Nhập tay mã voucher</label>
+        <p className='mt-1 text-xs text-gray-500'>Dùng khi bạn có mã riêng từ email, chiến dịch hoặc chưa thấy trong danh sách phía trên.</p>
+        <div className='mt-3 flex flex-col gap-3 md:flex-row'>
+          <input
+            type='text'
+            value={voucherCode}
+            disabled={disabled || isValidatingVoucher}
+            onChange={(e) => {
+              setVoucherCode(e.target.value.toUpperCase())
+              if (voucherPreview) {
+                setVoucherPreview(null)
+                onPreviewChange(null)
+              }
+            }}
+            placeholder='Nhập mã voucher...'
+            className='flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-wide text-gray-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 disabled:cursor-not-allowed disabled:opacity-70'
+          />
           <button
             type='button'
-            onClick={handleClearVoucher}
-            className='inline-flex shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-4 text-sm font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-red-500 hover:border-red-200'
+            onClick={() => handleValidateVoucher()}
+            disabled={disabled || isValidatingVoucher || !voucherCode.trim()}
+            className='inline-flex shrink-0 items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70'
           >
-            Gỡ bỏ
+            {isValidatingVoucher ? (
+              <span className='flex items-center gap-2'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                Đang kiểm tra...
+              </span>
+            ) : (
+              'Áp dụng mã'
+            )}
           </button>
-        )}
+        </div>
       </div>
 
       {voucherPreview && (
@@ -139,47 +248,6 @@ export default function VoucherInput({ orderId, disabled = false, onPreviewChang
           </div>
         </div>
       )}
-
-      {/* Modal Chọn Voucher */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title='Chọn Mã Ưu Đãi' maxWidth="max-w-lg">
-        <div className='flex flex-col gap-3 pb-4'>
-          {isLoadingVouchers ? (
-            <div className='flex justify-center p-8'><Loader2 className='h-8 w-8 animate-spin text-orange-500' /></div>
-          ) : myVouchers.length === 0 ? (
-            <div className='text-center py-10'>
-              <div className="bg-orange-100 text-orange-600 rounded-full h-16 w-16 mx-auto flex items-center justify-center mb-3">
-                <TicketPercent size={32} />
-              </div>
-              <p className='text-gray-500 font-medium'>Bạn chưa có mã ưu đãi nào.</p>
-            </div>
-          ) : (
-            myVouchers.map((v) => (
-              <div key={v.assignmentId} className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 transition hover:border-orange-300 hover:shadow-sm'>
-                <div className="flex-1">
-                  <h4 className='font-bold text-gray-800'>
-                    {v.voucherName} 
-                    <span className='inline-block text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded ml-2 align-middle'>
-                      {v.voucherCode}
-                    </span>
-                  </h4>
-                  <p className='text-xs text-gray-500 mt-1.5 leading-relaxed line-clamp-2'>{v.description || 'Không có mô tả cho voucher này'}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVoucherCode(v.voucherCode)
-                    setIsModalOpen(false)
-                    handleValidateVoucher(v.voucherCode)
-                  }}
-                  className='shrink-0 rounded-lg bg-orange-500 px-5 py-2 text-sm font-bold tracking-wide text-white transition hover:bg-orange-600 focus:ring-2 focus:ring-orange-300 focus:outline-none'
-                >
-                  Sử dụng
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </Modal>
     </div>
   )
 }

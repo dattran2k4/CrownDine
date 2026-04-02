@@ -7,6 +7,9 @@ import com.crowndine.model.Category;
 import com.crowndine.repository.CategoryRepository;
 import com.crowndine.service.category.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,15 +19,19 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
+    private static final String CATEGORIES_CACHE = "categories";
+    private static final String CATEGORY_BY_ID_CACHE = "category-by-id";
 
     private final CategoryRepository categoryRepository;
 
     @Override
+    @Cacheable(CATEGORIES_CACHE)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Override
+    @Cacheable(value = CATEGORY_BY_ID_CACHE, key = "#id")
     public CategoryResponse getCategoryById(Long id) {
         Category category = getCategoryOrThrow(id);
         return mapToResponse(category);
@@ -32,6 +39,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CATEGORIES_CACHE, allEntries = true),
+            @CacheEvict(value = CATEGORY_BY_ID_CACHE, allEntries = true)
+    })
     public CategoryResponse createCategory(CategoryRequest request) {
         Category category = new Category();
         category.setName(request.getName());
@@ -44,6 +55,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CATEGORIES_CACHE, allEntries = true),
+            @CacheEvict(value = CATEGORY_BY_ID_CACHE, allEntries = true)
+    })
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = getCategoryOrThrow(id);
         category.setName(request.getName());
@@ -56,6 +71,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CATEGORIES_CACHE, allEntries = true),
+            @CacheEvict(value = CATEGORY_BY_ID_CACHE, allEntries = true)
+    })
     public void deleteCategory(Long id) {
         categoryRepository.delete(getCategoryOrThrow(id));
     }

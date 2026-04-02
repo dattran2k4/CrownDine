@@ -15,6 +15,9 @@ import com.crowndine.repository.ItemRepository;
 import com.crowndine.repository.FeedbackRepository;
 import com.crowndine.service.combo.ComboService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,10 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class ComboServiceImpl implements ComboService {
+    private static final String COMBOS_CACHE = "combos";
+    private static final String COMBO_BY_ID_CACHE = "combo-by-id";
+    private static final String COMBO_BY_NAME_CACHE = "combo-by-name";
+    private static final String TOP_SELLING_COMBOS_CACHE = "top-selling-combos";
 
     private final ComboRepository comboRepository;
     private final ComboItemRepository comboItemRepository;
@@ -35,6 +42,7 @@ public class ComboServiceImpl implements ComboService {
     private final FeedbackRepository feedbackRepository;
 
     @Override
+    @Cacheable(COMBOS_CACHE)
     public List<ComboResponse> getAllCombos() {
         return comboRepository.findAll()
                 .stream().map(this::mapToResponse)
@@ -42,6 +50,7 @@ public class ComboServiceImpl implements ComboService {
     }
 
     @Override
+    @Cacheable(value = TOP_SELLING_COMBOS_CACHE, key = "#limit")
     public List<TopSellingComboResponse> getTopSellingCombos(int limit) {
         int normalizedLimit = normalizeTopSellingLimit(limit);
 
@@ -54,6 +63,7 @@ public class ComboServiceImpl implements ComboService {
     }
 
     @Override
+    @Cacheable(value = COMBO_BY_ID_CACHE, key = "#id")
     public ComboResponse getComboById(Long id) {
         Combo combo = comboRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy combo với id: " + id));
@@ -61,6 +71,7 @@ public class ComboServiceImpl implements ComboService {
     }
 
     @Override
+    @Cacheable(value = COMBO_BY_NAME_CACHE, key = "#name")
     public ComboResponse getComboByName(String name) {
         Combo combo = comboRepository.findByName(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy combo với tên: " + name));
@@ -69,6 +80,12 @@ public class ComboServiceImpl implements ComboService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = COMBOS_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_NAME_CACHE, allEntries = true),
+            @CacheEvict(value = TOP_SELLING_COMBOS_CACHE, allEntries = true)
+    })
     public ComboResponse createCombo(ComboRequest req) {
         if (comboRepository.findByName(req.getName()).isPresent()) {
             throw new InvalidDataException("Tên combo đã tồn tại");
@@ -107,7 +124,14 @@ public class ComboServiceImpl implements ComboService {
         return mapToResponse(savedCombo);
     }
 
+    @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = COMBOS_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_NAME_CACHE, allEntries = true),
+            @CacheEvict(value = TOP_SELLING_COMBOS_CACHE, allEntries = true)
+    })
     public ComboResponse updateCombo(Long id, ComboRequest req) {
         Combo combo = comboRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy combo với id: " + id));
@@ -150,6 +174,12 @@ public class ComboServiceImpl implements ComboService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = COMBOS_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_ID_CACHE, allEntries = true),
+            @CacheEvict(value = COMBO_BY_NAME_CACHE, allEntries = true),
+            @CacheEvict(value = TOP_SELLING_COMBOS_CACHE, allEntries = true)
+    })
     public void deleteCombo(Long id) {
         if (!comboRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy combo với id: " + id);

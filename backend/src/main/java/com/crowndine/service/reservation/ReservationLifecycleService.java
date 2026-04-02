@@ -3,13 +3,13 @@ package com.crowndine.service.reservation;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.request.StaffReservationCreateRequest;
 import com.crowndine.dto.request.ReservationUpdateTableRequest;
-import com.crowndine.dto.response.ReservationCreateResponse;
+import com.crowndine.dto.response.ReservationCheckoutResponse;
 import com.crowndine.model.Reservation;
 
 public interface ReservationLifecycleService {
-    ReservationCreateResponse createReservationByCustomer(String username, ReservationCreateRequest request);
+    ReservationCheckoutResponse createReservationByCustomer(String username, ReservationCreateRequest request);
 
-    ReservationCreateResponse createWalkInReservationByStaff(String staffUsername, StaffReservationCreateRequest request);
+    ReservationCheckoutResponse createWalkInReservationByStaff(String staffUsername, StaffReservationCreateRequest request);
 
     void checkInReservation(Long reservationId, String username);
 
@@ -21,7 +21,7 @@ public interface ReservationLifecycleService {
 
     void completeReservation(Long reservationId, String username);
 
-    void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
+    ReservationCheckoutResponse updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username);
 
     void confirmAfterDepositPaid(Reservation reservation);
 }

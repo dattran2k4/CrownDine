@@ -1,8 +1,7 @@
 import type { ApiResponse, PageResponse } from '@/types/utils.type'
 import type {
   ReservationCreateRequest,
-  ReservationCreateResponse,
-  OrderDetailResponse,
+  ReservationCheckoutResponse,
   StaffReservationResponse,
   StaffReservationCreateRequest,
   ReservationUpdateTableRequest,
@@ -24,15 +23,15 @@ const reservationApi = {
   },
 
   createReservation(data: ReservationCreateRequest) {
-    return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/create`, data)
+    return http.post<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/create`, data)
   },
 
   createWalkInReservationByStaff(data: StaffReservationCreateRequest) {
-    return http.post<ApiResponse<ReservationCreateResponse>>(`${RESERVATION_URL}/staff-create`, data)
+    return http.post<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/staff-create`, data)
   },
 
-  getReservationOrderDetails(reservationId: number) {
-    return http.get<ApiResponse<OrderDetailResponse>>(`${RESERVATION_URL}/${reservationId}/order-details`)
+  getReservationCheckout(reservationId: number) {
+    return http.get<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/${reservationId}/checkout`)
   },
 
   cancelReservation(reservationId: number) {
@@ -52,15 +51,15 @@ const reservationApi = {
   },
 
   addItemToReservation(reservationId: number, data: OrderItemRequest) {
-    return http.post<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/add-item`, data)
+    return http.post<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/${reservationId}/add-item`, data)
   },
 
   updateItemInReservation(reservationId: number, data: OrderItemRequest) {
-    return http.put<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/upd-item`, data)
+    return http.put<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/${reservationId}/upd-item`, data)
   },
 
   removeItemFromReservation(reservationId: number, data: OrderItemRemoveRequest) {
-    return http.delete<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/remove-item`, { data })
+    return http.delete<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/${reservationId}/remove-item`, { data })
   },
 
   checkInReservation(id: number, staffId?: string) {
@@ -68,7 +67,7 @@ const reservationApi = {
   },
 
   updateReservationTable(reservationId: number, data: ReservationUpdateTableRequest) {
-    return http.put<ApiResponse<void>>(`${RESERVATION_URL}/${reservationId}/update-table`, data)
+    return http.put<ApiResponse<ReservationCheckoutResponse>>(`${RESERVATION_URL}/${reservationId}/update-table`, data)
   }
 }
 

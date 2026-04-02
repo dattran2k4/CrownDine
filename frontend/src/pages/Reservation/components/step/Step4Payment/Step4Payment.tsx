@@ -1,7 +1,7 @@
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import { formatCurrency } from '@/utils/utils'
 import { CreditCard, XCircle, Utensils, Loader2, Info } from 'lucide-react'
-import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { ReservationCheckoutResponse } from '@/types/reservation.type'
 import { toast } from 'react-toastify'
 import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
@@ -30,7 +30,7 @@ interface Props {
   onPay: () => void
   onCancel: () => void
   isProcessing: boolean
-  orderDetails: OrderDetailResponse | null
+  checkoutSummary: ReservationCheckoutResponse | null
   isLoadingOrderDetails: boolean
   expiratedAt: string | null
   voucherPreview: VoucherValidateResponse | null
@@ -43,7 +43,7 @@ const Step4Payment = ({
   onPay,
   onCancel,
   isProcessing,
-  orderDetails,
+  checkoutSummary,
   isLoadingOrderDetails,
   expiratedAt,
   voucherPreview,
@@ -57,12 +57,12 @@ const Step4Payment = ({
   const foodTotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
   // Sử dụng dữ liệu từ API nếu có, nếu không thì tính từ local state
-  const itemsTotal = orderDetails?.itemsTotal ?? foodTotal
-  const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+  const itemsTotal = checkoutSummary?.itemsTotal ?? foodTotal
+  const tableDeposit = checkoutSummary?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
   const previewFinalAmount = voucherPreview?.finalAmount ?? itemsTotal
 
-  // Tính depositAmount: nếu có orderDetails thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
-  const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+  // Tính depositAmount: nếu có checkout summary thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
+  const depositAmount = checkoutSummary?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
   const discountedFoodDeposit = previewFinalAmount * 0.2
   const discountedRemainingAmount = previewFinalAmount - discountedFoodDeposit
   const discountedPayableNow =
@@ -72,7 +72,7 @@ const Step4Payment = ({
   const foodDeposit = itemsTotal * 0.2
 
   // Tính số tiền còn lại (80% món ăn)
-  const remainingAmount = orderDetails?.remainingAmount ?? itemsTotal * 0.8
+  const remainingAmount = checkoutSummary?.remainingAmount ?? itemsTotal * 0.8
 
   if (isLoadingOrderDetails) {
     return (
@@ -274,7 +274,7 @@ const Step4Payment = ({
           </div>
 
           <VoucherInput
-            orderId={orderDetails?.orderId ?? undefined}
+            orderId={checkoutSummary?.orderId ?? undefined}
             disabled={isProcessing}
             onPreviewChange={onVoucherPreviewChange}
           />

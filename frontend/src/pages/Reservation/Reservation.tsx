@@ -13,7 +13,7 @@ import paymentApi from '@/apis/payment.api'
 import layoutApi from '@/apis/layout.api'
 import type { CreatePaymentRequest } from '@/apis/payment.api'
 import type { PreOrderCartItem, ReservationTable as Table } from '@/types/reservation.type'
-import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { ReservationCheckoutResponse } from '@/types/reservation.type'
 import type { VoucherValidateResponse } from '@/types/voucher.type'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Progress from '@/pages/Reservation/components/Progress'
@@ -65,7 +65,7 @@ export default function Reservation() {
   const [expiratedAt, setExpiratedAt] = useState<string | null>(null) // Thời gian hết hạn reservation
   const [isCreatingReservation, setIsCreatingReservation] = useState(false)
   const [isPaid] = useState(false) // Đánh dấu đã thanh toán
-  const [orderDetails, setOrderDetails] = useState<OrderDetailResponse | null>(null)
+  const [checkoutSummary, setCheckoutSummary] = useState<ReservationCheckoutResponse | null>(null)
   const [isLoadingOrderDetails, setIsLoadingOrderDetails] = useState(false)
   const [voucherPreview, setVoucherPreview] = useState<VoucherValidateResponse | null>(null)
   const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(null)
@@ -131,6 +131,7 @@ export default function Reservation() {
                 setReservationId(createRes.data.data.reservationId)
                 setReservationCode(createRes.data.data.reservationCode)
                 setExpiratedAt(createRes.data.data.expiratedAt)
+                setCheckoutSummary(createRes.data.data)
                 setReservedTableId(matchedTable.id.toString())
                 setCurrentStep(parseInt(stepParam)) // Chuyển thẳng tới bước 3 hoặc 4
               }
@@ -181,9 +182,9 @@ export default function Reservation() {
         throw new Error('Không tìm thấy mã đặt bàn để thanh toán. Vui lòng thử lại.')
       }
 
-      const itemsTotal = orderDetails?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
-      const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
-      const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+      const itemsTotal = checkoutSummary?.itemsTotal ?? cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
+      const tableDeposit = checkoutSummary?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+      const depositAmount = checkoutSummary?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
 
       if (!checkoutUrl) {
         throw new Error('Không nhận được liên kết thanh toán')
@@ -223,19 +224,21 @@ export default function Reservation() {
     try {
       // Nếu đã có trong cart, update quantity; nếu chưa có, add mới
       if (exist) {
-        await reservationApi.updateItemInReservation(reservationId, {
+        const response = await reservationApi.updateItemInReservation(reservationId, {
           itemId: entry.type === 'item' ? entry.id : undefined,
           comboId: entry.type === 'combo' ? entry.id : undefined,
           quantity: newQuantity,
           note: exist.note
         })
+        setCheckoutSummary(response.data.data)
       } else {
-        await reservationApi.addItemToReservation(reservationId, {
+        const response = await reservationApi.addItemToReservation(reservationId, {
           itemId: entry.type === 'item' ? entry.id : undefined,
           comboId: entry.type === 'combo' ? entry.id : undefined,
           quantity: 1,
           note: undefined
         })
+        setCheckoutSummary(response.data.data)
       }
 
       // Update local state
@@ -262,12 +265,13 @@ export default function Reservation() {
     if (newQuantity < 1) return
 
     try {
-      await reservationApi.updateItemInReservation(reservationId, {
+      const response = await reservationApi.updateItemInReservation(reservationId, {
         itemId: type === 'item' ? id : undefined,
         comboId: type === 'combo' ? id : undefined,
         quantity: newQuantity,
         note: exist.note // Preserve current note
       })
+      setCheckoutSummary(response.data.data)
 
       setCartItems(cartItems.map((i) => (i.type === type && i.id === id ? { ...i, quantity: newQuantity } : i)))
     } catch (error) {
@@ -300,11 +304,12 @@ export default function Reservation() {
           return
         }
 
-        await reservationApi.updateReservationTable(reservationId, {
+        const response = await reservationApi.updateReservationTable(reservationId, {
           tableId: parseInt(selectedTable.id)
         })
 
         setReservedTableId(selectedTable.id)
+        setCheckoutSummary(response.data.data)
         setCurrentStep(3)
         return
       }
@@ -321,6 +326,7 @@ export default function Reservation() {
         setReservationId(response.data.data.reservationId)
         setReservationCode(response.data.data.reservationCode)
         setExpiratedAt(response.data.data.expiratedAt)
+        setCheckoutSummary(response.data.data)
         setReservedTableId(selectedTable.id)
         setCurrentStep(3)
       }
@@ -390,15 +396,15 @@ export default function Reservation() {
           )
           // --- END SYNC ---
 
-          const response = await reservationApi.getReservationOrderDetails(reservationId)
-          setOrderDetails(response.data.data)
+          const response = await reservationApi.getReservationCheckout(reservationId)
+          setCheckoutSummary(response.data.data)
           setCurrentStep(4)
         } catch (error) {
           console.error('Failed to fetch/sync order details:', error)
-          // Vẫn cho phép tiếp tục với orderDetails = null (Step4Payment có fallback logic)
+          // Vẫn cho phép tiếp tục với checkoutSummary = null (Step4Payment có fallback logic)
           // Nhưng hiện thông báo lỗi nếu sync thất bại
           toast.error('Có lỗi xảy ra khi lưu thông tin món ăn. Vui lòng thử lại.')
-          setOrderDetails(null)
+          setCheckoutSummary(null)
           setCurrentStep(4)
         } finally {
           setIsLoadingOrderDetails(false)
@@ -416,10 +422,11 @@ export default function Reservation() {
     }
 
     try {
-      await reservationApi.removeItemFromReservation(reservationId, {
+      const response = await reservationApi.removeItemFromReservation(reservationId, {
         itemId: type === 'item' ? id : undefined,
         comboId: type === 'combo' ? id : undefined
       })
+      setCheckoutSummary(response.data.data)
 
       // Update local state
       setCartItems(cartItems.filter((i) => !(i.type === type && i.id === id)))
@@ -435,14 +442,14 @@ export default function Reservation() {
       return
     }
 
-    paymentMutation.mutate({
-      paymentRequest: {
-        reservationCode,
-        method: 'PAYOS'
-      },
-      voucherCode: voucherPreview?.code,
-      orderId: orderDetails?.orderId ?? undefined
-    })
+      paymentMutation.mutate({
+        paymentRequest: {
+          reservationCode,
+          method: 'PAYOS'
+        },
+        voucherCode: voucherPreview?.code,
+        orderId: checkoutSummary?.orderId ?? undefined
+      })
   }
 
   const handleCancel = () => {
@@ -520,7 +527,7 @@ export default function Reservation() {
               onPay={handlePayment}
               onCancel={handleCancel}
               isProcessing={isProcessing}
-              orderDetails={orderDetails}
+              checkoutSummary={checkoutSummary}
               isLoadingOrderDetails={isLoadingOrderDetails}
               expiratedAt={expiratedAt}
               voucherPreview={voucherPreview}

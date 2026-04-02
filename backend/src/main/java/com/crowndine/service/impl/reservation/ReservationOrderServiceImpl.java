@@ -5,8 +5,9 @@ import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.common.enums.ERole;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.response.OrderDetailHistoryResponse;
 import com.crowndine.dto.response.OrderLineResponse;
+import com.crowndine.dto.response.ReservationCheckoutResponse;
+import com.crowndine.dto.response.ReservationCheckoutTableResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Order;
@@ -45,20 +46,14 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderDetailHistoryResponse getReservationOrderDetails(Long reservationId) {
+    public ReservationCheckoutResponse getReservationCheckout(Long reservationId) {
         Reservation reservation = getReservationById(reservationId);
-        Order order = reservation.getOrder();
-
-        if (order == null) {
-            return createEmptyOrderDetailResponse(reservation);
-        }
-
-        return toOrderDetailPageResponse(order);
+        return toReservationCheckoutResponse(reservation);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addItemToReservationOrder(Long reservationId, OrderItemRequest request, String username) {
+    public ReservationCheckoutResponse addItemToReservationOrder(Long reservationId, OrderItemRequest request, String username) {
         log.info("Adding order item for reservation id {}", reservationId);
 
         Reservation reservation = getReservationById(reservationId);
@@ -73,11 +68,13 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         }
 
         orderService.addOrUpdateItemToOrder(order.getId(), request);
+        reservation = getReservationById(reservationId);
+        return toReservationCheckoutResponse(reservation);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateReservationOrderItem(Long reservationId, OrderItemRequest request, String username) {
+    public ReservationCheckoutResponse updateReservationOrderItem(Long reservationId, OrderItemRequest request, String username) {
         log.info("Processing update order item for reservation id {}", reservationId);
 
         Reservation reservation = getReservationById(reservationId);
@@ -89,11 +86,13 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         }
 
         orderService.updateOrderItemInReservation(reservation.getOrder(), request);
+        reservation = getReservationById(reservationId);
+        return toReservationCheckoutResponse(reservation);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeReservationOrderItem(Long reservationId, OrderItemRemoveRequest request, String username) {
+    public ReservationCheckoutResponse removeReservationOrderItem(Long reservationId, OrderItemRemoveRequest request, String username) {
         log.info("Processing remove order item for reservation id {}", reservationId);
 
         Reservation reservation = getReservationById(reservationId);
@@ -105,6 +104,8 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         }
 
         orderService.removeOrderItemInReservation(reservation.getOrder(), request);
+        reservation = getReservationById(reservationId);
+        return toReservationCheckoutResponse(reservation);
     }
 
     private Reservation getReservationById(Long reservationId) {
@@ -148,13 +149,18 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         return response;
     }
 
-    private OrderDetailHistoryResponse toOrderDetailPageResponse(Order order) {
+    public ReservationCheckoutResponse toReservationCheckoutResponse(Reservation reservation) {
+        Order order = reservation.getOrder();
+        if (order == null) {
+            return createEmptyCheckoutResponse(reservation);
+        }
+
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrder_Id(order.getId());
         List<OrderLineResponse> data = orderDetails.stream()
                 .map(orderDetail -> toLineResponse(orderDetail, order.getUser() != null ? order.getUser().getId() : null))
                 .toList();
 
-        BigDecimal tableDeposit = getTableDeposit(order.getRestaurantTable());
+        BigDecimal tableDeposit = getTableDeposit(reservation.getTable());
         BigDecimal totalPrice = defaultMoney(order.getTotalPrice());
         BigDecimal discountPrice = defaultMoney(order.getDiscountPrice());
         BigDecimal finalPrice = defaultMoney(order.getFinalPrice());
@@ -163,18 +169,19 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         BigDecimal remainingAmount = finalPrice.subtract(finalPrice.multiply(DEPOSIT_RATE))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        OrderDetailHistoryResponse response = new OrderDetailHistoryResponse();
+        ReservationCheckoutResponse response = new ReservationCheckoutResponse();
+        response.setReservationId(reservation.getId());
+        response.setReservationCode(reservation.getCode());
+        response.setReservationStatus(reservation.getStatus());
+        response.setExpiratedAt(reservation.getExpiratedAt());
         response.setOrderId(order.getId());
-        response.setTableName(order.getRestaurantTable() != null ? order.getRestaurantTable().getName() : null);
-        response.setStatus(order.getStatus());
-        response.setTotalPrice(totalPrice);
-        response.setDiscountPrice(discountPrice);
-        response.setFinalPrice(finalPrice);
+        response.setTable(toCheckoutTable(reservation.getTable()));
         response.setItemsTotal(itemsTotal);
+        response.setDiscountAmount(discountPrice);
+        response.setFinalAmount(finalPrice);
         response.setTableDeposit(tableDeposit);
         response.setDepositAmount(depositAmount);
         response.setRemainingAmount(remainingAmount);
-        response.setCreatedAt(order.getCreatedAt());
         response.setItems(data);
         return response;
     }
@@ -187,19 +194,41 @@ public class ReservationOrderServiceImpl implements ReservationOrderService {
         return EOrderStatus.PRE_ORDER;
     }
 
-    private OrderDetailHistoryResponse createEmptyOrderDetailResponse(Reservation reservation) {
-        OrderDetailHistoryResponse response = new OrderDetailHistoryResponse();
+    private ReservationCheckoutResponse createEmptyCheckoutResponse(Reservation reservation) {
+        BigDecimal tableDeposit = getTableDeposit(reservation.getTable());
+
+        ReservationCheckoutResponse response = new ReservationCheckoutResponse();
+        response.setReservationId(reservation.getId());
+        response.setReservationCode(reservation.getCode());
+        response.setReservationStatus(reservation.getStatus());
+        response.setExpiratedAt(reservation.getExpiratedAt());
         response.setOrderId(null);
-        response.setTableName(reservation.getTable() != null ? reservation.getTable().getName() : null);
-        response.setStatus(resolveReservationOrderStatus(reservation));
-        response.setTotalPrice(BigDecimal.ZERO);
-        response.setDiscountPrice(BigDecimal.ZERO);
-        response.setFinalPrice(BigDecimal.ZERO);
+        response.setTable(toCheckoutTable(reservation.getTable()));
         response.setItemsTotal(BigDecimal.ZERO);
-        response.setTableDeposit(getTableDeposit(reservation.getTable()));
-        response.setDepositAmount(BigDecimal.ZERO);
+        response.setDiscountAmount(BigDecimal.ZERO);
+        response.setFinalAmount(BigDecimal.ZERO);
+        response.setTableDeposit(tableDeposit);
+        response.setDepositAmount(tableDeposit);
         response.setRemainingAmount(BigDecimal.ZERO);
         response.setItems(List.of());
+        return response;
+    }
+
+    private ReservationCheckoutTableResponse toCheckoutTable(RestaurantTable table) {
+        if (table == null) {
+            return null;
+        }
+
+        ReservationCheckoutTableResponse response = new ReservationCheckoutTableResponse();
+        response.setId(table.getId());
+        response.setName(table.getName());
+        response.setDeposit(getTableDeposit(table));
+        if (table.getArea() != null) {
+            response.setAreaName(table.getArea().getName());
+            if (table.getArea().getFloor() != null) {
+                response.setFloorName(table.getArea().getFloor().getName());
+            }
+        }
         return response;
     }
 

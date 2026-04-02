@@ -21,6 +21,14 @@ export interface ReservationCreateResponse {
   expiratedAt: string | null
 }
 
+export interface ReservationCheckoutTableResponse {
+  id: number
+  name: string
+  areaName?: string | null
+  floorName?: string | null
+  deposit: number
+}
+
 export interface OrderLineResponse {
   orderDetailId: number
   productId: number
@@ -33,18 +41,19 @@ export interface OrderLineResponse {
   hasFeedback?: boolean
 }
 
-export interface OrderDetailResponse {
+export interface ReservationCheckoutResponse {
+  reservationId: number
+  reservationCode: string
+  reservationStatus: string
+  expiratedAt: string | null
   orderId: number | null
-  tableName: string
-  status: string
-  totalPrice: number
-  discountPrice: number
-  finalPrice: number
+  table: ReservationCheckoutTableResponse | null
   itemsTotal: number
+  discountAmount: number
+  finalAmount: number
   tableDeposit: number
   depositAmount: number
   remainingAmount: number
-  createdAt: string
   items: OrderLineResponse[]
 }
 

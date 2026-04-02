@@ -8,7 +8,7 @@ import com.crowndine.common.utils.CodeUtils;
 import com.crowndine.dto.request.ReservationCreateRequest;
 import com.crowndine.dto.request.StaffReservationCreateRequest;
 import com.crowndine.dto.request.ReservationUpdateTableRequest;
-import com.crowndine.dto.response.ReservationCreateResponse;
+import com.crowndine.dto.response.ReservationCheckoutResponse;
 import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Order;
@@ -21,6 +21,7 @@ import com.crowndine.repository.UserRepository;
 import com.crowndine.service.order.OrderService;
 import com.crowndine.service.reservation.ReservationAvailabilityService;
 import com.crowndine.service.reservation.ReservationLifecycleService;
+import com.crowndine.service.reservation.ReservationOrderService;
 import com.crowndine.service.reservation.ReservationTimePolicy;
 import com.crowndine.service.reservation.event.ReservationCancelledEvent;
 import com.crowndine.service.reservation.event.ReservationConfirmedEvent;
@@ -44,11 +45,12 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final OrderService orderService;
     private final ReservationTimePolicy reservationTimePolicy;
     private final ReservationAvailabilityService reservationAvailabilityService;
+    private final ReservationOrderService reservationOrderService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ReservationCreateResponse createReservationByCustomer(String username, ReservationCreateRequest request) {
+    public ReservationCheckoutResponse createReservationByCustomer(String username, ReservationCreateRequest request) {
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User customer = getUserByUserName(username);
         return createReservationInternal(request, customer, null, null, null, EReservationStatus.PENDING, startDateTime);
@@ -56,7 +58,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ReservationCreateResponse createWalkInReservationByStaff(String staffUsername, StaffReservationCreateRequest request) {
+    public ReservationCheckoutResponse createWalkInReservationByStaff(String staffUsername, StaffReservationCreateRequest request) {
         LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(request.getDate(), request.getStartTime());
         User staff = getUserByUserName(staffUsername);
 
@@ -165,7 +167,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username) {
+    public ReservationCheckoutResponse updateReservationTable(Long reservationId, ReservationUpdateTableRequest request, String username) {
         log.info("Updating table for reservation id {} to table id {} for user {}", reservationId, request.getTableId(), username);
 
         Reservation reservation = getReservationById(reservationId);
@@ -189,6 +191,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
         reservationRepository.save(reservation);
         log.info("Reservation id {} table updated to table id {}", reservationId, request.getTableId());
+        return reservationOrderService.getReservationCheckout(reservationId);
     }
 
     private void validateTableForReservation(RestaurantTable table, Integer guestNumber) {
@@ -230,7 +233,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
     }
 
-    private ReservationCreateResponse createReservationInternal(ReservationCreateRequest request, User customer,
+    private ReservationCheckoutResponse createReservationInternal(ReservationCreateRequest request, User customer,
                                                                 User createdByStaff, String guestName, String guestPhone,
                                                                 EReservationStatus initialStatus, LocalDateTime startDateTime) {
         LocalDateTime endDateTime = reservationTimePolicy.calculatePlannedEndTime(startDateTime);
@@ -258,12 +261,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
         Reservation saved = reservationRepository.save(reservation);
         log.info("Reservation has been saved with id: {}", saved.getId());
-
-        ReservationCreateResponse response = new ReservationCreateResponse();
-        response.setReservationId(saved.getId());
-        response.setReservationCode(saved.getCode());
-        response.setExpiratedAt(saved.getExpiratedAt());
-        return response;
+        return reservationOrderService.getReservationCheckout(saved.getId());
     }
 
     private void applyInitialStatus(Reservation reservation, EReservationStatus initialStatus) {

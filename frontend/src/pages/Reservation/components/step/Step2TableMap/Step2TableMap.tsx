@@ -223,7 +223,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
         </div>
       </div>
 
-      <div className='relative flex min-h-125 flex-col overflow-hidden rounded-2xl border-2 border-gray-200/80 bg-white shadow-2xl backdrop-blur-sm'>
+      <div className='relative flex min-h-[750px] flex-col overflow-hidden rounded-2xl border-2 border-gray-200/80 bg-white shadow-2xl backdrop-blur-sm'>
         {/* Floor Tabs - Enhanced Modern Design */}
         {!isLoading && floors.length > 0 && (
           <div className='flex border-b-2 border-gray-200/50 bg-linear-to-br from-gray-50 via-white to-gray-50 shadow-sm'>
@@ -249,8 +249,8 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
           </div>
         )}
 
-        {/* Layout Area - Enhanced Modern Design */}
-        <div className='relative min-h-125 flex-1 overflow-hidden rounded-b-2xl bg-linear-to-br from-gray-50/80 via-white to-gray-50/80 backdrop-blur-sm'>
+        {/* Layout Area - Enhanced Modern Design spans full height */}
+        <div className='relative flex-1 overflow-hidden rounded-b-2xl bg-linear-to-br from-gray-50/80 via-white to-gray-50/80 backdrop-blur-sm'>
           {isLoading ? (
             <div className='absolute inset-0 flex flex-col items-center justify-center'>
               <div className='flex flex-col items-center gap-4'>
@@ -278,8 +278,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
                     layout={activeLayout}
                     onChange={() => {}} // Readonly
                     onSelectArea={handleSelectArea}
-                    zoomScale={0.4}
-                    enableScroll={true}
+                    enableScroll={false}
                   />
                 </div>
               </div>
@@ -309,8 +308,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
                     onChange={() => {}} // Disabled in this view
                     onSelectTable={handleSelectTable}
                     selectedTableIds={currentSelectedTable ? [parseInt(currentSelectedTable.id)] : []}
-                    zoomScale={0.4}
-                    enableScroll={true}
+                    enableScroll={false}
                     guests={guests}
                     availableTableIds={availableTableIds}
                     isPaid={isPaid}

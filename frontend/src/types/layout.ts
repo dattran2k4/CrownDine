@@ -61,7 +61,7 @@ export type AreaRequest = {
 export type TableRequest = {
   name: string;
   capacity?: number;
-  shape: "RECT" | "CIRCLE" | "SQUARE";
+  shape: "RECT" | "CIRCLE" | "SQUARE" | "DOOR" | "PLANT" | "WC";
   deposit?: number;
   width?: number;
   height?: number;

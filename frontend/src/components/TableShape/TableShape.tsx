@@ -101,92 +101,59 @@ export default function TableShape({
     if (isCircle) {
       return Array.from({ length: capacity }).map((_, i) => {
         const angle = (i / capacity) * Math.PI * 2
+        // Ghế tròn có tựa
         const sx = r + Math.cos(angle) * (r + 14)
         const sy = r + Math.sin(angle) * (r + 14)
-        return <circle key={i} cx={sx} cy={sy} r={5} fill={seatColor} />
+        const backX = r + Math.cos(angle) * (r + 18)
+        const backY = r + Math.sin(angle) * (r + 18)
+
+        return (
+          <g key={i}>
+            <circle cx={sx} cy={sy} r={6} fill={seatColor} />
+            <path
+              d={`M ${sx - 8 * Math.sin(angle)},${sy + 8 * Math.cos(angle)} Q ${backX},${backY} ${sx + 8 * Math.sin(angle)},${sy - 8 * Math.cos(angle)}`}
+              fill="none"
+              stroke={seatColor}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+          </g>
+        )
       })
     }
 
-    // RECT / SQUARE - Trapezoid shape pointing to table
-    const top = Math.ceil(capacity / 2)
-    const bottom = capacity - top
+    // RECT / SQUARE - Modern chairs with backs
+    const topCap = Math.ceil(capacity / 2)
+    const bottomCap = capacity - topCap
     const seats: JSX.Element[] = []
 
-    if (table.shape === 'SQUARE' && capacity === 6) {
-      const topCenters = [width * 0.3, width * 0.7]
-      const bottomCenters = [width * 0.3, width * 0.7]
-      const leftCenterY = height / 2
-      const rightCenterY = height / 2
-
-      topCenters.forEach((centerX, i) => {
-        const d = `M ${centerX - 14},-6 L ${centerX + 14},-6 Q ${centerX + 16},-6 ${centerX + 16},-4 L ${centerX + 20},0 L ${centerX - 20},0 L ${centerX - 16},-4 Q ${centerX - 16},-6 ${centerX - 14},-6 Z`
-        seats.push(
+    const renderDetailedChair = (centerX: number, centerY: number, rotation: number, key: string) => {
+      return (
+        <g key={key} transform={`translate(${centerX}, ${centerY}) rotate(${rotation})`}>
+          {/* Seat base */}
+          <rect x={-12} y={-4} width={24} height={8} rx={3} fill={seatColor} />
+          {/* Chair backrest */}
           <path
-            key={`t${i}`}
-            d={d}
-            fill={seatColor}
+            d="M -14,-7 Q 0,-10 14,-7"
+            fill="none"
+            stroke={seatColor}
+            strokeWidth={3}
+            strokeLinecap="round"
           />
-        )
-      })
-
-      bottomCenters.forEach((centerX, i) => {
-        const d = `M ${centerX - 20},${height} L ${centerX + 20},${height} L ${centerX + 16},${height + 4} Q ${centerX + 16},${height + 6} ${centerX + 14},${height + 6} L ${centerX - 14},${height + 6} Q ${centerX - 16},${height + 6} ${centerX - 16},${height + 4} L ${centerX - 20},${height} Z`
-        seats.push(
-          <path
-            key={`b${i}`}
-            d={d}
-            fill={seatColor}
-          />
-        )
-      })
-
-      const leftPoints = `-6,${leftCenterY - 14} -6,${leftCenterY + 14} 0,${leftCenterY + 20} 0,${leftCenterY - 20}`
-      seats.push(
-        <polygon
-          key="l0"
-          points={leftPoints}
-          fill={seatColor}
-        />
-      )
-
-      const rightPoints = `${width},${rightCenterY - 20} ${width},${rightCenterY + 20} ${width + 6},${rightCenterY + 14} ${width + 6},${rightCenterY - 14}`
-      seats.push(
-        <polygon
-          key="r0"
-          points={rightPoints}
-          fill={seatColor}
-        />
-      )
-
-      return seats
-    }
-
-    for (let i = 0; i < top; i++) {
-      const spreadWidth = width + (top - 1) * 4
-      const centerX = (spreadWidth / (top + 1)) * (i + 1) - (spreadWidth - width) / 2
-      // Trapezoid: narrow at top, wide at bottom (pointing into table) with rounded top corners
-      const d = `M ${centerX - 14},-6 L ${centerX + 14},-6 Q ${centerX + 16},-6 ${centerX + 16},-4 L ${centerX + 20},0 L ${centerX - 20},0 L ${centerX - 16},-4 Q ${centerX - 16},-6 ${centerX - 14},-6 Z`
-      seats.push(
-        <path
-          key={`t${i}`}
-          d={d}
-          fill={seatColor}
-        />
+        </g>
       )
     }
 
-    for (let i = 0; i < bottom; i++) {
-      const spreadWidth = width + (bottom - 1) * 4
-      const centerX = (spreadWidth / (bottom + 1)) * (i + 1) - (spreadWidth - width) / 2
-      // Trapezoid: narrow at bottom, wide at top (pointing into table) with rounded bottom corners
-      const d = `M ${centerX - 20},${height} L ${centerX + 20},${height} L ${centerX + 16},${height + 4} Q ${centerX + 16},${height + 6} ${centerX + 14},${height + 6} L ${centerX - 14},${height + 6} Q ${centerX - 16},${height + 6} ${centerX - 16},${height + 4} L ${centerX - 20},${height} Z`
-      seats.push(
-        <path
-          key={`b${i}`}
-          d={d}
-          fill={seatColor}
-        />
-      )
+    for (let i = 0; i < topCap; i++) {
+      const spreadWidth = width + (topCap - 1) * 4
+      const centerX = (spreadWidth / (topCap + 1)) * (i + 1) - (spreadWidth - width) / 2
+      seats.push(renderDetailedChair(centerX, -8, 0, `t${i}`))
+    }
+
+    for (let i = 0; i < bottomCap; i++) {
+      const spreadWidth = width + (bottomCap - 1) * 4
+      const centerX = (spreadWidth / (bottomCap + 1)) * (i + 1) - (spreadWidth - width) / 2
+      seats.push(renderDetailedChair(centerX, height + 8, 180, `b${i}`))
     }
 
     return seats
@@ -207,13 +174,11 @@ export default function TableShape({
     ) : null
 
   // Xác định bàn có thể chọn được không
-  // Cho phép chọn bàn OCCUPIED và RESERVED
-  // Chỉ disable bàn UNAVAILABLE hoặc bàn AVAILABLE nhưng không phù hợp yêu cầu
   const isSelectable = statusKey === 'AVAILABLE' 
     ? (isAvailableInTimeSlot && (guests === undefined || capacity >= guests))
-    : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED') // Cho phép chọn OCCUPIED và RESERVED
-  const isDisabled = statusKey === 'UNAVAILABLE' || (statusKey === 'AVAILABLE' && !isSelectable)
-
+    : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED')
+  const isDisabled = !isSelectable
+  
   const minDim = Math.min(width, height)
   const scaleFactor = Math.max(1, minDim / 60)
 
@@ -226,7 +191,7 @@ export default function TableShape({
 
   return (
     <g
-      transform={`translate(${table.x}, ${table.y})`}
+      transform={`translate(${table.x}, ${table.y}) rotate(${table.rotation || 0}, ${width/2}, ${height/2})`}
       onPointerDown={isDisabled ? undefined : onPointerDown}
       style={{ 
         cursor: isDisabled ? 'not-allowed' : (editable ? 'move' : 'pointer'),
@@ -240,7 +205,6 @@ export default function TableShape({
       {/* ===== BÀN ===== */}
       {isCircle ? (
         <>
-          {/* Shadow/Glow effect khi selected */}
           {selected && (
             <circle
               cx={r}
@@ -252,21 +216,18 @@ export default function TableShape({
               opacity={0.5}
             />
           )}
-        <circle
-          cx={r}
-          cy={r}
-          r={r}
-          fill={style.fill}
+          <circle
+            cx={r}
+            cy={r}
+            r={r}
+            fill={style.fill}
             stroke={tableStroke}
             strokeWidth={tableStrokeWidth}
-            style={{
-              filter: tableFilter
-            }}
+            style={{ filter: tableFilter }}
           />
         </>
       ) : (
         <>
-          {/* Shadow/Glow effect khi selected */}
           {selected && (
             <rect
               x={-4}
@@ -280,21 +241,19 @@ export default function TableShape({
               opacity={0.5}
             />
           )}
-        <rect
-          width={width}
-          height={height}
-          rx={14}
-          fill={style.fill}
+          <rect
+            width={width}
+            height={height}
+            rx={14}
+            fill={style.fill}
             stroke={tableStroke}
             strokeWidth={tableStrokeWidth}
-            style={{
-              filter: tableFilter
-            }}
+            style={{ filter: tableFilter }}
           />
         </>
       )}
 
-      {/* ===== TÊN ===== */}
+      {/* ===== TÊN BÀN ===== */}
       <text
         x={isCircle ? r : width / 2}
         y={nameY}
@@ -306,7 +265,6 @@ export default function TableShape({
         {table.name}
       </text>
       
-      {/* ===== SỐ LƯỢNG KHÁCH ===== */}
       <text
         x={isCircle ? r : width / 2}
         y={capacityY}
@@ -318,11 +276,15 @@ export default function TableShape({
         {capacity} khách
       </text>
 
-      {/* ===== RESIZE ===== */}
-      {handle(-4, -4, 'nw')}
-      {handle(width - 4, -4, 'ne')}
-      {handle(-4, height - 4, 'sw')}
-      {handle(width - 4, height - 4, 'se')}
+      {/* ===== RESIZE (Chỉ hiện nếu có thể chỉnh sửa) ===== */}
+      {editable && selected && (
+        <>
+          {handle(-4, -4, 'nw')}
+          {handle(width - 4, -4, 'ne')}
+          {handle(-4, height - 4, 'sw')}
+          {handle(width - 4, height - 4, 'se')}
+        </>
+      )}
     </g>
   )
 }

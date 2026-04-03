@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.crowndine.service.mail.MailService;
 import com.crowndine.exception.InvalidDataException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +25,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -168,5 +170,54 @@ public class UserServiceImpl implements UserService {
                         .updatedAt(user.getUpdatedAt().toLocalDate())
                         .build())
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public void sendEmailOtp(String username, String newEmail) {
+        log.info("Generating email OTP for user: {}", username);
+        
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new InvalidDataException("auth.email_exists");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        // Generate 6-digit random OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+        
+        user.setVerificationCode(otp);
+        user.setVerificationExpiration(java.time.LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+        mailService.sendOtpEmail(user.getEmail(), otp);
+        log.info("Email OTP sent successfully to current email of user: {}", username);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void verifyEmailOtp(String username, String otp, String newEmail) {
+        log.info("Verifying email OTP for user: {}", username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        if (user.getVerificationCode() == null || !user.getVerificationCode().equals(otp)) {
+            throw new InvalidDataException("auth.verify_code_invalid");
+        }
+
+        if (user.getVerificationExpiration().isBefore(java.time.LocalDateTime.now())) {
+            throw new InvalidDataException("auth.verify_code_expired");
+        }
+
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new InvalidDataException("auth.email_exists");
+        }
+
+        user.setEmail(newEmail);
+        user.setVerificationCode(null);
+        user.setVerificationExpiration(null);
+        userRepository.save(user);
+
+        log.info("Email updated successfully for user: {}", username);
     }
 }

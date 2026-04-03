@@ -22,4 +22,8 @@ public interface UserService {
     User getUserByUserName(String username);
 
     java.util.List<ProfileResponse> getAllCustomers();
+    
+    void sendEmailOtp(String username, String newEmail);
+
+    void verifyEmailOtp(String username, String otp, String newEmail);
 }

@@ -41,6 +41,12 @@ const userApi = {
   },
   changePassword(data: ChangePasswordRequest) {
     return http.post<ApiResponse<any>>('users/change-password', data)
+  },
+  sendEmailOtp(newEmail: string) {
+    return http.post<ApiResponse<any>>('users/profile/email-otp/send', { newEmail })
+  },
+  verifyEmailOtp(data: { otp: string; newEmail: string }) {
+    return http.post<ApiResponse<any>>('users/profile/email-otp/verify', data)
   }
 }
 

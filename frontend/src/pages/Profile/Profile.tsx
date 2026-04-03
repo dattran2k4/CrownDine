@@ -61,8 +61,8 @@ const Profile = () => {
       <div className='container mx-auto px-4'>
         {/* Page Header */}
         <div className='mb-12'>
-          <h1 className='mb-2 text-4xl font-bold'>My Account</h1>
-          <p className='text-foreground/60'>Manage your profile, reservations, and account security</p>
+          <h1 className='mb-2 text-4xl font-bold'>Tài Khoản Của Tôi</h1>
+          <p className='text-foreground/60'>Quản lý hồ sơ, lịch sử đặt bàn và bảo mật tài khoản</p>
         </div>
 
         {/* Layout: Sidebar + Main Content */}

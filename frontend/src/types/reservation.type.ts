@@ -87,12 +87,14 @@ export type PreOrderItem = MenuItemIdentity & {
   type: 'item'
   price: number
   image: string
+  description?: string
 }
 
 export type PreOrderCombo = ComboIdentity & {
   type: 'combo'
   price: number
   image: string
+  description?: string
 }
 
 export type PreOrderEntry = PreOrderItem | PreOrderCombo

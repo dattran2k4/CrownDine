@@ -27,14 +27,28 @@ public class OrderStatusServiceImpl implements OrderStatusService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UpdateStatusOrderResponse updateOrderStatus(Long orderId, EOrderStatus status) {
+        return updateOrderStatus(orderId, status, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UpdateStatusOrderResponse updateOrderStatus(Long orderId, EOrderStatus status, String cancelReason) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
-        Order updatedOrder = transitionOrderStatus(order, status);
+        Order updatedOrder = transitionOrderStatus(order, status, cancelReason);
         return buildStatusResponse(updatedOrder);
     }
 
     @Override
     public Order transitionOrderStatus(Order order, EOrderStatus status) {
+        return transitionOrderStatus(order, status, null);
+    }
+
+    @Override
+    public Order transitionOrderStatus(Order order, EOrderStatus status, String cancelReason) {
         order.setStatus(status);
+        if (status == EOrderStatus.CANCELLED && cancelReason != null) {
+            order.setCancelReason(cancelReason);
+        }
         Order updatedOrder = orderRepository.save(order);
         handleOrderStatusSideEffects(updatedOrder);
         publishOrderStatus(updatedOrder);

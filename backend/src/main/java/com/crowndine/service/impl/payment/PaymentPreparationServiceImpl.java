@@ -61,7 +61,7 @@ public class PaymentPreparationServiceImpl implements PaymentPreparationService 
         Payment payment = new Payment();
         payment.setStatus(initialStatus);
         payment.setMethod(method);
-        payment.setCreatedBy(user);
+        payment.setUser(user);
         payment.setCode(CodeUtils.generatePaymentCode());
         return payment;
     }

@@ -24,29 +24,13 @@ import {
   FileDown,
   ChevronDown,
   ChevronUp,
-  Check
+  Check,
+  X
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-const recentActivities = [
-  { id: 1, user: 'asldkj', action: 'bán đơn giao hàng', value: '508,000', time: '2 days ago', type: 'sale' },
-  { id: 2, user: 'Hương - Kế Toán', action: 'bán đơn hàng', value: '330,000', time: '2 days ago', type: 'sale' },
-  { id: 3, user: 'asldkj', action: 'bán đơn hàng', value: '3,290,000', time: '2 days ago', type: 'sale' },
-  { id: 4, user: 'Hương - Kế Toán', action: 'nhập hàng', value: '286,500', time: '3 days ago', type: 'import' },
-  { id: 5, user: 'asldkj', action: 'nhập hàng', value: '2,847,000', time: '3 days ago', type: 'import' },
-  { id: 6, user: 'asldkj', action: 'nhập hàng', value: '285,000', time: '3 days ago', type: 'import' },
-  {
-    id: 7,
-    user: 'Hoàng - Kinh Doanh',
-    action: 'bán đơn giao hàng',
-    value: '2,125,000',
-    time: '3 days ago',
-    type: 'sale'
-  },
-  { id: 8, user: 'asldkj', action: 'bán đơn hàng', value: '1,495,000', time: '3 days ago', type: 'sale' },
-  { id: 9, user: 'Hương - Kế Toán', action: 'bán đơn hàng', value: '1,250,000', time: '3 days ago', type: 'sale' }
-]
+// Fake data removed, will use data from API
 
 const TimeRangeDropdown = ({
   selected,
@@ -104,6 +88,7 @@ export default function Dashboard() {
   const [customerTimeRange, setCustomerTimeRange] = useState('Hôm nay')
   const [topProductsTimeRange, setTopProductsTimeRange] = useState('Hôm nay')
   const [topProductsViewMode, setTopProductsViewMode] = useState<'revenue' | 'quantity'>('revenue')
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
 
   const revenueViewMode = revenueTimeRange === 'Hôm nay' || revenueTimeRange === 'Hôm qua' ? 'Theo giờ' : 'Theo ngày'
   const customerViewMode = customerTimeRange === 'Hôm nay' || customerTimeRange === 'Hôm qua' ? 'Theo giờ' : 'Theo ngày'
@@ -112,17 +97,20 @@ export default function Dashboard() {
 
   const { data: revenueResults } = useQuery({
     queryKey: ['dashboard-sales', 'revenue', revenueViewMode, revenueTimeRange],
-    queryFn: () => dashboardApi.getSalesResults(revenueViewMode, revenueTimeRange)
+    queryFn: () => dashboardApi.getSalesResults(revenueViewMode, revenueTimeRange),
+    refetchInterval: 15000 // Tự động tải lại sau 15 giây
   })
 
   const { data: customerResults } = useQuery({
     queryKey: ['dashboard-sales', 'customer', customerViewMode, customerTimeRange],
-    queryFn: () => dashboardApi.getSalesResults(customerViewMode, customerTimeRange)
+    queryFn: () => dashboardApi.getSalesResults(customerViewMode, customerTimeRange),
+    refetchInterval: 15000
   })
 
   const { data: topProductsResults } = useQuery({
     queryKey: ['dashboard-sales', 'topProducts', topProductsTimeRange],
-    queryFn: () => dashboardApi.getSalesResults('Theo ngày', topProductsTimeRange)
+    queryFn: () => dashboardApi.getSalesResults('Theo ngày', topProductsTimeRange),
+    refetchInterval: 15000
   })
 
   const summaryResults = revenueResults?.data.data // Base analytics use the revenue range but usually they are for Today anyway
@@ -149,6 +137,8 @@ export default function Dashboard() {
         value: item.value
       })
     ) || []
+
+  const displayRecentActivities = summaryResults?.recentActivities || []
 
   const handleExport = async () => {
     try {
@@ -457,28 +447,51 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className='flex-1 overflow-y-auto p-0'>
             <div className='divide-border/50 divide-y'>
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className='hover:bg-muted/5 flex gap-4 p-4 transition-colors'>
-                  <div
-                    className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      activity.type === 'sale' ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'
-                    }`}
-                  >
-                    {activity.type === 'sale' ? <CircleDollarSign size={16} /> : <History size={16} />}
-                  </div>
-                  <div className='space-y-1'>
-                    <p className='text-foreground text-xs leading-relaxed'>
-                      <span className='font-bold text-blue-600'>{activity.user}</span> vừa{' '}
-                      <span className='text-foreground font-medium'>{activity.action}</span> với giá trị{' '}
-                      <span className='font-bold'>{activity.value}</span>
-                    </p>
-                    <p className='text-muted-foreground text-[10px]'>{activity.time}</p>
-                  </div>
+              {displayRecentActivities.length === 0 ? (
+                <div className='flex h-32 items-center justify-center text-sm text-slate-400'>
+                  Chưa có hoạt động nào trong khoảng thời gian này
                 </div>
-              ))}
+              ) : (
+                displayRecentActivities.map((activity: any) => (
+                  <div key={activity.id} className='hover:bg-muted/5 flex gap-4 p-4 transition-colors'>
+                    <div
+                      className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        activity.type === 'delete'
+                          ? 'bg-red-50 text-red-500'
+                          : activity.type === 'import'
+                            ? 'bg-green-50 text-green-500'
+                            : 'bg-blue-50 text-blue-500'
+                      }`}
+                    >
+                      {activity.type === 'delete' ? (
+                         <X size={16} />
+                      ) : activity.type === 'import' ? (
+                        <History size={16} />
+                      ) : (
+                        <CircleDollarSign size={16} />
+                      )}
+                    </div>
+                    <div className='space-y-1'>
+                      <p className='text-foreground text-xs leading-relaxed'>
+                        <span className='font-bold text-blue-600'>{activity.user || 'Nhân viên'}</span> vừa{' '}
+                        <span className='text-foreground font-medium'>{activity.action}</span>{' '}
+                        {Number(activity.value) > 0 && (
+                          <>
+                            với giá trị <span className='font-bold'>{Number(activity.value).toLocaleString('vi-VN')} đ</span>
+                          </>
+                        )}
+                      </p>
+                      <p className='text-muted-foreground text-[10px]'>{activity.time}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className='sticky bottom-0 flex justify-center border-t bg-white p-4'>
-              <button className='flex items-center gap-1 text-[11px] font-bold text-blue-600 uppercase hover:underline'>
+              <button 
+                onClick={() => setIsActivityModalOpen(true)}
+                className='flex items-center gap-1 text-[11px] font-bold text-blue-600 uppercase hover:underline'
+              >
                 Xem thêm <ChevronRight size={14} />
               </button>
             </div>
@@ -492,6 +505,71 @@ export default function Dashboard() {
           <TrendingUp size={20} className='rotate-[-45deg]' />
         </button>
       </div>
+
+      {/* Activity Details Modal */}
+      {isActivityModalOpen && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6'>
+          <div className='fixed inset-0 bg-black/50 backdrop-blur-sm' onClick={() => setIsActivityModalOpen(false)} />
+          <div className='bg-background w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl relative flex flex-col max-h-[85vh]'>
+            <div className='border-border flex items-center justify-between border-b px-6 py-4'>
+              <h2 className='text-lg font-bold tracking-tight'>Chi tiết hoạt động gần đây</h2>
+              <button onClick={() => setIsActivityModalOpen(false)} className='text-muted-foreground hover:text-foreground rounded-full p-2 transition-colors'>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className='flex-1 overflow-auto p-0'>
+              <table className='w-full text-left text-sm whitespace-nowrap'>
+                <thead className='bg-muted/50 text-muted-foreground sticky top-0 border-b border-border text-xs font-semibold uppercase'>
+                  <tr>
+                    <th className='px-6 py-4'>Thời gian</th>
+                    <th className='px-6 py-4'>Nhân viên</th>
+                    <th className='px-6 py-4'>Hành động</th>
+                    <th className='px-6 py-4 text-right'>Giá trị (VNĐ)</th>
+                    <th className='px-6 py-4'>Lý do</th>
+                  </tr>
+                </thead>
+                <tbody className='divide-border divide-y bg-white'>
+                  {summaryResults?.recentActivities?.length ? (
+                    summaryResults.recentActivities.map((activity: any) => (
+                      <tr key={activity.id} className='hover:bg-muted/30 transition-colors'>
+                        <td className='text-foreground px-6 py-4 whitespace-nowrap'>{activity.time}</td>
+                        <td className='px-6 py-4'>
+                          <span className='font-bold text-blue-600'>{activity.user || 'Nhân viên'}</span>
+                        </td>
+                        <td className='text-foreground px-6 py-4'>
+                          <div className='flex items-center gap-2'>
+                            <div className={`flex h-6 w-6 items-center justify-center rounded-full shrink-0 ${activity.type === 'delete' ? 'bg-red-50 text-red-500' : activity.type === 'import' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
+                              {activity.type === 'delete' ? <X size={12} /> : activity.type === 'import' ? <History size={12} /> : <CircleDollarSign size={12} />}
+                            </div>
+                            <span className='font-medium'>{activity.action}</span>
+                          </div>
+                        </td>
+                        <td className='text-foreground px-6 py-4 text-right font-bold'>
+                          {Number(activity.value) > 0 ? Number(activity.value).toLocaleString('vi-VN') : '-'}
+                        </td>
+                        <td className='px-6 py-4 min-w-[200px] whitespace-normal text-xs'>
+                          {activity.reason ? (
+                            <span className='text-destructive font-semibold'>{activity.reason}</span>
+                          ) : (
+                            <span className='text-muted-foreground italic'>-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className='text-muted-foreground px-6 py-12 text-center'>
+                        Chưa có hoạt động nào trong khoảng thời gian này
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

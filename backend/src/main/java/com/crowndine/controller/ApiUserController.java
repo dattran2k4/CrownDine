@@ -2,7 +2,9 @@ package com.crowndine.controller;
 
 import com.cloudinary.Cloudinary;
 import com.crowndine.dto.request.ChangePasswordRequest;
+import com.crowndine.dto.request.SendEmailOtpRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
+import com.crowndine.dto.request.VerifyEmailOtpRequest;
 import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.service.user.RewardPointService;
@@ -37,8 +39,30 @@ public class ApiUserController {
     }
 
     @PostMapping("change-password")
-    public ApiResponse changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
-        return ApiResponse.builder().build();
+    public ApiResponse changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, Principal principal) {
+        userService.changePassword(changePasswordRequest, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Change password successfully")
+                .build();
+    }
+
+    @PostMapping("profile/email-otp/send")
+    public ApiResponse sendEmailOtp(@Valid @RequestBody SendEmailOtpRequest request, Principal principal) {
+        userService.sendEmailOtp(principal.getName(), request.getNewEmail());
+        return ApiResponse.builder()
+                .status(200)
+                .message("OTP sent to your current email")
+                .build();
+    }
+
+    @PostMapping("profile/email-otp/verify")
+    public ApiResponse verifyEmailOtp(@Valid @RequestBody VerifyEmailOtpRequest request, Principal principal) {
+        userService.verifyEmailOtp(principal.getName(), request.getOtp(), request.getNewEmail());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Email updated successfully")
+                .build();
     }
 
     @PatchMapping("upload-avatar")

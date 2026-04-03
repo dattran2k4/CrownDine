@@ -35,9 +35,9 @@ const MyVouchers = ({ vouchers, isLoading }: MyVouchersProps) => {
   if (isLoading) {
     return (
       <div className='bg-card border-border rounded-lg border p-8'>
-        <h2 className='mb-8 text-2xl font-bold'>My Vouchers</h2>
+        <h2 className='mb-8 text-2xl font-bold'>Voucher Của Tôi</h2>
         <div className='flex items-center justify-center py-12'>
-          <p className='text-foreground/60 animate-pulse'>Loading your vouchers...</p>
+          <p className='text-foreground/60 animate-pulse'>Đang tải voucher...</p>
         </div>
       </div>
     )
@@ -45,7 +45,7 @@ const MyVouchers = ({ vouchers, isLoading }: MyVouchersProps) => {
 
   return (
     <div className='bg-card border-border rounded-lg border p-8'>
-      <h2 className='mb-8 text-2xl font-bold'>My Vouchers</h2>
+      <h2 className='mb-8 text-2xl font-bold'>Voucher Của Tôi</h2>
       <p className='text-foreground/60 mb-6 text-sm'>
         Các voucher bạn được tặng. Dùng mã khi thanh toán đơn hàng để được giảm giá.
       </p>

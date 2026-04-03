@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import useChangePassword from '@/hooks/useChangePassword'
+import useSendEmailOtp from '@/hooks/useSendEmailOtp'
+import useVerifyEmailOtp from '@/hooks/useVerifyEmailOtp'
+import { toast } from 'sonner'
 
 interface SecurityTab {
   id: 'password' | 'email' | 'phone'
@@ -17,24 +21,36 @@ interface SecurityTab {
 const SecuritySetting = () => {
   const [activeTab, setActiveTab] = useState<'password' | 'email' | 'phone'>('password')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+
+  React.useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
+  
   const tabs: SecurityTab[] = [
     {
       id: 'password',
-      label: 'Change Password',
-      description: 'Update your password to keep your account secure'
+      label: 'Đổi Mật Khẩu',
+      description: 'Cập nhật mật khẩu để bảo vệ tài khoản của bạn'
     },
     {
       id: 'email',
-      label: 'Change Email',
-      description: 'Verify your new email address with OTP'
+      label: 'Đổi Email',
+      description: 'Xác minh địa chỉ email mới bằng mã OTP'
     },
     {
       id: 'phone',
-      label: 'Change Phone',
-      description: 'Verify your new phone number with OTP'
+      label: 'Đổi Số Điện Thoại',
+      description: 'Xác minh số điện thoại mới bằng mã OTP'
     }
   ]
 
@@ -49,67 +65,108 @@ const SecuritySetting = () => {
     otp: ''
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [phoneForm, setPhoneForm] = useState({
     newPhone: '',
     otp: ''
   })
 
-  const handlePasswordChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setPasswordForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleEmailChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setEmailForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handlePhoneChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setPhoneForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  const changePasswordMutation = useChangePassword()
+  const sendEmailOtpMutation = useSendEmailOtp()
+  const verifyEmailOtpMutation = useVerifyEmailOtp()
+
+  const validateEmail = (email: string) => {
+    return String(email)
+      .toLowerCase()
+      .match(
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+      )
+  }
+
   const handleSendOTP = async (type: 'email' | 'phone') => {
-    setIsLoading(true)
-    // Simulate OTP sending
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setOtpSent(true)
-    setIsLoading(false)
-    console.log(`[v0] OTP sent to ${type}`)
+    if (type === 'email') {
+      if (!emailForm.newEmail) {
+        toast.error('Vui lòng nhập email mới')
+        return
+      }
+      if (!validateEmail(emailForm.newEmail)) {
+        toast.error('Email không đúng định dạng')
+        return
+      }
+      sendEmailOtpMutation.mutate(emailForm.newEmail, {
+        onSuccess: () => {
+          setOtpSent(true)
+          setCountdown(30)
+        }
+      })
+    }
   }
 
   const handleVerifyOTP = async (type: 'email' | 'phone') => {
-    setIsLoading(true)
-    // Simulate OTP verification
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setOtpVerified(true)
-    setIsLoading(false)
-    console.log(`[v0] OTP verified for ${type}`)
+    if (type === 'email') {
+      if (!emailForm.otp) {
+        toast.error('Vui lòng nhập mã OTP')
+        return
+      }
+      verifyEmailOtpMutation.mutate({
+        otp: emailForm.otp,
+        newEmail: emailForm.newEmail
+      }, {
+        onSuccess: () => {
+          setOtpVerified(true)
+          setOtpSent(false)
+          setEmailForm({ newEmail: '', otp: '' })
+        }
+      })
+    }
   }
 
   const handlePasswordSubmit = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      console.log('[v0] Passwords do not match')
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('Vui lòng nhập đầy đủ thông tin')
       return
     }
-    setIsLoading(true)
-    // Simulate password change
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Mật khẩu mới không khớp')
+      return
+    }
+
+    changePasswordMutation.mutate({
+      oldPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+      confirmNewPassword: passwordForm.confirmPassword
+    }, {
+      onSuccess: () => {
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+      }
     })
-    console.log('[v0] Password changed successfully')
   }
+
   return (
     <div className='bg-card border-border rounded-lg border p-8'>
-      {/* Header */}
-      <h2 className='mb-2 text-2xl font-bold'>Password & Security</h2>
-      <p className='text-foreground/60 mb-8'>Manage your account security and personal information</p>
+      <h2 className='mb-2 text-2xl font-bold'>Mật Khẩu & Bảo Mật</h2>
+      <p className='text-foreground/60 mb-8'>Quản lý bảo mật tài khoản và thông tin cá nhân</p>
 
-      {/* Tabs */}
       <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-3'>
         {tabs.map((tab) => (
           <button
@@ -129,29 +186,35 @@ const SecuritySetting = () => {
         ))}
       </div>
 
-      {/* Password Tab */}
       {activeTab === 'password' && (
         <div className='max-w-md space-y-6'>
           <div>
             <Label htmlFor='currentPassword' className='text-sm font-semibold'>
-              Current Password
+              Mật Khẩu Hiện Tại
             </Label>
             <div className='relative mt-2'>
               <Input
                 id='currentPassword'
                 name='currentPassword'
-                type='password'
+                type={showCurrentPassword ? 'text' : 'password'}
                 value={passwordForm.currentPassword}
                 onChange={handlePasswordChange}
-                placeholder='Enter your current password'
+                placeholder='Nhập mật khẩu hiện tại'
                 className='border-border rounded-lg border-2 pr-10'
               />
+              <button
+                type='button'
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+              >
+                {showCurrentPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+              </button>
             </div>
           </div>
 
           <div>
             <Label htmlFor='newPassword' className='text-sm font-semibold'>
-              New Password
+              Mật Khẩu Mới
             </Label>
             <div className='relative mt-2'>
               <Input
@@ -160,52 +223,58 @@ const SecuritySetting = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={passwordForm.newPassword}
                 onChange={handlePasswordChange}
-                placeholder='Enter your new password'
+                placeholder='Nhập mật khẩu mới'
                 className='border-border rounded-lg border-2 pr-10'
               />
               <button
+                type='button'
                 onClick={() => setShowPassword(!showPassword)}
                 className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
               >
                 {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
               </button>
             </div>
-            <p className='text-foreground/60 mt-1 text-xs'>
-              At least 8 characters, including uppercase, lowercase, and numbers
-            </p>
           </div>
 
           <div>
             <Label htmlFor='confirmPassword' className='text-sm font-semibold'>
-              Confirm New Password
+              Xác Nhập Mật Khẩu Mới
             </Label>
-            <Input
-              id='confirmPassword'
-              name='confirmPassword'
-              type='password'
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordChange}
-              placeholder='Confirm your new password'
-              className='border-border mt-2 rounded-lg border-2'
-            />
+            <div className='relative mt-2'>
+              <Input
+                id='confirmPassword'
+                name='confirmPassword'
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordChange}
+                placeholder='Nhập lại mật khẩu mới'
+                className='border-border rounded-lg border-2 pr-10'
+              />
+              <button
+                type='button'
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+              >
+                {showConfirmPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+              </button>
+            </div>
           </div>
 
           <Button
             onClick={handlePasswordSubmit}
-            disabled={isLoading}
+            disabled={changePasswordMutation.isPending}
             className='bg-primary hover:bg-primary/90 w-full text-white'
           >
-            {isLoading ? 'Updating...' : 'Update Password'}
+            {changePasswordMutation.isPending ? 'Đang cập nhật...' : 'Cập Nhập Mật Khẩu'}
           </Button>
         </div>
       )}
 
-      {/* Email Tab */}
       {activeTab === 'email' && (
         <div className='max-w-md space-y-6'>
           <div>
             <Label htmlFor='newEmail' className='text-sm font-semibold'>
-              New Email Address
+              Email Mới
             </Label>
             <Input
               id='newEmail'
@@ -213,73 +282,100 @@ const SecuritySetting = () => {
               type='email'
               value={emailForm.newEmail}
               onChange={handleEmailChange}
-              placeholder='Enter your new email'
+              placeholder='Nhập email mới của bạn'
               className='border-border mt-2 rounded-lg border-2'
-              disabled={otpSent}
+              disabled={otpSent || otpVerified}
             />
           </div>
 
-          {!otpSent ? (
+          {!otpSent && !otpVerified && (
             <Button
               onClick={() => handleSendOTP('email')}
-              disabled={isLoading || !emailForm.newEmail}
+              disabled={sendEmailOtpMutation.isPending || !emailForm.newEmail}
               className='bg-primary hover:bg-primary/90 w-full text-white'
             >
-              {isLoading ? 'Sending OTP...' : 'Send OTP'}
+              {sendEmailOtpMutation.isPending ? 'Đang gửi mã...' : 'Gửi Mã OTP'}
             </Button>
-          ) : (
+          )}
+
+          {otpSent && !otpVerified && (
             <>
               <div className='flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-950/20'>
                 <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400' />
                 <p className='text-sm text-blue-700 dark:text-blue-300'>
-                  An OTP has been sent to your new email address
+                  Đã gửi mã OTP đến địa chỉ email hiện tại của bạn. Vui lòng kiểm tra hộp thư.
                 </p>
               </div>
 
-              {!otpVerified && (
-                <>
-                  <div>
-                    <Label htmlFor='emailOtp' className='text-sm font-semibold'>
-                      Enter OTP
-                    </Label>
-                    <Input
-                      id='emailOtp'
-                      name='otp'
-                      value={emailForm.otp}
-                      onChange={handleEmailChange}
-                      placeholder='Enter 6-digit OTP'
-                      className='border-border mt-2 rounded-lg border-2'
-                      maxLength={6}
-                    />
-                  </div>
+              <div>
+                <Label htmlFor='emailOtp' className='text-sm font-semibold'>
+                  Mã Xác Thực OTP
+                </Label>
+                <Input
+                  id='emailOtp'
+                  name='otp'
+                  value={emailForm.otp}
+                  onChange={handleEmailChange}
+                  placeholder='Nhập mã 6 số'
+                  className='border-border mt-2 rounded-lg border-2'
+                  maxLength={6}
+                />
+              </div>
 
-                  <Button
-                    onClick={() => handleVerifyOTP('email')}
-                    disabled={isLoading || emailForm.otp.length !== 6}
-                    className='bg-primary hover:bg-primary/90 w-full text-white'
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify OTP'}
-                  </Button>
-                </>
-              )}
+              <Button
+                onClick={() => handleVerifyOTP('email')}
+                disabled={verifyEmailOtpMutation.isPending || emailForm.otp.length !== 6}
+                className='bg-primary hover:bg-primary/90 w-full text-white'
+              >
+                {verifyEmailOtpMutation.isPending ? 'Đang xác thực...' : 'Xác Minh & Cập Nhật'}
+              </Button>
 
-              {otpVerified && (
-                <div className='flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900/50 dark:bg-green-950/20'>
-                  <CheckCircle2 className='mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400' />
-                  <p className='text-sm text-green-700 dark:text-green-300'>Email verified successfully!</p>
-                </div>
-              )}
+              <button
+                type='button'
+                disabled={countdown > 0 || sendEmailOtpMutation.isPending}
+                onClick={() => handleSendOTP('email')}
+                className='text-primary hover:text-primary/80 disabled:text-foreground/40 w-full text-center text-sm font-medium transition-colors'
+              >
+                {countdown > 0 ? `Gửi lại mã OTP sau ${countdown}s` : 'Gửi lại mã OTP'}
+              </button>
+
+              <button
+                type='button'
+                onClick={() => setOtpSent(false)}
+                className='text-foreground/60 hover:text-foreground w-full text-center text-sm'
+              >
+                Thay đổi email khác
+              </button>
+            </>
+          )}
+
+          {otpVerified && (
+            <>
+              <div className='flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900/50 dark:bg-green-950/20'>
+                <CheckCircle2 className='mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400' />
+                <p className='text-sm text-green-700 dark:text-green-300'> Email đã được cập nhật thành công! </p>
+              </div>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setOtpVerified(false)
+                  setOtpSent(false)
+                  setEmailForm({ newEmail: '', otp: '' })
+                }}
+                className='w-full border-2'
+              >
+                Thực hiện thay đổi khác
+              </Button>
             </>
           )}
         </div>
       )}
 
-      {/* Phone Tab */}
       {activeTab === 'phone' && (
         <div className='max-w-md space-y-6'>
           <div>
             <Label htmlFor='newPhone' className='text-sm font-semibold'>
-              New Phone Number
+              Số Điện Thoại Mới
             </Label>
             <Input
               id='newPhone'
@@ -287,64 +383,12 @@ const SecuritySetting = () => {
               type='tel'
               value={phoneForm.newPhone}
               onChange={handlePhoneChange}
-              placeholder='+1 (555) 000-0000'
+              placeholder='VD: 0912345678'
               className='border-border mt-2 rounded-lg border-2'
               disabled={otpSent}
             />
           </div>
-
-          {!otpSent ? (
-            <Button
-              onClick={() => handleSendOTP('phone')}
-              disabled={isLoading || !phoneForm.newPhone}
-              className='bg-primary hover:bg-primary/90 w-full text-white'
-            >
-              {isLoading ? 'Sending OTP...' : 'Send OTP'}
-            </Button>
-          ) : (
-            <>
-              <div className='flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-950/20'>
-                <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400' />
-                <p className='text-sm text-blue-700 dark:text-blue-300'>
-                  An OTP has been sent to your new phone number
-                </p>
-              </div>
-
-              {!otpVerified && (
-                <>
-                  <div>
-                    <Label htmlFor='phoneOtp' className='text-sm font-semibold'>
-                      Enter OTP
-                    </Label>
-                    <Input
-                      id='phoneOtp'
-                      name='otp'
-                      value={phoneForm.otp}
-                      onChange={handlePhoneChange}
-                      placeholder='Enter 6-digit OTP'
-                      className='border-border mt-2 rounded-lg border-2'
-                      maxLength={6}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={() => handleVerifyOTP('phone')}
-                    disabled={isLoading || phoneForm.otp.length !== 6}
-                    className='bg-primary hover:bg-primary/90 w-full text-white'
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify OTP'}
-                  </Button>
-                </>
-              )}
-
-              {otpVerified && (
-                <div className='flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900/50 dark:bg-green-950/20'>
-                  <CheckCircle2 className='mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400' />
-                  <p className='text-sm text-green-700 dark:text-green-300'>Phone number verified successfully!</p>
-                </div>
-              )}
-            </>
-          )}
+          <p className='text-foreground/60 text-sm'> Tính năng đổi số điện thoại đang được phát triển. </p>
         </div>
       )}
     </div>

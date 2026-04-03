@@ -243,6 +243,9 @@ export default function OrderDrawer({
                   Bàn: <span className='font-semibold'>{order.tableName || '-'}</span> &middot; Tạo lúc{' '}
                   {new Date(order.createdAt).toLocaleString('vi-VN')} &middot; Trạng thái:{' '}
                   <span className='text-primary font-semibold'>{order.status}</span>
+                  {order.status === 'CANCELLED' && order.cancelReason && (
+                    <> &middot; Lý do hủy: <span className='text-destructive font-semibold'>{order.cancelReason}</span></>
+                  )}
                 </p>
               )}
             </div>

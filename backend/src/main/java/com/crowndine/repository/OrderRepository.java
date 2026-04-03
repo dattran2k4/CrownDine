@@ -51,4 +51,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
                                                      @Param("voucherId") Long voucherId,
                                                      @Param("excludedOrderId") Long excludedOrderId,
                                                      @Param("finalStatuses") List<EOrderStatus> finalStatuses);
+
+
+    List<Order> findTop50ByUpdatedByIsNotNullOrderByUpdatedAtDesc();
 }

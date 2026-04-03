@@ -61,10 +61,12 @@ createRoot(document.getElementById('root')!).render(
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <QueryClientProvider client={queryClient}>
         <AppProvider>
-          <AppWebSocketProvider>
-            <RouterProvider router={router} />
-            <Toaster richColors position='top-right' />
-          </AppWebSocketProvider>
+          <ThemeProvider attribute='class' defaultTheme='light' disableTransitionOnChange>
+            <AppWebSocketProvider>
+              <RouterProvider router={router} />
+              <Toaster richColors position='top-right' />
+            </AppWebSocketProvider>
+          </ThemeProvider>
         </AppProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

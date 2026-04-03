@@ -63,6 +63,9 @@ public class Order extends AbstractEntity<Long> {
     @JoinColumn(name = "voucher_id")
     private Voucher voucher;
 
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
     public void addOrderDetail(OrderDetail detail) {
         this.orderDetails.add(detail);
         detail.setOrder(this);

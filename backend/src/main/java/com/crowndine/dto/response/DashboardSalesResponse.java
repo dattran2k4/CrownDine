@@ -30,4 +30,5 @@ public class DashboardSalesResponse {
     private List<ChartDataResponse> customerChart;
     private List<ChartDataResponse> topProducts;
     private List<ChartDataResponse> topProductsQuantity;
+    private List<RecentActivityResponse> recentActivities;
 }

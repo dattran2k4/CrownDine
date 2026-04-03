@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import useChangePassword from '@/hooks/useChangePassword'
+import { toast } from 'sonner'
 
 interface SecurityTab {
   id: 'password' | 'email' | 'phone'
@@ -17,6 +19,8 @@ interface SecurityTab {
 const SecuritySetting = () => {
   const [activeTab, setActiveTab] = useState<'password' | 'email' | 'phone'>('password')
   const [showPassword, setShowPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
@@ -87,21 +91,32 @@ const SecuritySetting = () => {
     console.log(`[v0] OTP verified for ${type}`)
   }
 
+  const changePasswordMutation = useChangePassword()
+
   const handlePasswordSubmit = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      console.log('[v0] Passwords do not match')
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('Vui lòng nhập đầy đủ thông tin')
       return
     }
-    setIsLoading(true)
-    // Simulate password change
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Mật khẩu mới không khớp')
+      return
+    }
+
+    changePasswordMutation.mutate({
+      oldPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+      confirmNewPassword: passwordForm.confirmPassword
+    }, {
+      onSuccess: () => {
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+      }
     })
-    console.log('[v0] Password changed successfully')
   }
   return (
     <div className='bg-card border-border rounded-lg border p-8'>
@@ -140,12 +155,19 @@ const SecuritySetting = () => {
               <Input
                 id='currentPassword'
                 name='currentPassword'
-                type='password'
+                type={showCurrentPassword ? 'text' : 'password'}
                 value={passwordForm.currentPassword}
                 onChange={handlePasswordChange}
                 placeholder='Nhập mật khẩu hiện tại'
                 className='border-border rounded-lg border-2 pr-10'
               />
+              <button
+                type='button'
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+              >
+                {showCurrentPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+              </button>
             </div>
           </div>
 
@@ -164,6 +186,7 @@ const SecuritySetting = () => {
                 className='border-border rounded-lg border-2 pr-10'
               />
               <button
+                type='button'
                 onClick={() => setShowPassword(!showPassword)}
                 className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
               >
@@ -179,23 +202,32 @@ const SecuritySetting = () => {
             <Label htmlFor='confirmPassword' className='text-sm font-semibold'>
               Xác Nhập Mật Khẩu Mới
             </Label>
-            <Input
-              id='confirmPassword'
-              name='confirmPassword'
-              type='password'
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordChange}
-              placeholder='Nhập lại mật khẩu mới'
-              className='border-border mt-2 rounded-lg border-2'
-            />
+            <div className='relative mt-2'>
+              <Input
+                id='confirmPassword'
+                name='confirmPassword'
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordChange}
+                placeholder='Nhập lại mật khẩu mới'
+                className='border-border rounded-lg border-2 pr-10'
+              />
+              <button
+                type='button'
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+              >
+                {showConfirmPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+              </button>
+            </div>
           </div>
 
           <Button
             onClick={handlePasswordSubmit}
-            disabled={isLoading}
+            disabled={changePasswordMutation.isPending}
             className='bg-primary hover:bg-primary/90 w-full text-white'
           >
-            {isLoading ? 'Đang cập nhật...' : 'Cập Nhập Mật Khẩu'}
+            {changePasswordMutation.isPending ? 'Đang cập nhật...' : 'Cập Nhập Mật Khẩu'}
           </Button>
         </div>
       )}

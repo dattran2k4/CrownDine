@@ -102,3 +102,8 @@ export interface OTPVerification {
   code?: string
   isVerified: boolean
 }
+export interface ChangePasswordRequest {
+  oldPassword: string
+  newPassword: string
+  confirmNewPassword: string
+}

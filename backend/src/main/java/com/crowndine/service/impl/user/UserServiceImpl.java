@@ -11,6 +11,8 @@ import com.crowndine.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.crowndine.exception.InvalidDataException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,10 +23,31 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void changePassword(ChangePasswordRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(ChangePasswordRequest request, String username) {
+        log.info("Processing for changing password for user {}", username);
 
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        // 1. Verify old password
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new InvalidDataException("auth.bad_credentials");
+        }
+
+        // 2. Verify new password confirmation
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new InvalidDataException("auth.confirm_password_mismatch");
+        }
+
+        // 3. Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Successfully changed password for user {}", username);
     }
 
     @Override

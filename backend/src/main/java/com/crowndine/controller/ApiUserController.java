@@ -37,8 +37,12 @@ public class ApiUserController {
     }
 
     @PostMapping("change-password")
-    public ApiResponse changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
-        return ApiResponse.builder().build();
+    public ApiResponse changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, Principal principal) {
+        userService.changePassword(changePasswordRequest, principal.getName());
+        return ApiResponse.builder()
+                .status(200)
+                .message("Change password successfully")
+                .build();
     }
 
     @PatchMapping("upload-avatar")

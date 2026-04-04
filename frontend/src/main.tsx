@@ -33,9 +33,10 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
   }
 
   const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8080'
   const websocketUrl = rawAccessToken
-    ? `ws://localhost:8080/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
-    : 'ws://localhost:8080/ws-restaurant'
+    ? `${wsBaseUrl}/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
+    : `${wsBaseUrl}/ws-restaurant`
 
   return (
     <WebSocketEnabledProvider enabled={true}>

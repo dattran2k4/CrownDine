@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 public class LoginRequest {
-    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @NotBlank(message = "{validation.login.username.not_blank}")
     private String username;
-    @NotBlank(message = "Mật khẩu không được để trống")
+    @NotBlank(message = "{validation.login.password.not_blank}")
     private String password;
 }

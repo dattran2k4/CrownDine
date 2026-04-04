@@ -19,6 +19,7 @@ export const generateTimeSlots = (openHour: number, closeHour: number, stepMinut
 }
 
 export const addMinutesToTime = (timeStr: string, minutesToAdd: number) => {
+  if (!timeStr) return ''
   const [hours, minutes] = timeStr.split(':').map(Number)
   const date = new Date()
   date.setHours(hours, minutes, 0, 0)

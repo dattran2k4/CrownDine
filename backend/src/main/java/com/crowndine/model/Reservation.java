@@ -39,6 +39,12 @@ public class Reservation extends AbstractEntity<Long> {
     @Column(name = "note")
     private String note;
 
+    @Column(name = "guest_name")
+    private String guestName;
+
+    @Column(name = "guest_phone")
+    private String guestPhone;
+
     @Column(name = "expirated_at")
     private LocalDateTime expiratedAt;
 
@@ -52,6 +58,10 @@ public class Reservation extends AbstractEntity<Long> {
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "created_by_staff_id")
+    private User createdByStaff;
 
     @ManyToOne
     @JoinColumn(name = "restaurant_table_id")

@@ -50,6 +50,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setType(request.getType());
         voucher.setDiscountValue(request.getDiscountValue());
         voucher.setMaxDiscountValue(request.getMaxDiscountValue());
+        voucher.setMinValue(request.getMinValue());
         voucher.setDescription(request.getDescription());
 
         validateVoucherBusinessRules(voucher);
@@ -88,6 +89,12 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
+    public Voucher getVoucherByCode(String code) {
+        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
+        return voucherRepository.findByCode(normalizedCode).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public VoucherResponse updateVoucher(Long id, VoucherRequest request) {
         Voucher voucher = getVoucher(id);
@@ -108,6 +115,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setType(request.getType());
         voucher.setDiscountValue(request.getDiscountValue());
         voucher.setMaxDiscountValue(request.getMaxDiscountValue());
+        voucher.setMinValue(request.getMinValue());
         voucher.setDescription(request.getDescription());
 
         validateVoucherBusinessRules(voucher);
@@ -128,7 +136,9 @@ public class VoucherServiceImpl implements VoucherService {
                 .type(voucher.getType())
                 .discountValue(voucher.getDiscountValue())
                 .maxDiscountValue(voucher.getMaxDiscountValue())
+                .minValue(voucher.getMinValue())
                 .description(voucher.getDescription())
+                .pointsRequired(voucher.getPointsRequired())
                 .createdAt(voucher.getCreatedAt())
                 .updatedAt(voucher.getUpdatedAt())
                 .build();
@@ -144,6 +154,11 @@ public class VoucherServiceImpl implements VoucherService {
         if (voucher.getMaxDiscountValue() != null
                 && voucher.getMaxDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidDataException("Giảm tối đa phải lớn hơn 0");
+        }
+
+        if (voucher.getMinValue() != null
+                && voucher.getMinValue().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidDataException("Giá trị đơn tối thiểu phải lớn hơn 0");
         }
     }
 }

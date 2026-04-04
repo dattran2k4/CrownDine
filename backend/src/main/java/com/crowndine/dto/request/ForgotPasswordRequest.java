@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 public class ForgotPasswordRequest {
-    @NotBlank(message = "Email không được để trống")
-    @Email
+    @NotBlank(message = "{validation.forgot_password.email.not_blank}")
+    @Email(message = "{validation.forgot_password.email.invalid}")
     private String email;
 }

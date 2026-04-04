@@ -5,22 +5,21 @@ import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
 import com.crowndine.dto.request.OrderRequest;
-import com.crowndine.dto.response.OrderApplyVoucherResponse;
 import com.crowndine.dto.response.OrderResponse;
 import com.crowndine.dto.response.PageResponse;
-import com.crowndine.dto.response.UpdateStatusOrderResponse;
 import com.crowndine.model.Order;
 import com.crowndine.model.Reservation;
 import com.crowndine.model.User;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface OrderService {
     Order getOrderByCode(String code);
 
-    void addOrderForReservation(Reservation res, OrderItemBatchRequest request, User user);
+    Order createOrderForReservation(Reservation reservation, User user, EOrderStatus initialStatus);
 
-    Order createOrderForReservation(Reservation reservation, User user);
+    Order confirmReservationOrder(Order order);
 
     void addOrUpdateItemToOrder(Long orderId, OrderItemRequest request);
 
@@ -29,11 +28,11 @@ public interface OrderService {
     void removeOrderItemInReservation(Order order, OrderItemRemoveRequest request);
 
     PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
-            int size);
-
-    UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status);
+                                             int size);
 
     void createWalkInOrder(OrderRequest request, String username);
+
+    OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username);
 
     void appendItemsToOrder(Long id, OrderItemBatchRequest request, String name);
 
@@ -41,9 +40,5 @@ public interface OrderService {
 
     Order getOrder(Long id);
 
-    OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username);
-
-    OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username);
-
-    void markAsPaid(Order order);
+    List<OrderResponse> getKitchenOrders();
 }

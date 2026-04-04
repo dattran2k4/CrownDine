@@ -3,26 +3,24 @@ package com.crowndine.service.impl.auth;
 import com.crowndine.common.enums.ERole;
 import com.crowndine.common.enums.ETokenType;
 import com.crowndine.common.enums.EUserStatus;
-import com.crowndine.dto.request.ForgotPasswordRequest;
-import com.crowndine.dto.request.LoginRequest;
-import com.crowndine.dto.request.RegisterRequest;
-import com.crowndine.dto.request.ResetPasswordRequest;
+import com.crowndine.common.enums.ErrorCode;
+import com.crowndine.dto.request.*;
 import com.crowndine.dto.response.TokenResponse;
 import com.crowndine.exception.InvalidDataException;
+import com.crowndine.exception.JwtAuthenticationException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Role;
 import com.crowndine.model.Token;
 import com.crowndine.model.User;
 import com.crowndine.repository.RoleRepository;
-import com.crowndine.repository.TokenRepository;
 import com.crowndine.repository.UserRepository;
-import com.crowndine.security.CustomUserDetailsService;
 import com.crowndine.service.auth.AuthenticationService;
 import com.crowndine.service.auth.JwtService;
 import com.crowndine.service.mail.MailService;
 import com.crowndine.service.token.TokenService;
-import com.crowndine.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +43,6 @@ import java.util.*;
 @Slf4j(topic = "AUTH-SERVICE")
 public class AuthenticationServiceImpl implements AuthenticationService {
 
-    private final UserService userService;
     @Value("${endpoint.confirmUser}")
     private String endPointConfirmUser;
 
@@ -55,12 +52,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
-    private final TokenRepository tokenRepository;
     private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
-    private final CustomUserDetailsService customUserDetailsService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -96,7 +94,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String refreshToken = request.getHeader("X-Refresh-Token");
 
         if (!StringUtils.hasText(refreshToken)) {
-            throw new InvalidDataException("Refresh token is empty");
+            throw new InvalidDataException("auth.refresh_token_empty");
         }
 
         // Kiem tra JWT
@@ -106,11 +104,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Token token = tokenService.getByRefreshToken(refreshToken);
 
         if (Boolean.TRUE.equals(token.getIsRevoked())) {
-            throw new InvalidDataException("Token is revoked");
+            throw new InvalidDataException("auth.token_revoked");
         }
 
         if (token.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidDataException("Refresh token expired");
+            throw new InvalidDataException("auth.refresh_token_expired");
         }
 
         User user = userRepository.findByUsername(username)
@@ -141,7 +139,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String refreshToken = request.getHeader("X-Refresh-Token");
 
         if (!StringUtils.hasText(refreshToken)) {
-            throw new InvalidDataException("Token missing or empty");
+            throw new InvalidDataException("auth.token_missing");
         }
 
         // Kiem tra JWT
@@ -158,19 +156,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         log.info("Processing register for user: {}", request.getUsername());
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("Mật khẩu xác nhận không khớp");
+            throw new InvalidDataException("auth.confirm_password_mismatch");
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new InvalidDataException("Tài khoản đã tồn tại");
+            throw new InvalidDataException("auth.username_exists");
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new InvalidDataException("Email đã tồn tại");
+            throw new InvalidDataException("auth.email_exists");
         }
 
         if (userRepository.existsByPhone(request.getPhone())) {
-            throw new InvalidDataException("Số điện thoại đã tồn tại");
+            throw new InvalidDataException("auth.phone_exists");
         }
 
         String randomCode = UUID.randomUUID().toString();
@@ -200,22 +198,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public String forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
         log.info("Processing forgot password for user: {}", request.getEmail());
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản"));
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        if (userOptional.isEmpty()) {
+            log.info("Forgot password requested for non-existent email {}", request.getEmail());
+            return;
+        }
 
-        String randomCode = UUID.randomUUID().toString();
-        user.setVerificationCode(randomCode);
-        user.setVerificationExpiration(LocalDateTime.now().plusMinutes(5));
+        User user = userOptional.get();
 
-        mailService.sendConfirmLink(request.getEmail(), "email-confirmation-register.html", endPointConfirmUser,
-                randomCode);
+        String resetPasswordToken = jwtService.generateResetPasswordToken(user.getUsername());
+        mailService.sendResetPasswordLink(request.getEmail(), endPointResetPassword, resetPasswordToken);
 
-        userRepository.save(user);
-
-        log.info("User {} has been sended email to reset password", user.getUsername());
-        return null;
+        log.info("User {} has been sent email to reset password", user.getUsername());
     }
 
     @Override
@@ -223,7 +219,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         log.info("Processing verify code for register");
 
         User user = userRepository.findByVerificationCode(verifyCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user qua mã xác nhận"));
+                .orElseThrow(() -> new ResourceNotFoundException("auth.user_not_found_by_verification_code"));
 
         if (LocalDateTime.now().isAfter(user.getVerificationExpiration())) {
             log.error("Verification code expired for user {}", user.getUsername());
@@ -244,29 +240,115 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    public void verifyResetPasswordToken(String token) {
+        getUserFromResetPasswordToken(token);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetPassword(String verifyCode, ResetPasswordRequest request) {
-
-        User user = userRepository.findByVerificationCode(verifyCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản"));
-
-        if (user.getVerificationExpiration().isAfter(LocalDateTime.now())) {
-            log.error("Verification code expired for user {}", user.getUsername());
-            return;
-        }
+    public void resetPassword(String token, ResetPasswordRequest request) {
+        User user = getUserFromResetPasswordToken(token);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            log.error("Passwords confirm do not match for user {}", user.getUsername());
-            return;
+            throw new InvalidDataException("auth.confirm_password_mismatch");
         }
 
-        user.setVerificationCode(null);
-        user.setVerificationExpiration(null);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
 
         log.info("Reset password successfully");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TokenResponse googleLogin(GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Verifying Google OIDC ID Token using Spring Security OAuth2");
+
+        try {
+            // Using Spring Security's NimbusJwtDecoder to verify Google ID Token (OIDC)
+            NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation("https://accounts.google.com").build();
+
+            Jwt jwt = jwtDecoder.decode(request.getToken());
+
+            // Validate Audience (your Client ID)
+            if (!jwt.getAudience().contains(googleClientId)) {
+                log.error("Invalid Audience in ID Token");
+                throw new InvalidDataException("Token belongs to a different client");
+            }
+
+            String email = jwt.getClaim("email");
+            String googleId = jwt.getSubject();
+            String firstName = jwt.getClaim("given_name");
+            String lastName = jwt.getClaim("family_name");
+            String pictureUrl = jwt.getClaim("picture");
+
+            // Logic to find or create user remains the same
+            Optional<User> userOptional = userRepository.findByGoogleId(googleId);
+            User user;
+
+            if (userOptional.isPresent()) {
+                user = userOptional.get();
+            } else {
+                userOptional = userRepository.findByEmail(email);
+
+                if (userOptional.isPresent()) {
+                    user = userOptional.get();
+                    user.setGoogleId(googleId);
+                    if (user.getAvatarUrl() == null) {
+                        user.setAvatarUrl(pictureUrl);
+                    }
+                    userRepository.save(user);
+                } else {
+                    user = new User();
+                    user.setEmail(email);
+                    user.setUsername(email);
+                    user.setFirstName(firstName != null ? firstName : "User");
+                    user.setLastName(lastName != null ? lastName : "Google");
+                    user.setGoogleId(googleId);
+                    user.setAvatarUrl(pictureUrl);
+                    user.setStatus(EUserStatus.ACTIVE);
+
+                    Role role = roleRepository.findByName(ERole.USER);
+                    user.setRoles(new HashSet<>(List.of(role)));
+
+                    userRepository.save(user);
+                }
+            }
+
+            List<String> roles = extractRoles(user.getAuthorities());
+            String accessToken = jwtService.generateAccessToken(user.getUsername(), roles);
+            String refreshToken = jwtService.generateRefreshToken(user.getUsername(), roles);
+
+            tokenService.saveToken(user.getUsername(), refreshToken, httpServletRequest);
+
+            return TokenResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .username(user.getUsername())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error during Google OAuth2 Nimbus verification: ", e);
+            throw new InvalidDataException("Google authentication failed: " + e.getMessage());
+        }
+    }
+
+    private User getUserFromResetPasswordToken(String token) {
+        String username;
+        try {
+            username = jwtService.extractUsername(token, ETokenType.RESET_PASSWORD_TOKEN);
+        } catch (JwtAuthenticationException e) {
+            if (e.getErrorCode() == ErrorCode.TOKEN_EXPIRED) {
+                throw new InvalidDataException("auth.reset_password_token_expired");
+            }
+            throw new InvalidDataException("auth.reset_password_token_invalid");
+        }
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("auth.account_not_found"));
+
+        jwtService.isTokenValid(token, ETokenType.RESET_PASSWORD_TOKEN, user);
+        return user;
     }
 
 }

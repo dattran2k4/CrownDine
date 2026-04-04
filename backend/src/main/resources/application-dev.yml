@@ -66,10 +66,13 @@ openapi:
 jwt:
   access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
   refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
+  reset-password-key: pKj6Yk3A2tR9mNv5QeL1sWx8BzUd4Hf0JcVa7Pn2XmQ=
   # 15 phút
   access-key-expiration: 900000
   # 7 ngày
   refresh-key-expiration: 604800000
+  # 10 phút
+  reset-password-key-expiration: 600000
 
 logging:
   level:
@@ -86,5 +89,19 @@ payos:
   client-id: 02745e9c-7c5a-4a1e-81d0-bb50281bec1f
   api-key: a189d0aa-4443-4b62-b1ff-ae64b057a0eb
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
-  return-url: http://localhost:5173/thanh-toan/thanh-cong
-  cancel-url: http://localhost:5173/thanh-toan/that-bai
+  return-url: ${PAYOS_RETURN_URL:http://localhost:5173/thanh-toan/thanh-cong}
+  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:5173/thanh-toan/that-bai}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent
+  model: models/gemini-2.0-flash-001
+
+#OpenRouter
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY}

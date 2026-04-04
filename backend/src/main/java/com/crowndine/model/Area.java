@@ -11,7 +11,7 @@ import lombok.*;
 @Table(name = "areas")
 public class Area extends AbstractEntity<Long> {
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "description", length = 500)

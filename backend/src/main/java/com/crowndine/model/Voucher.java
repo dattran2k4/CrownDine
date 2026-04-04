@@ -32,6 +32,12 @@ public class Voucher extends AbstractEntity<Long> {
     @Column(name = "max_discount_value")
     private BigDecimal maxDiscountValue;
 
+    @Column(name = "min_value")
+    private BigDecimal minValue;
+
+    @Column(name = "points_required")
+    private Integer pointsRequired;
+
     @Column(name = "description")
     private String description;
 

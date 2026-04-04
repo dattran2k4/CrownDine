@@ -1,7 +1,7 @@
 package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderStatus;
-import com.crowndine.common.enums.ETableStatus;
+import com.crowndine.common.enums.EReservationStatus;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRemoveRequest;
 import com.crowndine.dto.request.OrderItemRequest;
@@ -12,15 +12,16 @@ import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.*;
 import com.crowndine.repository.*;
 import com.crowndine.service.CalculationService;
+import com.crowndine.service.OrderPricingResult;
 import com.crowndine.service.order.OrderDetailService;
 import com.crowndine.service.order.OrderService;
-import com.crowndine.service.order.event.OrderPaidEvent;
+import com.crowndine.service.order.OrderStatusService;
+import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.voucher.UserVoucherService;
-import com.crowndine.util.OrderCodeGenerator;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.crowndine.common.utils.CodeUtils;
+import org.springframework.beans.BeanUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,10 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,13 +44,13 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final ComboRepository comboRepository;
     private final UserRepository userRepository;
+    private final ReservationRepository reservationRepository;
     private final RestaurantTableRepository tableRepository;
 
     private final CalculationService calculationService;
     private final OrderDetailService orderDetailService;
-    private final UserVoucherService userVoucherService;
-    private final SimpMessagingTemplate messagingTemplate;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OrderStatusService orderStatusService;
+    private final OrderVoucherService orderVoucherService;
 
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found";
 
@@ -62,80 +61,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void addOrderForReservation(Reservation reservation, OrderItemBatchRequest request, User user) {
-        Order order = (reservation.getOrder() != null) ? reservation.getOrder() : new Order();
-
-        order.setStatus(EOrderStatus.PRE_ORDER);
-        order.setReservation(reservation);
-        order.setUser(user);
-        order.setRestaurantTable(reservation.getTable());
-        order.setDiscountPrice(BigDecimal.ZERO);
-        order.setTotalPrice(BigDecimal.ZERO);
-        order.setFinalPrice(BigDecimal.ZERO);
-
-        List<OrderDetail> orderDetails = new ArrayList<>();
-
-        for (OrderItemRequest itemReq : request.getItems()) {
-            boolean hasItem = itemReq.getItemId() != null;
-            boolean hasCombo = itemReq.getComboId() != null;
-            if (!hasItem && !hasCombo) {
-                throw new InvalidDataException("Chưa có món");
-            }
-
-            OrderDetail detail = new OrderDetail();
-            detail.setOrder(order);
-            detail.setQuantity(itemReq.getQuantity());
-            detail.setNote(itemReq.getNote());
-
-            BigDecimal unitPrice = BigDecimal.ZERO;
-
-            if (hasItem) {
-                Item item = itemRepository.findById(itemReq.getItemId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
-                detail.setItem(item);
-                unitPrice = item.getPriceAfterDiscount() != null ? item.getPriceAfterDiscount() : item.getPrice();
-                log.info("Adding item {} for order {}", itemReq.getItemId(), order.getId());
-            }
-
-            if (hasCombo) {
-                Combo combo = comboRepository.findById(itemReq.getComboId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
-                detail.setCombo(combo);
-                unitPrice = combo.getPriceAfterDiscount() != null ? combo.getPriceAfterDiscount() : combo.getPrice();
-                log.info("Adding combo {} for order {}", itemReq.getComboId(), order.getId());
-            }
-
-            detail.setTotalPrice(unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity())));
-
-            orderDetails.add(detail);
-        }
-        order.setOrderDetails(orderDetails);
-        recalculateOrderPricing(order);
-
-        Order result = orderRepository.save(order);
-
-        log.info("Order has been saved {}", result.getId());
+    public Order createOrderForReservation(Reservation reservation, User user, EOrderStatus initialStatus) {
+        log.info("Creating reservation order for reservation id {} with status {}", reservation.getId(), initialStatus);
+        return createReservationOrder(reservation, user, initialStatus);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Order createOrderForReservation(Reservation reservation, User user) {
-        log.info("Creating new order for reservation {}", reservation.getId());
+    private Order createReservationOrder(Reservation reservation, User user, EOrderStatus status) {
         Order order = new Order();
         order.setReservation(reservation);
         order.setUser(user);
         order.setRestaurantTable(reservation.getTable());
-        order.setStatus(EOrderStatus.PRE_ORDER);
+        order.setStatus(status);
         order.setTotalPrice(BigDecimal.ZERO);
         order.setFinalPrice(BigDecimal.ZERO);
         order.setDiscountPrice(BigDecimal.ZERO);
-        order.setCode(OrderCodeGenerator.generateOrderCode());
+        order.setCode(CodeUtils.generateOrderCode());
 
         Order result = orderRepository.save(order);
-
         log.info("New order has been created with id {} for reservationId {}", result.getId(), reservation.getId());
         return result;
+    }
+
+    @Override
+    public Order confirmReservationOrder(Order order) {
+        Order updatedOrder = orderStatusService.transitionOrderStatus(order, EOrderStatus.CONFIRMED);
+        log.info("Updated reservation order {} status to CONFIRMED", updatedOrder.getId());
+        return updatedOrder;
     }
 
     @Override
@@ -175,6 +126,7 @@ public class OrderServiceImpl implements OrderService {
             detail.setQuantity(request.getQuantity());
             detail.setNote(request.getNote());
             detail.setOrder(order);
+            detail.setStatus(com.crowndine.common.enums.EOrderDetailStatus.PENDING);
             detail.calculateAndSetTotalPrice();
             orderDetails.add(detail);
         }
@@ -230,7 +182,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PageResponse<OrderResponse> getAllOrders(LocalDate fromDate, LocalDate toDate, EOrderStatus status, int page,
-            int size) {
+                                                    int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
 
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "id"));
@@ -251,57 +203,57 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public UpdateStatusOrderResponse updateOrderStatus(Long id, EOrderStatus status) {
-        Order order = getOrder(id);
-
-        order.setStatus(status);
-        orderRepository.save(order);
-
-        if (status == EOrderStatus.COMPLETED || status == EOrderStatus.CANCELLED) {
-            RestaurantTable table = order.getRestaurantTable();
-            if (table != null) {
-                table.setStatus(ETableStatus.AVAILABLE);
-                tableRepository.save(table);
-
-                RestaurantTableResponse tableRes = new RestaurantTableResponse();
-                BeanUtils.copyProperties(table, tableRes);
-                tableRes.setId(table.getId());
-                messagingTemplate.convertAndSend("/topic/tables", tableRes);
-                log.info("Released table {} to AVAILABLE after order updated to {}", table.getId(), status);
-            }
-        }
-
-        UpdateStatusOrderResponse response = new UpdateStatusOrderResponse();
-        response.setId(order.getId());
-        response.setStatus(order.getStatus());
-
-        messagingTemplate.convertAndSend("/topic/orders", response);
-
-        return response;
-    }
-
-    @Override
     public void createWalkInOrder(OrderRequest request, String username) {
         log.info("Processing create new walk-in order by username {}", username);
-        User staff = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        User staff = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
-        RestaurantTable table = tableRepository.findById(request.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+        RestaurantTable table = tableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
         Order order = new Order();
-        order.setCode(OrderCodeGenerator.generateOrderCode());
+        order.setCode(CodeUtils.generateOrderCode());
         order.setStaff(staff);
         order.setStatus(EOrderStatus.CONFIRMED);
         order.setRestaurantTable(table);
         orderRepository.save(order);
+        orderStatusService.transitionOrderStatus(order, EOrderStatus.CONFIRMED);
 
         orderDetailService.createPendingOrderDetails(order, request.getItems());
         recalculateOrderPricing(order);
 
         Order result = orderRepository.save(order);
-        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(), order.getFinalPrice());
+        log.info("Created order with id {}, totalPrice = {}, finalPrice = {}", result.getId(), order.getTotalPrice(),
+                order.getFinalPrice());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse openOrderForReservation(Long reservationId, OrderItemBatchRequest request, String username) {
+        log.info("Opening order for reservation {} by staff {}", reservationId, username);
 
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        User staff = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+
+        if (reservation.getStatus() != EReservationStatus.CHECKED_IN) {
+            throw new InvalidDataException("Cần check-in trước khi tạo order cho đặt bàn này");
+        }
+
+        if (reservation.getOrder() != null) {
+            throw new InvalidDataException("Đặt bàn này đã có order");
+        }
+
+        Order order = createOrderForReservation(reservation, reservation.getUser(), EOrderStatus.CONFIRMED);
+        order.setStaff(staff);
+        orderDetailService.createPendingOrderDetails(order, request.getItems());
+        recalculateOrderPricing(order);
+        reservation.setOrder(order);
+        Order savedOrder = orderRepository.save(order);
+        orderStatusService.transitionOrderStatus(savedOrder, EOrderStatus.CONFIRMED);
+
+        return toResponse(savedOrder);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -325,139 +277,26 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     public void mapCustomerToOrder(Long orderId, Long customerId) {
         Order order = getOrder(orderId);
-        User customer = userRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         order.setUser(customer);
         orderRepository.save(order);
         log.info("Mapped user {} to order {}", customerId, orderId);
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public OrderApplyVoucherResponse applyVoucherToOrder(Long orderId, String code, String username) {
-        log.info("Applying voucher to order with id {}", orderId);
-
-        Order order = getOrder(orderId);
-
-        if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể áp voucher cho đơn đã hoàn tất hoặc đã hủy");
-        }
-
-        // Determine the customer username to check ownership
-        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-
-        if (order.getVoucher() != null && !order.getVoucher().getCode().equalsIgnoreCase(code)) {
-            userVoucherService.releaseVoucher(order.getVoucher().getCode(), customerUsername);
-            order.setVoucher(null);
-        }
-
-        if (order.getOrderDetails().isEmpty()) {
-            throw new InvalidDataException("Đơn hàng chưa có món để áp voucher");
-        }
-
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        log.info("Total price for order with id {} is {}", orderId, totalPrice);
-
-        if (totalPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidDataException("Tổng tiền đơn hàng phải lớn hơn 0 để áp voucher");
-        }
-
-        Voucher voucher = userVoucherService.consumeVoucher(code, customerUsername);
-
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, voucher);
-        log.info("Discount price for order with id {} is {}", orderId, discountPrice);
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-        log.info("Final price for order with id {} is {}", orderId, finalPrice);
-
-        order.setVoucher(voucher);
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
-
-        Order updatedOrder = orderRepository.save(order);
-        log.info("Applied successfully voucher {} to order {}", voucher.getCode(), updatedOrder.getId());
-
-        return OrderApplyVoucherResponse.builder()
-                .orderId(updatedOrder.getId())
-                .orderCode(updatedOrder.getCode())
-                .voucherId(voucher.getId())
-                .voucherCode(voucher.getCode())
-                .totalPrice(updatedOrder.getTotalPrice())
-                .discountPrice(updatedOrder.getDiscountPrice())
-                .finalPrice(updatedOrder.getFinalPrice())
-                .build();
-    }
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public OrderApplyVoucherResponse removeVoucherFromOrder(Long orderId, String username) {
-        log.info("Removing voucher from order with id {}", orderId);
-
-        Order order = getOrder(orderId);
-
-        if (order.getStatus().isFinal()) {
-            throw new InvalidDataException("Không thể gỡ voucher cho đơn đã hoàn tất hoặc đã hủy");
-        }
-
-        if (order.getVoucher() == null) {
-            throw new InvalidDataException("Đơn hàng chưa áp voucher");
-        }
-
-        String customerUsername = order.getUser() != null ? order.getUser().getUsername() : null;
-
-        String voucherCode = order.getVoucher().getCode();
-        userVoucherService.releaseVoucher(voucherCode, customerUsername);
-
-        order.setVoucher(null);
-
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        BigDecimal discountPrice = BigDecimal.ZERO;
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-
-        order.setTotalPrice(totalPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
-
-        Order updatedOrder = orderRepository.save(order);
-        log.info("Removed voucher {} from order {}", voucherCode, updatedOrder.getId());
-
-        return OrderApplyVoucherResponse.builder()
-                .orderId(updatedOrder.getId())
-                .orderCode(updatedOrder.getCode())
-                .voucherId(null)
-                .voucherCode(null)
-                .totalPrice(updatedOrder.getTotalPrice())
-                .discountPrice(updatedOrder.getDiscountPrice())
-                .finalPrice(updatedOrder.getFinalPrice())
-                .build();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void markAsPaid(Order order) {
-        if (order.getStatus() == EOrderStatus.COMPLETED) {
-            log.info("Order id {} is already completed. Skipping status update and OrderPaidEvent publishing.", order.getId());
-            return;
-        }
-
-        order.setStatus(EOrderStatus.COMPLETED);
-        orderRepository.save(order);
-        eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
-        log.info("Order id {} status changed to {} and OrderPaidEvent published", order.getId(), order.getStatus());
+    public List<OrderResponse> getKitchenOrders() {
+        List<EOrderStatus> activeStatuses = List.of(EOrderStatus.CONFIRMED, EOrderStatus.IN_PROGRESS);
+        List<Order> orders = orderRepository.findByStatusIn(activeStatuses);
+        log.info("Found {} active kitchen orders", orders.size());
+        return orders.stream().map(this::toResponse).toList();
     }
 
     private void recalculateOrderPricing(Order order) {
-        BigDecimal totalPrice = calculationService.calculateTotalOrder(order.getOrderDetails());
-        order.setTotalPrice(totalPrice);
-
-        if (order.getVoucher() == null) {
-            order.setDiscountPrice(BigDecimal.ZERO);
-            order.setFinalPrice(totalPrice);
-            return;
-        }
-
-        BigDecimal discountPrice = calculationService.calculateVoucherDiscount(totalPrice, order.getVoucher());
-        BigDecimal finalPrice = calculationService.calculateFinalTotalPrice(totalPrice, discountPrice);
-        order.setDiscountPrice(discountPrice);
-        order.setFinalPrice(finalPrice);
+        OrderPricingResult pricing = calculationService.calculateOrderPricing(order);
+        order.setTotalPrice(pricing.totalPrice());
+        order.setDiscountPrice(pricing.discountPrice());
+        order.setFinalPrice(pricing.finalPrice());
     }
 
     private OrderResponse toResponse(Order order) {
@@ -489,6 +328,7 @@ public class OrderServiceImpl implements OrderService {
             od.setNote(d.getNote());
             od.setStatus(d.getStatus());
             od.setTotalPrice(d.getTotalPrice());
+            od.setCreatedAt(d.getCreatedAt());
             return od;
         }).toList();
 

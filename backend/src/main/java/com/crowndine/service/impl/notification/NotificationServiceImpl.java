@@ -11,6 +11,7 @@ import com.crowndine.model.UserVoucher;
 import com.crowndine.repository.NotificationRepository;
 import com.crowndine.repository.ReservationRepository;
 import com.crowndine.repository.UserVoucherRepository;
+import com.crowndine.service.notification.NotificationRealtimeService;
 import com.crowndine.service.notification.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,13 +36,15 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final ReservationRepository reservationRepository;
     private final UserVoucherRepository userVoucherRepository;
+    private final NotificationRealtimeService notificationRealtimeService;
     private final ObjectMapper objectMapper;
 
     @Override
     public PageResponse<NotificationResponse> getMyNotifications(String username, int page, int size) {
         int pageNumber = (page > 0) ? page - 1 : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Notification> notificationPage = notificationRepository.findByUserUsernameOrderByCreatedAtDesc(username, pageRequest);
+        Page<Notification> notificationPage = notificationRepository.findByUserUsernameOrderByCreatedAtDesc(username,
+                pageRequest);
         List<NotificationResponse> responses = notificationPage.stream().map(this::toResponse).toList();
 
         return PageResponse.<NotificationResponse>builder()
@@ -62,7 +65,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public NotificationResponse markAsRead(Long notificationId, String username) {
-        Notification notification = notificationRepository.findByIdAndUserUsername(notificationId, username).orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+        Notification notification = notificationRepository.findByIdAndUserUsername(notificationId, username)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
         if (notification.getReadAt() == null) {
             notification.setReadAt(LocalDateTime.now());
@@ -89,17 +93,22 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Đặt bàn thành công");
         notification.setMessage(buildReservationConfirmedMessage(reservation));
         notification.setPayload(buildReservationConfirmedPayload(reservation));
-        notificationRepository.save(notification);
-        log.info("Created reservation confirmed notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
+        Notification savedNotification = notificationRepository.save(notification);
+        pushRealtimeNotification(savedNotification);
+
+        log.info("Created reservation confirmed notification for reservation {} and user {}",
+                reservationId, reservation.getUser().getUsername());
     }
 
     @Override
     @Transactional
     public void notifyVoucherGranted(Long userVoucherId) {
-        UserVoucher userVoucher = userVoucherRepository.findById(userVoucherId).orElseThrow(() -> new ResourceNotFoundException("User voucher not found"));
+        UserVoucher userVoucher = userVoucherRepository.findById(userVoucherId)
+                .orElseThrow(() -> new ResourceNotFoundException("User voucher not found"));
 
         if (userVoucher.getCustomer() == null || userVoucher.getVoucher() == null) {
-            log.warn("UserVoucher {} is missing customer or voucher. Skip voucher granted notification.", userVoucherId);
+            log.warn("UserVoucher {} is missing customer or voucher. Skip voucher granted notification.",
+                    userVoucherId);
             return;
         }
 
@@ -109,14 +118,17 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Bạn nhận được voucher mới");
         notification.setMessage(buildVoucherGrantedMessage(userVoucher));
         notification.setPayload(buildVoucherGrantedPayload(userVoucher));
-        notificationRepository.save(notification);
-        log.info("Created voucher granted notification for userVoucher {} and user {}", userVoucherId, userVoucher.getCustomer().getUsername());
+        Notification savedNotification = notificationRepository.save(notification);
+        pushRealtimeNotification(savedNotification);
+        log.info("Created voucher granted notification for userVoucher {} and user {}", userVoucherId,
+                userVoucher.getCustomer().getUsername());
     }
 
     @Override
     @Transactional
     public void notifyReservationReminder(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
 
         if (reservation.getUser() == null) {
             log.warn("Reservation {} has no user. Skip reservation reminder notification.", reservationId);
@@ -134,11 +146,13 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setTitle("Sắp đến giờ đặt bàn");
         notification.setMessage(buildReservationReminderMessage(reservation));
         notification.setPayload(buildReservationReminderPayload(reservation));
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
 
         reservation.setReminderSentAt(LocalDateTime.now());
         reservationRepository.save(reservation);
-        log.info("Created reservation reminder notification for reservation {} and user {}", reservationId, reservation.getUser().getUsername());
+        pushRealtimeNotification(savedNotification);
+        log.info("Created reservation reminder notification for reservation {} and user {}", reservationId,
+                reservation.getUser().getUsername());
     }
 
     private NotificationResponse toResponse(Notification notification) {
@@ -155,12 +169,16 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String buildReservationConfirmedMessage(Reservation reservation) {
         String tableName = reservation.getTable() != null ? reservation.getTable().getName() : "bàn đã chọn";
-        return "Bàn " + tableName + " của bạn đã được xác nhận vào " + reservation.getStartTime() + " ngày " + reservation.getDate() + ".";
+        return "Bàn " + tableName + " của bạn đã được xác nhận vào " + reservation.getStartTime() + " ngày "
+                + reservation.getDate() + ".";
     }
 
     private String buildReservationConfirmedPayload(Reservation reservation) {
         try {
-            return objectMapper.writeValueAsString(new ReservationConfirmedPayload(reservation.getId(), reservation.getCode(), reservation.getDate(), reservation.getStartTime(), reservation.getEndTime(), reservation.getTable() != null ? reservation.getTable().getId() : null, reservation.getTable() != null ? reservation.getTable().getName() : null));
+            return objectMapper.writeValueAsString(new ReservationConfirmedPayload(reservation.getId(),
+                    reservation.getCode(), reservation.getDate(), reservation.getStartTime(), reservation.getEndTime(),
+                    reservation.getTable() != null ? reservation.getTable().getId() : null,
+                    reservation.getTable() != null ? reservation.getTable().getName() : null));
         } catch (JsonProcessingException e) {
             log.warn("Cannot serialize reservation confirmed payload for reservation {}", reservation.getId(), e);
             return null;
@@ -175,7 +193,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String buildVoucherGrantedPayload(UserVoucher userVoucher) {
         try {
-            return objectMapper.writeValueAsString(new VoucherGrantedPayload(userVoucher.getId(), userVoucher.getVoucher().getId(), userVoucher.getVoucher().getCode(), userVoucher.getVoucher().getName(), userVoucher.getUsageLimit(), userVoucher.getExpiredAt()));
+            return objectMapper.writeValueAsString(new VoucherGrantedPayload(userVoucher.getId(),
+                    userVoucher.getVoucher().getId(), userVoucher.getVoucher().getCode(),
+                    userVoucher.getVoucher().getName(), userVoucher.getUsageLimit(), userVoucher.getExpiredAt()));
         } catch (JsonProcessingException e) {
             log.warn("Cannot serialize voucher granted payload for userVoucher {}", userVoucher.getId(), e);
             return null;
@@ -184,16 +204,30 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String buildReservationReminderMessage(Reservation reservation) {
         String tableName = reservation.getTable() != null ? reservation.getTable().getName() : "bàn đã chọn";
-        return "Bạn có lịch đặt bàn " + tableName + " vào " + reservation.getStartTime() + " ngày " + reservation.getDate() + ".";
+        return "Bạn có lịch đặt bàn " + tableName + " vào " + reservation.getStartTime() + " ngày "
+                + reservation.getDate() + ".";
     }
 
     private String buildReservationReminderPayload(Reservation reservation) {
         try {
-            return objectMapper.writeValueAsString(new ReservationReminderPayload(reservation.getId(), reservation.getCode(), reservation.getDate(), reservation.getStartTime(), reservation.getEndTime(), reservation.getTable() != null ? reservation.getTable().getId() : null, reservation.getTable() != null ? reservation.getTable().getName() : null));
+            return objectMapper.writeValueAsString(new ReservationReminderPayload(reservation.getId(),
+                    reservation.getCode(), reservation.getDate(), reservation.getStartTime(), reservation.getEndTime(),
+                    reservation.getTable() != null ? reservation.getTable().getId() : null,
+                    reservation.getTable() != null ? reservation.getTable().getName() : null));
         } catch (JsonProcessingException e) {
             log.warn("Cannot serialize reservation reminder payload for reservation {}", reservation.getId(), e);
             return null;
         }
+    }
+
+    private void pushRealtimeNotification(Notification notification) {
+        if (notification.getUser() == null || notification.getUser().getUsername() == null) {
+            return;
+        }
+
+        long unreadCount = notificationRepository
+                .countByUserUsernameAndReadAtIsNull(notification.getUser().getUsername());
+        notificationRealtimeService.sendToUser(notification, unreadCount);
     }
 
     private record ReservationConfirmedPayload(

@@ -7,7 +7,7 @@ import com.crowndine.model.User;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
-    void changePassword(ChangePasswordRequest request);
+    void changePassword(ChangePasswordRequest request, String username);
 
     String updateAvatar(MultipartFile file, String name);
 
@@ -20,4 +20,10 @@ public interface UserService {
     User getUserById(Long id);
 
     User getUserByUserName(String username);
+
+    java.util.List<ProfileResponse> getAllCustomers();
+    
+    void sendEmailOtp(String username, String newEmail);
+
+    void verifyEmailOtp(String username, String otp, String newEmail);
 }

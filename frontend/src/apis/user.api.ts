@@ -1,8 +1,14 @@
 import http from '@/utils/http'
 import type { ApiResponse } from '@/types/utils.type'
-import type { UpdateUserRequest, User } from '@/types/profile.type'
+import type { UpdateUserRequest, User, PointHistory, ChangePasswordRequest } from '@/types/profile.type'
+import type { PageResponse } from '@/types/utils.type'
 
 const userApi = {
+  getPointHistory(page: number = 1, size: number = 5) {
+    return http.get<ApiResponse<PageResponse<PointHistory>>>(`users/profile/point-history`, {
+      params: { page, size }
+    })
+  },
   getProfile() {
     return http.get<ApiResponse<User>>('users/profile', {
     }).then(res => {
@@ -27,8 +33,20 @@ const userApi = {
   getCustomerByPhone(phone: string) {
     return http.get<ApiResponse<any>>(`users/customer/${phone}`)
   },
+  getAllCustomers() {
+    return http.get<ApiResponse<any[]>>('users')
+  },
   getAvailableVouchers(customerId: number) {
     return http.get<ApiResponse<any>>(`user-vouchers/customer/${customerId}`)
+  },
+  changePassword(data: ChangePasswordRequest) {
+    return http.post<ApiResponse<any>>('users/change-password', data)
+  },
+  sendEmailOtp(newEmail: string) {
+    return http.post<ApiResponse<any>>('users/profile/email-otp/send', { newEmail })
+  },
+  verifyEmailOtp(data: { otp: string; newEmail: string }) {
+    return http.post<ApiResponse<any>>('users/profile/email-otp/verify', data)
   }
 }
 

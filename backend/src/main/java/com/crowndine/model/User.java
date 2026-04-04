@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serial;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,11 +32,11 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "avatar_url", length = 200)
     private String avatarUrl;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     @JsonIgnore
     private String password;
 
-    @Column(name = "email", unique = true, nullable = false, length = 255)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
     @Column(name = "first_name", nullable = false, length = 50)
@@ -55,14 +56,23 @@ public class User extends AbstractEntity<Long> implements UserDetails {
     @Column(name = "status", nullable = false)
     private EUserStatus status;
 
-    @Column(name = "phone", unique = true, nullable = false, length = 11)
+    @Column(name = "phone", unique = true, length = 11)
     private String phone;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @Column(name = "verification_code")
     private String verificationCode;
 
     @Column(name = "verification_expiration")
     private LocalDateTime verificationExpiration;
+
+    @Column(name = "reward_points", nullable = false)
+    private Integer rewardPoints = 0;
+
+    @OneToMany(mappedBy = "user")
+    private List<PointHistory> pointHistories = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
     private List<Reservation> reservations = new ArrayList<>();
@@ -107,10 +117,12 @@ public class User extends AbstractEntity<Long> implements UserDetails {
         return EUserStatus.ACTIVE.equals(status);
     }
 
+    @Serial
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
     }
 
+    @Serial
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
     }

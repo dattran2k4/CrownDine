@@ -19,4 +19,15 @@ export interface DashboardSalesResponse {
   customerChart: ChartData[]
   topProducts: ChartData[]
   topProductsQuantity: ChartData[]
+  recentActivities: RecentActivity[]
+}
+
+export interface RecentActivity {
+  id: string
+  user: string
+  action: string
+  value: string
+  time: string
+  type: 'sale' | 'import' | 'delete'
+  reason?: string
 }

@@ -294,7 +294,7 @@ export default function LayoutCanvas({
               key={t.id}
               table={t}
               editable={editable}
-              selected={t.id === selectedId || selectedTableIds?.includes(t.id)}
+              selected={selectedTableIds !== undefined ? selectedTableIds.includes(t.id) : t.id === selectedId}
               onPointerDown={e => onMoveStart(e, a.areaId, t)}
               onResizeStart={(e, dir) =>
                 onResizeStart(e, a.areaId, t, dir)
@@ -308,13 +308,15 @@ export default function LayoutCanvas({
     </svg>
   )
 
-  if (!enableScroll) return innerSvg
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'auto', background: '#f7f7f7', textAlign: 'center' }}>
-      <div style={{ display: 'inline-block', width: physicalWidth, height: physicalHeight, position: 'relative', textAlign: 'left' }}>
-        {innerSvg}
+  if (enableScroll) {
+    return (
+      <div className="w-full h-[600px] overflow-auto relative border border-slate-200 shadow-sm rounded-xl">
+        <div style={{ width: physicalWidth, height: physicalHeight, position: 'relative', margin: '0 auto' }}>
+          {innerSvg}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  return innerSvg
 }

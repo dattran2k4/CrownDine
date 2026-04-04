@@ -1,4 +1,10 @@
-import type { Order, OrderStatus, OrderRequest, OrderItemBatchRequest, UpdateOrderDetailRequest } from '@/types/order.type'
+import type {
+  Order,
+  OrderStatus,
+  OrderRequest,
+  OrderItemBatchRequest,
+  UpdateOrderDetailRequest
+} from '@/types/order.type'
 import type { ApiResponse, PageResponse } from '@/types/utils.type'
 import http from '@/utils/http'
 
@@ -8,9 +14,13 @@ const orderApi = {
   getAllOrders(params: { fromDate?: string; toDate?: string; status?: OrderStatus }) {
     return http.get<ApiResponse<PageResponse<Order>>>(`${TABLE_URL}?`, { params })
   },
-  
+
   createOrder(body: OrderRequest) {
     return http.post<ApiResponse<null>>(`${TABLE_URL}`, body)
+  },
+
+  openOrderForReservation(reservationId: number, body: OrderItemBatchRequest, staffId?: string) {
+    return http.post<ApiResponse<Order>>(`${TABLE_URL}/reservation/${reservationId}${staffId ? `?staffId=${staffId}` : ''}`, body)
   },
 
   addOrderDetails(orderId: number, body: OrderItemBatchRequest) {
@@ -24,15 +34,19 @@ const orderApi = {
   deleteOrderDetail(detailId: number) {
     return http.delete<ApiResponse<null>>(`order-details/${detailId}/del`)
   },
-  
-  createPaymentLink(body: { orderCode: string, returnUrl?: string, method: string }) {
+
+  createPaymentLink(body: { orderCode: string; returnUrl?: string; method: string }) {
     return http.post<ApiResponse<any>>('payments/create', body)
   },
 
-  updateOrderStatus(orderId: number, status: OrderStatus) {
-    return http.patch<ApiResponse<any>>(`${TABLE_URL}/${orderId}/status?status=${status}`)
+  updateOrderStatus(orderId: number, status: OrderStatus, cancelReason?: string) {
+    let url = `${TABLE_URL}/${orderId}/status?status=${status}`
+    if (cancelReason) {
+      url += `&cancelReason=${encodeURIComponent(cancelReason)}`
+    }
+    return http.patch<ApiResponse<any>>(url)
   },
-  
+
   applyVoucher(orderId: number, code: string) {
     return http.post<ApiResponse<any>>(`${TABLE_URL}/${orderId}/voucher/apply`, { code })
   },
@@ -43,6 +57,10 @@ const orderApi = {
 
   mapCustomerToOrder(orderId: number, customerId: number) {
     return http.patch<ApiResponse<null>>(`${TABLE_URL}/${orderId}/customer/${customerId}`)
+  },
+
+  getKitchenOrders() {
+    return http.get<ApiResponse<Order[]>>(`${TABLE_URL}/kitchen`)
   }
 }
 

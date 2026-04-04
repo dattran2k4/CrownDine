@@ -1,9 +1,13 @@
 package com.crowndine.common.utils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
 
 public class CodeUtils {
+    private static final DateTimeFormatter ENTITY_CODE_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd-HHmmss");
 
     private CodeUtils() {
     }
@@ -22,5 +26,19 @@ public class CodeUtils {
         String orderCodeStr = String.valueOf(timestamp) + randomBits;
 
         return Long.parseLong(orderCodeStr);
+    }
+
+    public static String generateOrderCode() {
+        return generateEntityCode("ORD");
+    }
+
+    public static String generateReservationCode() {
+        return generateEntityCode("RES");
+    }
+
+    private static String generateEntityCode(String prefix) {
+        String timestamp = LocalDateTime.now().format(ENTITY_CODE_FORMATTER);
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        return String.format("%s-%s-%s", prefix, timestamp, randomSuffix);
     }
 }

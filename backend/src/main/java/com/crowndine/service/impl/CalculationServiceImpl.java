@@ -2,9 +2,11 @@ package com.crowndine.service.impl;
 
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.common.enums.EVoucherType;
+import com.crowndine.model.Order;
 import com.crowndine.model.OrderDetail;
 import com.crowndine.model.Voucher;
 import com.crowndine.service.CalculationService;
+import com.crowndine.service.OrderPricingResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -80,5 +82,14 @@ public class CalculationServiceImpl implements CalculationService {
             finalPrice = BigDecimal.ZERO;
         }
         return finalPrice;
+    }
+
+    @Override
+    public OrderPricingResult calculateOrderPricing(Order order) {
+        BigDecimal totalPrice = calculateTotalOrder(order.getOrderDetails());
+        BigDecimal discountPrice = order.getVoucher() == null ? BigDecimal.ZERO : calculateVoucherDiscount(totalPrice, order.getVoucher());
+        BigDecimal finalPrice = calculateFinalTotalPrice(totalPrice, discountPrice);
+
+        return new OrderPricingResult(totalPrice, discountPrice, finalPrice);
     }
 }

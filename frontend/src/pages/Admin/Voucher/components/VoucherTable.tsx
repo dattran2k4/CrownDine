@@ -57,6 +57,11 @@ export function VoucherTable({ vouchers, onEdit, onAssign }: VoucherTableProps) 
                   </td>
                   <td className='hidden px-6 py-4 md:table-cell'>
                     {formatDiscount(voucher)}
+                    {voucher.minValue != null && (
+                      <div className='text-muted-foreground mt-0.5 text-xs'>
+                        Đơn tối thiểu {Number(voucher.minValue).toLocaleString('vi-VN')}đ
+                      </div>
+                    )}
                   </td>
                   <td className='px-6 py-4'>
                     <div className='flex items-center justify-end gap-2'>

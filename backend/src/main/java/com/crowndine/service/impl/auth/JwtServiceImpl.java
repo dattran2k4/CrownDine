@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +38,12 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.refresh-key-expiration}")
     private long refreshExpiration;
 
+    @Value("${jwt.reset-password-key}")
+    private String resetPasswordKey;
+
+    @Value("${jwt.reset-password-key-expiration}")
+    private long resetPasswordExpiration;
+
     @Override
     public String extractUsername(String token, ETokenType type) {
         return extractClaim(token, type, Claims::getSubject);
@@ -53,7 +57,7 @@ public class JwtServiceImpl implements JwtService {
     private Claims extractAllClaims(String token, ETokenType tokenType) {
 
         if (StringUtils.isBlank(token)) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_MISSING, "Token không được cung cấp hoặc rỗng.");
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_MISSING);
         }
         try {
             return Jwts.parserBuilder()
@@ -63,9 +67,9 @@ public class JwtServiceImpl implements JwtService {
                     .getBody();
 
         } catch (ExpiredJwtException e) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_EXPIRED, "Token đã hết hạn", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_EXPIRED, e);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new JwtAuthenticationException(ErrorCode.TOKEN_INVALID, "Token không hợp lệ", e);
+            throw new JwtAuthenticationException(ErrorCode.TOKEN_INVALID, e);
         }
     }
 
@@ -77,7 +81,10 @@ public class JwtServiceImpl implements JwtService {
             case REFRESH_TOKEN -> {
                 return Keys.hmacShaKeyFor(refreshKey.getBytes());
             }
-            default -> throw new InvalidDataException("Token type not found");
+            case RESET_PASSWORD_TOKEN -> {
+                return Keys.hmacShaKeyFor(resetPasswordKey.getBytes());
+            }
+            default -> throw new InvalidDataException("auth.token_type_not_found");
         }
     }
 
@@ -89,6 +96,11 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String generateRefreshToken(String username, List<String> authorities) {
         return buildToken(username, authorities, refreshExpiration, ETokenType.REFRESH_TOKEN);
+    }
+
+    @Override
+    public String generateResetPasswordToken(String username) {
+        return buildToken(username, List.of(), resetPasswordExpiration, ETokenType.RESET_PASSWORD_TOKEN);
     }
 
     private String buildToken(String username, List<String> authorities, long expiration, ETokenType type) {

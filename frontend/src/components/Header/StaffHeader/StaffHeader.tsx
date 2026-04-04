@@ -46,7 +46,7 @@ const StaffHeader = () => {
     logoutMutation.mutate()
   }
   const navItems = [
-    { label: 'Trạng thái bàn', href: 'staff/floor-plan' },
+    { label: 'Thu ngân', href: 'staff/cashier' },
     { label: 'Đơn đặt bàn', href: 'staff/reservation-list' },
     { label: 'Đơn gọi món', href: 'staff/order-management' },
     { label: 'Bếp', href: 'staff/kitchen-display' },

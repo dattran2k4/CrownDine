@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { signinSchema, type SigninFormValues } from '@/utils/auth.schema'
 import { useLogin } from '@/hooks/useLogin'
@@ -15,9 +14,14 @@ import { isAxiosUnauthorizedError } from '@/utils/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { ErrorResponse } from '@/types/utils.type'
 import { toast } from 'sonner'
+import { GoogleLogin } from '@react-oauth/google'
+import { useGoogleLogin } from '@/hooks/useGoogleLogin'
+import { Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -29,6 +33,27 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   })
 
   const loginMutation = useLogin()
+  const googleLoginMutation = useGoogleLogin()
+
+  const handleGoogleLoginSuccess = async (credential: string) => {
+    try {
+      await googleLoginMutation.mutateAsync(credential)
+      toast.success('Đăng nhập Google thành công!')
+
+      const roles = useAuthStore.getState().roles
+      if (roles.includes('ADMIN')) {
+        navigate('/admin')
+      } else if (roles.includes('STAFF')) {
+        navigate('/staff')
+      } else {
+        navigate(path.home)
+      }
+    } catch (error) {
+      console.error('Google Login Mutation Failed:', error)
+      toast.error('Đăng nhập Google thất bại!')
+    }
+  }
+
   const onSubmit = handleSubmit(async (data) => {
     try {
       await loginMutation.mutateAsync(data)
@@ -96,14 +121,23 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                 <Label htmlFor='password' className='text-sm font-medium'>
                   Mật khẩu
                 </Label>
-                <Input
-                  type='password'
-                  id='password'
-                  placeholder='Nhập mật khẩu'
-                  className='border-input h-10 rounded-lg'
-                  autoComplete='current-password'
-                  {...register('password')}
-                />
+                <div className='relative mt-1'>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    id='password'
+                    placeholder='Nhập mật khẩu'
+                    className='border-input h-10 rounded-lg pr-10'
+                    autoComplete='current-password'
+                    {...register('password')}
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setShowPassword(!showPassword)}
+                    className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+                  >
+                    {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className='text-destructive mt-1 text-xs wrap-break-word'>{errors.password.message}</p>
                 )}
@@ -130,18 +164,22 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
 
               {/* Google Login Button */}
-              <Button
-                type='button'
-                className='btn-auth w-full cursor-pointer'
-                size='lg'
-                onClick={() => {
-                  // TODO: Implement Google login
-                  console.log('Google login clicked')
-                }}
-              >
-                <GoogleIcon className='size-5' />
-                Đăng nhập với Google
-              </Button>
+              <div className='flex justify-center'>
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      handleGoogleLoginSuccess(credentialResponse.credential)
+                    }
+                  }}
+                  onError={() => {
+                    toast.error('Đăng nhập Google thất bại!')
+                  }}
+                  useOneTap
+                  theme='outline'
+                  size='large'
+                  width='100%'
+                />
+              </div>
 
               {/* Signup link */}
               <p className='text-muted-foreground text-center text-sm'>

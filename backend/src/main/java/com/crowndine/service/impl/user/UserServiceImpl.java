@@ -2,7 +2,6 @@ package com.crowndine.service.impl.user;
 
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
-import com.crowndine.dto.response.ApiResponse;
 import com.crowndine.dto.response.ProfileResponse;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.User;
@@ -12,6 +11,9 @@ import com.crowndine.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.crowndine.service.mail.MailService;
+import com.crowndine.exception.InvalidDataException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,10 +24,32 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @Override
-    public void changePassword(ChangePasswordRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(ChangePasswordRequest request, String username) {
+        log.info("Processing for changing password for user {}", username);
 
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        // 1. Verify old password
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new InvalidDataException("auth.bad_credentials");
+        }
+
+        // 2. Verify new password confirmation
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new InvalidDataException("auth.confirm_password_mismatch");
+        }
+
+        // 3. Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Successfully changed password for user {}", username);
     }
 
     @Override
@@ -61,6 +85,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
                 // Only getting the first role's name as a string for simplicity
@@ -88,6 +113,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
                 // Only getting the first role's name as a string for simplicity
@@ -124,5 +150,74 @@ public class UserServiceImpl implements UserService {
     public User getUserByUserName(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Override
+    public java.util.List<ProfileResponse> getAllCustomers() {
+        return userRepository.findAllCustomers().stream()
+                .map(user -> ProfileResponse.builder()
+                        .id(user.getId())
+                        .gender(user.getGender())
+                        .username(user.getUsername())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .dateOfBirth(user.getDateOfBirth())
+                        .avatarUrl(user.getAvatarUrl())
+                        .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                        .createdAt(user.getCreatedAt().toLocalDate())
+                        .updatedAt(user.getUpdatedAt().toLocalDate())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public void sendEmailOtp(String username, String newEmail) {
+        log.info("Generating email OTP for user: {}", username);
+        
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new InvalidDataException("auth.email_exists");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        // Generate 6-digit random OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+        
+        user.setVerificationCode(otp);
+        user.setVerificationExpiration(java.time.LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+        mailService.sendOtpEmail(user.getEmail(), otp);
+        log.info("Email OTP sent successfully to current email of user: {}", username);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void verifyEmailOtp(String username, String otp, String newEmail) {
+        log.info("Verifying email OTP for user: {}", username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
+
+        if (user.getVerificationCode() == null || !user.getVerificationCode().equals(otp)) {
+            throw new InvalidDataException("auth.verify_code_invalid");
+        }
+
+        if (user.getVerificationExpiration().isBefore(java.time.LocalDateTime.now())) {
+            throw new InvalidDataException("auth.verify_code_expired");
+        }
+
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new InvalidDataException("auth.email_exists");
+        }
+
+        user.setEmail(newEmail);
+        user.setVerificationCode(null);
+        user.setVerificationExpiration(null);
+        userRepository.save(user);
+
+        log.info("Email updated successfully for user: {}", username);
     }
 }

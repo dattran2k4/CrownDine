@@ -8,6 +8,7 @@ import ReservationHistory from '@/components/Profile/reservation-history'
 import MyVouchers from '@/components/Profile/my-vouchers'
 import ProfileFavorites from '@/components/Profile/ProfileFavorites'
 import SecuritySettings from '@/components/Profile/security-setting'
+import RewardPointsTab from '@/components/Profile/reward-points'
 import userVoucherApi from '@/apis/userVoucher.api'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { User } from '@/types/profile.type'
@@ -21,7 +22,7 @@ const Profile = () => {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tabFromUrl = params.get('tab')
-    const validTabs = ['info', 'reservations', 'favorites', 'vouchers', 'security']
+    const validTabs = ['info', 'reservations', 'favorites', 'reward-points', 'vouchers', 'security']
     if (tabFromUrl && validTabs.includes(tabFromUrl)) {
       setActiveTab(tabFromUrl)
     }
@@ -60,8 +61,8 @@ const Profile = () => {
       <div className='container mx-auto px-4'>
         {/* Page Header */}
         <div className='mb-12'>
-          <h1 className='mb-2 text-4xl font-bold'>My Account</h1>
-          <p className='text-foreground/60'>Manage your profile, reservations, and account security</p>
+          <h1 className='mb-2 text-4xl font-bold'>Tài Khoản Của Tôi</h1>
+          <p className='text-foreground/60'>Quản lý hồ sơ, lịch sử đặt bàn và bảo mật tài khoản</p>
         </div>
 
         {/* Layout: Sidebar + Main Content */}
@@ -80,6 +81,8 @@ const Profile = () => {
             )}
 
             {activeTab === 'favorites' && <ProfileFavorites />}
+
+            {activeTab === 'reward-points' && <RewardPointsTab user={user} onUpdateUser={setUser} />}
 
             {activeTab === 'vouchers' && (
               <MyVouchers vouchers={vouchers} isLoading={isVouchersLoading} />

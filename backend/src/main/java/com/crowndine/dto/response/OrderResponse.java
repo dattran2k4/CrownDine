@@ -35,6 +35,8 @@ public class OrderResponse {
 
     private LocalDateTime updatedAt;
 
+    private String cancelReason;
+
     private List<OrderDetailResponse> orderDetails = new ArrayList<>();
 
     private VoucherSlimResponse voucher;

@@ -1,6 +1,7 @@
 package com.crowndine.service;
 
 import com.crowndine.model.OrderDetail;
+import com.crowndine.model.Order;
 import com.crowndine.model.Voucher;
 
 import java.math.BigDecimal;
@@ -17,4 +18,6 @@ public interface CalculationService {
     BigDecimal calculateVoucherDiscount(BigDecimal orderAmount, Voucher voucher);
 
     BigDecimal calculateFinalTotalPrice(BigDecimal totalPrice, BigDecimal discountPrice);
+
+    OrderPricingResult calculateOrderPricing(Order order);
 }

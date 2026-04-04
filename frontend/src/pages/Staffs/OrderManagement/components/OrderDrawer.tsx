@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { queryClient } from '@/main'
@@ -14,6 +15,8 @@ interface OrderDrawerProps {
   isOpen: boolean
   onClose: () => void
   order: Order | null // null if creating a new order
+  reservationId?: number | null
+  preSelectedTableId?: string | number | null
   onPaymentClick?: (order: Order) => void
   onCancelClick?: (order: Order) => void
 }
@@ -28,7 +31,15 @@ interface CartItem {
   status?: string // PENDING, COOKING, etc for existing details
 }
 
-export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, onCancelClick }: OrderDrawerProps) {
+export default function OrderDrawer({ 
+  isOpen, 
+  onClose, 
+  order, 
+  reservationId, 
+  preSelectedTableId,
+  onPaymentClick, 
+  onCancelClick 
+}: OrderDrawerProps) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [selectedTableId, setSelectedTableId] = useState<string>('')
   const [orderNote, setOrderNote] = useState<string>('')
@@ -41,7 +52,7 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
 
   // Load existing order details when editing
   useEffect(() => {
-    if (order) {
+    if (order && order.orderDetails) {
       const existingCart: CartItem[] = order.orderDetails.map((detail) => {
         const dItem = detail.item || detail.combo
         return {
@@ -66,12 +77,15 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
       setCart(existingCart)
       // Extract table ID if possible (backend might not send tableId directly on Order, map it if needed)
       // For now, if order has no tableId available, we leave it empty.
+    } else if (order) {
+      // Order exists but no details yet
+      setCart([])
     } else {
       setCart([])
-      setSelectedTableId('')
+      setSelectedTableId(preSelectedTableId ? preSelectedTableId.toString() : '')
       setOrderNote('')
     }
-  }, [order, isOpen])
+  }, [order, isOpen, preSelectedTableId])
 
   const handleSelectItem = (item: MenuCardItem, type: 'item' | 'combo') => {
     setCart((prev) => [
@@ -111,7 +125,18 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
   }
 
   const createOrderMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async (): Promise<any> => {
+      if (reservationId) {
+        return orderApi.openOrderForReservation(reservationId, {
+          items: cart.map((c) => ({
+            itemId: c.itemType === 'item' ? c.data.id : undefined,
+            comboId: c.itemType === 'combo' ? c.data.id : undefined,
+            quantity: c.quantity,
+            note: orderNote || undefined
+          }))
+        })
+      }
+
       return orderApi.createOrder({
         tableId: selectedTableId ? Number(selectedTableId) : null,
         items: cart.map((c) => ({
@@ -125,6 +150,7 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
     onSuccess: () => {
       toast.success('Tạo đơn thành công!')
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
       onClose()
     },
     onError: (err: any) => {
@@ -184,6 +210,7 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
   const discountPrice = order?.discountPrice || 0
   const finalPrice = Math.max(0, totalPrice - discountPrice)
   const isSaving = createOrderMutation.isPending || addDetailsMutation.isPending
+  const hasNewItems = cart.some((c) => !c.existingDetailId)
   const tables = tableData?.data?.data || []
 
   return (
@@ -216,6 +243,9 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
                   Bàn: <span className='font-semibold'>{order.tableName || '-'}</span> &middot; Tạo lúc{' '}
                   {new Date(order.createdAt).toLocaleString('vi-VN')} &middot; Trạng thái:{' '}
                   <span className='text-primary font-semibold'>{order.status}</span>
+                  {order.status === 'CANCELLED' && order.cancelReason && (
+                    <> &middot; Lý do hủy: <span className='text-destructive font-semibold'>{order.cancelReason}</span></>
+                  )}
                 </p>
               )}
             </div>
@@ -235,7 +265,7 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
           {/* Right Column: Order Cart */}
           <div className='bg-background flex w-full flex-col lg:w-5/12 xl:w-1/3'>
             {/* Top Config for new orders */}
-            {!order && (
+            {!order && !reservationId && (
               <div className='border-border flex items-center gap-2 border-b p-4'>
                 <select
                   value={selectedTableId}
@@ -256,6 +286,14 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
                   onChange={(e) => setOrderNote(e.target.value)}
                   className='bg-card border-border flex-1 rounded-md border px-3 py-2 text-sm shadow-sm outline-none'
                 />
+              </div>
+            )}
+
+            {!order && reservationId && (
+              <div className='border-border border-b p-4'>
+                <p className='text-muted-foreground text-sm'>
+                  Đơn hàng này sẽ được tạo từ đặt bàn hiện tại. Bàn và khách sẽ lấy theo reservation.
+                </p>
               </div>
             )}
 
@@ -349,11 +387,14 @@ export default function OrderDrawer({ isOpen, onClose, order, onPaymentClick, on
                 {order && (
                   <Button
                     onClick={handleSave}
-                    disabled={isSaving || order.status === 'CANCELLED' || order.status === 'COMPLETED'}
+                    disabled={isSaving || order.status === 'CANCELLED' || order.status === 'COMPLETED' || !hasNewItems}
                     variant='secondary'
-                    className='border-border h-11 flex-1 border shadow-sm xl:flex-none'
+                    className={cn(
+                      'border-border h-11 flex-1 border shadow-sm xl:flex-none',
+                      !hasNewItems ? 'opacity-40 grayscale cursor-not-allowed' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+                    )}
                   >
-                    Lưu món mới
+                    {isSaving ? 'Đang gửi...' : 'Thông báo bếp'}
                   </Button>
                 )}
                 {order && (

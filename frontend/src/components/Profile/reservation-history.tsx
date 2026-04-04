@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import feedbackApi from '@/apis/feedback.api'
+import paymentApi from '@/apis/payment.api'
 import { toast } from 'react-toastify'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -40,7 +41,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
       comboId?: number
     }) => feedbackApi.createFeedback(data),
     onSuccess: () => {
-      toast.success('Feedback sent successfully!')
+      toast.success('Gửi đánh giá thành công!')
       setIsModalOpen(false)
       queryClient.invalidateQueries({ queryKey: ['reservation-history'] })
       // Reset state
@@ -49,7 +50,29 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
       setCurrentTarget(null)
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to send feedback')
+      toast.error(error.response?.data?.message || 'Gửi đánh giá thất bại')
+    }
+  })
+
+  const continuePaymentMutation = useMutation({
+    mutationFn: async (reservationCode: string) => {
+      const response = await paymentApi.createPayment({
+        reservationCode,
+        method: 'PAYOS'
+      })
+
+      return response.data.data
+    },
+    onSuccess: (checkoutUrl) => {
+      if (!checkoutUrl) {
+        toast.error('Không nhận được liên kết thanh toán')
+        return
+      }
+
+      window.location.href = checkoutUrl
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Không thể tạo liên kết thanh toán')
     }
   })
 
@@ -112,12 +135,21 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
     })
   }
 
+  const handleContinuePayment = (reservationCode?: string | null) => {
+    if (!reservationCode) {
+      toast.error('Không tìm thấy mã đặt bàn để tiếp tục thanh toán')
+      return
+    }
+
+    continuePaymentMutation.mutate(reservationCode)
+  }
+
   if (isLoading) {
     return (
       <div className='bg-card border-border rounded-lg border p-8'>
-        <h2 className='mb-8 text-2xl font-bold'>Order & Reservation History</h2>
+        <h2 className='mb-8 text-2xl font-bold'>Lịch Sử Đặt Bàn & Đơn Hàng</h2>
         <div className='flex items-center justify-center py-12'>
-          <p className='text-foreground/60 animate-pulse'>Loading your history...</p>
+          <p className='text-foreground/60 animate-pulse'>Đang tải dữ liệu...</p>
         </div>
       </div>
     )
@@ -126,13 +158,13 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
   return (
     <div className='bg-card border-border rounded-lg border p-8'>
       {/* Header */}
-      <h2 className='mb-8 text-2xl font-bold'>Order & Reservation History</h2>
+      <h2 className='mb-8 text-2xl font-bold'>Lịch Sử Đặt Bàn & Đơn Hàng</h2>
 
       {/* Reservations List */}
       <div className='space-y-4'>
         {reservations.length === 0 ? (
           <div className='py-12 text-center'>
-            <p className='text-foreground/60'>No reservations yet</p>
+            <p className='text-foreground/60'>Chưa có đặt bàn nào</p>
           </div>
         ) : (
           reservations.map((reservation) => {
@@ -155,7 +187,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                             {reservation.guestNumber !== 1 ? 's' : ''}
                           </>
                         ) : (
-                          <>Walk-in Order • {reservation.tableName}</>
+                          <> Khách vãng lai • {reservation.tableName}</>
                         )}
                       </h3>
                       <p className='text-foreground/60 mt-1 text-sm'>
@@ -166,6 +198,18 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                   </div>
 
                   <div className='flex items-center gap-4'>
+                    {reservation.reservationStatus === 'PENDING' && reservation.reservationCode && (
+                      <Button
+                        size='sm'
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleContinuePayment(reservation.reservationCode)
+                        }}
+                        disabled={continuePaymentMutation.isPending}
+                      >
+                        {continuePaymentMutation.isPending ? 'Đang tạo link...' : 'Tiếp tục thanh toán'}
+                      </Button>
+                    )}
                     <Badge className={getReservationStatusColor(reservation.reservationStatus)}>
                       {reservation.reservationStatus}
                     </Badge>
@@ -181,19 +225,19 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                     {/* General Info */}
                     {reservation.reservationId && (
                       <div className='border-border/50 mb-6 border-b pb-6'>
-                        <h4 className='mb-3 font-semibold'>Reservation Information</h4>
+                        <h4 className='mb-3 font-semibold'>Thông Tin Đặt Bàn</h4>
                         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                           <div className='flex items-start gap-2'>
                             <Table className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
                             <div>
-                              <p className='text-foreground/60 text-sm'>Table</p>
+                              <p className='text-foreground/60 text-sm'>Bàn</p>
                               <p className='font-medium'>{reservation.tableName}</p>
                             </div>
                           </div>
                           <div className='flex items-start gap-2'>
                             <Clock className='text-primary mt-0.5 h-5 w-5 flex-shrink-0' />
                             <div>
-                              <p className='text-foreground/60 text-sm'>Time Slot</p>
+                              <p className='text-foreground/60 text-sm'>Khung Giờ</p>
                               <p className='font-medium'>
                                 {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
                               </p>
@@ -206,7 +250,7 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                     {reservation.orderId ? (
                       <div className='bg-card border-border/50 space-y-4 rounded-lg border p-6'>
                         <div className='flex items-center justify-between'>
-                          <h4 className='font-semibold'>Order Summary</h4>
+                          <h4 className='font-semibold'>Tóm Tắt Đơn Hàng</h4>
                           <div className='flex items-center gap-3'>
                             {reservation.orderStatus === 'COMPLETED' && !reservation.hasGeneralFeedback && (
                               <Button
@@ -216,13 +260,13 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                                 onClick={() => handleOpenFeedback(reservation.orderId!)}
                               >
                                 <MessageSquare className='h-3.5 w-3.5' />
-                                Feedback Order
+                                Đánh Giá Đơn Hàng
                               </Button>
                             )}
                             {reservation.hasGeneralFeedback && (
                               <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
                                 <Star className='mr-1 h-3 w-3 fill-current' />
-                                Order Reviewed
+                              Đã Đánh Giá
                               </Badge>
                             )}
                             <Badge variant='outline' className={getOrderStatusColor(reservation.orderStatus || '')}>
@@ -248,12 +292,12 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                                       onClick={() => handleOpenFeedback(reservation.orderId!, item)}
                                       className='text-primary hover:text-primary/80 ml-2 text-xs font-semibold underline underline-offset-2'
                                     >
-                                      Rate dish
+                                      Đánh giá món
                                     </button>
                                   )}
                                   {item.hasFeedback && (
                                     <span className='text-green-600 ml-2 text-[10px] italic font-medium'>
-                                      (Rated)
+                                      (Đã đánh giá)
                                     </span>
                                   )}
                                 </div>
@@ -266,19 +310,19 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
                         <div className='flex items-center justify-between'>
                           <span className='flex items-center gap-2 font-semibold'>
                             <DollarSign className='text-primary h-4 w-4' />
-                            Final Bill
+                            Hóa Đơn Cuối
                           </span>
                           <span className='text-primary text-xl font-bold'>
                             {formatCurrency(Number(reservation.finalPrice || 0))}
                           </span>
                         </div>
                         <p className='text-foreground/60 text-center text-xs'>
-                          Visit the counter to see full invoice details
+                          Vui lòng đến quầy thu ngân để xem hóa đơn chi tiết
                         </p>
                       </div>
                     ) : (
                       <div className='bg-card/50 border-border/50 rounded-lg border border-dashed p-6 text-center italic'>
-                        <p className='text-foreground/40 text-sm'>No order created for this reservation yet</p>
+                        <p className='text-foreground/40 text-sm'>Chưa có đơn hàng nào cho lần đặt bàn này</p>
                       </div>
                     )}
                   </div>
@@ -299,8 +343,8 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
           <div className='flex flex-col items-center gap-3 py-4 text-center'>
             <p className='text-foreground/60 text-sm'>
               {currentTarget?.itemName 
-                ? `How was the ${currentTarget.itemName}? Your feedback helps other food lovers.`
-                : 'How was your experience with CrownDine?'}
+                ? `Món ${currentTarget.itemName} có ngon không? Đánh giá của bạn giúp những thực khách khác biết thêm.`
+                : 'Trải nghiệm của bạn tại CrownDine hôm nay thế nào?'}
             </p>
             <div className='flex gap-2'>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -319,20 +363,20 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
               ))}
             </div>
             <p className='text-sm font-semibold text-yellow-600 capitalize'>
-              {rating === 1 && 'Poor'}
-              {rating === 2 && 'Fair'}
-              {rating === 3 && 'Good'}
-              {rating === 4 && 'Very Good'}
-              {rating === 5 && 'Excellent!'}
+              {rating === 1 && 'Rất tệ'}
+              {rating === 2 && 'Tạmực'}
+              {rating === 3 && 'Bình thường'}
+              {rating === 4 && 'Tốt'}
+              {rating === 5 && 'Xuất sắc!'}
             </p>
           </div>
 
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>Your comment (optional)</label>
+            <label className='text-sm font-medium'>Nhận xét của bạn (tùy chọn)</label>
             <textarea
               className='border-border bg-foreground/[0.02] focus:ring-primary/20 w-full rounded-lg border p-4 text-sm focus:outline-none focus:ring-2'
               rows={4}
-              placeholder='Add a comment...'
+              placeholder='Viết nhận xét...'
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
@@ -341,15 +385,15 @@ const ReservationHistory = ({ reservations, isLoading }: ReservationHistoryProps
 
           <div className='flex gap-3'>
             <Button variant='outline' className='flex-1' onClick={() => setIsModalOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button className='flex-1' onClick={handleSubmitFeedback} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Submitting...' : 'Submit Review'}
+              {mutation.isPending ? 'Đang gửi...' : 'Gửi Đánh Giá'}
             </Button>
           </div>
           
           <p className='text-foreground/40 mt-4 text-center text-xs italic'>
-            * Each item or summary can only be reviewed once.
+            * Mỗi món ăn hoặc đơn hàng chỉ được đánh giá một lần.
           </p>
         </div>
       </Modal>

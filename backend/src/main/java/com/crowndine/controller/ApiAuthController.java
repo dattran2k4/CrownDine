@@ -3,6 +3,7 @@ package com.crowndine.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crowndine.dto.request.ForgotPasswordRequest;
+import com.crowndine.dto.request.GoogleLoginRequest;
 import com.crowndine.dto.request.LoginRequest;
 import com.crowndine.dto.request.RegisterRequest;
 import com.crowndine.dto.request.ResetPasswordRequest;
@@ -35,6 +37,12 @@ public class ApiAuthController {
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
         log.info("Login request for user: {}", request.getUsername());
         return new ResponseEntity<>(authenticationService.accessToken(request, httpServletRequest), HttpStatus.OK);
+    }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<TokenResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request, HttpServletRequest httpServletRequest) {
+        log.info("Google login request");
+        return new ResponseEntity<>(authenticationService.googleLogin(request, httpServletRequest), HttpStatus.OK);
     }
 
     @PostMapping("/refresh-token")
@@ -80,13 +88,31 @@ public class ApiAuthController {
     @PostMapping("forgot-password")
     public ApiResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         log.info("Forgot password request for email: {}", request.getEmail());
-        return null;
+        authenticationService.forgotPassword(request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("If the account exists, a reset password email has been sent")
+                .build();
     }
 
-    // Verify code + doi mat khau moi
+    @GetMapping("reset-password")
+    public ApiResponse verifyResetPasswordToken(@RequestParam String token) {
+        log.info("Verify reset password token request");
+        authenticationService.verifyResetPasswordToken(token);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Reset password token is valid")
+                .build();
+    }
+
+    @PostMapping("reset-password")
     public ApiResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request,
-            @RequestParam String verifyCode) {
-        log.info("Reset Password request for user, verify code: {}", verifyCode);
-        return null;
+            @RequestParam String token) {
+        log.info("Reset Password request");
+        authenticationService.resetPassword(token, request);
+        return ApiResponse.builder()
+                .status(200)
+                .message("Reset password successfully")
+                .build();
     }
 }

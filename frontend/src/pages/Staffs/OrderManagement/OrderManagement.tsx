@@ -5,13 +5,16 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 import { useState, useEffect, Fragment } from 'react'
 import { useSubscription } from 'react-stomp-hooks'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useWebSocketEnabled } from '@/contexts/websocket-context'
 import { Search, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import OrderDrawer from './components/OrderDrawer'
 import PaymentModal from './components/PaymentModal'
+import { CancelModal } from './components/CancelModal'
 import {
   Pagination,
   PaginationContent,
@@ -23,42 +26,67 @@ import {
 } from '@/components/ui/pagination'
 
 const OrderManagement = () => {
+  const isWebSocketEnabled = useWebSocketEnabled()
+  const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [dateFilterType, setDateFilterType] = useState<string>('ALL')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL')
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [reservationIdForNewOrder, setReservationIdForNewOrder] = useState<number | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null)
+  const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  const getDateRange = () => {
+    const today = new Date()
+    // Local timezone offset hack to get YYYY-MM-DD reliably
+    const offset = today.getTimezoneOffset()
+    today.setMinutes(today.getMinutes() - offset)
+
+    if (dateFilterType === 'TODAY') {
+      const dateStr = today.toISOString().split('T')[0]
+      return { fromDate: dateStr, toDate: dateStr }
+    } else if (dateFilterType === 'YESTERDAY') {
+      const yesterday = new Date(today)
+      yesterday.setDate(today.getDate() - 1)
+      const dateStr = yesterday.toISOString().split('T')[0]
+      return { fromDate: dateStr, toDate: dateStr }
+    } else if (dateFilterType === 'CUSTOM') {
+      return { fromDate: customStartDate || undefined, toDate: customEndDate || undefined }
+    }
+    return { fromDate: undefined, toDate: undefined }
+  }
+
+  const { fromDate, toDate } = getDateRange()
+
   // Fetch orders
   const { data: orders = [] } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => orderApi.getAllOrders({}),
+    queryKey: ['orders', statusFilter, fromDate, toDate],
+    queryFn: () =>
+      orderApi.getAllOrders({
+        status: statusFilter !== 'ALL' ? (statusFilter as any) : undefined,
+        fromDate,
+        toDate
+      }),
     select: (response) => response?.data?.data?.data ?? []
-  })
-
-  // WebSocket Subscription
-  useSubscription('/topic/orders', (message) => {
-    const updatedOrder = JSON.parse(message.body) as Order
-
-    queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
-      if (!oldData) return oldData
-      return {
-        ...oldData,
-        data: {
-          ...oldData.data,
-          data: {
-            ...oldData.data.data,
-            data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
-          }
-        }
-      }
-    })
   })
 
   // Filter orders
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase()
-    return order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
+    const matchesSearch = order.code.toLowerCase().includes(q) || (order.tableName || '').toLowerCase().includes(q)
+
+    let matchesType = true
+    if (orderTypeFilter === 'RES') matchesType = order.code.startsWith('RES')
+    else if (orderTypeFilter === 'ORD') matchesType = order.code.startsWith('ORD')
+
+    return matchesSearch && matchesType
   })
 
   // Pagination logic
@@ -75,12 +103,38 @@ const OrderManagement = () => {
         if (updated) setSelectedOrder(updated)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders])
 
   useEffect(() => {
+    const selectedOrderId = (location.state as { selectedOrderId?: number } | null)?.selectedOrderId
+    const reservationId = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)
+      ?.reservationId
+    const createFromReservation = (location.state as { reservationId?: number; createFromReservation?: boolean } | null)
+      ?.createFromReservation
+
+    if (createFromReservation && reservationId) {
+      setSelectedOrder(null)
+      setReservationIdForNewOrder(reservationId)
+      setIsDrawerOpen(true)
+      window.history.replaceState({}, document.title)
+      return
+    }
+
+    if (!selectedOrderId || orders.length === 0) return
+
+    const matchedOrder = orders.find((order: Order) => order.id === selectedOrderId)
+    if (matchedOrder) {
+      setSelectedOrder(matchedOrder)
+      setReservationIdForNewOrder(null)
+      setIsDrawerOpen(true)
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state, orders])
+
+  useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery])
+  }, [searchQuery, statusFilter, dateFilterType, customStartDate, customEndDate, orderTypeFilter])
 
   // Reset page to last possible if current page exceeds total pages due to deletions/updates
   useEffect(() => {
@@ -110,11 +164,13 @@ const OrderManagement = () => {
 
   const handleCreateOrder = () => {
     setSelectedOrder(null)
+    setReservationIdForNewOrder(null)
     setIsDrawerOpen(true)
   }
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order)
+    setReservationIdForNewOrder(null)
     setIsDrawerOpen(true)
   }
 
@@ -123,7 +179,8 @@ const OrderManagement = () => {
   }
 
   const cancelOrderMutation = useMutation({
-    mutationFn: (orderId: number) => orderApi.updateOrderStatus(orderId, 'CANCELLED'),
+    mutationFn: ({ orderId, cancelReason }: { orderId: number; cancelReason: string }) => 
+      orderApi.updateOrderStatus(orderId, 'CANCELLED', cancelReason),
     onSuccess: () => {
       toast.success('Hủy đơn hàng thành công')
       queryClient.invalidateQueries({ queryKey: ['orders'] })
@@ -134,36 +191,113 @@ const OrderManagement = () => {
   })
 
   const handleCancelOrder = (order: Order) => {
-    if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.code}?`)) {
-      cancelOrderMutation.mutate(order.id)
+    setCancelingOrder(order)
+  }
+
+  const confirmCancelOrder = (reason: string) => {
+    if (cancelingOrder) {
+      cancelOrderMutation.mutate({ orderId: cancelingOrder.id, cancelReason: reason }, {
+        onSuccess: () => setCancelingOrder(null)
+      })
     }
   }
 
   return (
     <div className='bg-background flex min-h-screen flex-col p-6 md:p-8'>
+      {isWebSocketEnabled && <OrdersRealtimeSubscription />}
       {/* Header */}
       <header className='mb-6'>
         <h1 className='text-foreground text-3xl font-bold tracking-tight'>Đơn gọi món</h1>
         <p className='text-muted-foreground mt-1 text-sm'>Tìm nhanh theo Mã đơn, tên bàn hoặc ghi chú ngay bên dưới.</p>
       </header>
 
-      {/* Toolbar */}
-      <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
-        <div className='relative w-full max-w-md'>
-          <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-          <Input
-            placeholder='Tìm theo Mã đơn, tên bàn...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className='bg-background pl-9 shadow-none'
-          />
+      {/* Toolbar & Filters */}
+      <div className='bg-card border-border mb-6 flex flex-col gap-4 rounded-xl border p-4 shadow-sm'>
+        <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-center'>
+          <div className='relative w-full sm:max-w-xs'>
+            <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
+            <Input
+              placeholder='Tìm theo Mã đơn, tên bàn...'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className='bg-background pl-9 shadow-none'
+            />
+          </div>
+          <Button
+            onClick={handleCreateOrder}
+            className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
+          >
+            <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
+          </Button>
         </div>
-        <Button
-          onClick={handleCreateOrder}
-          className='text-primary-foreground flex w-full items-center font-medium shadow-sm transition-all hover:shadow-md sm:w-auto'
-        >
-          <Plus className='mr-2 h-4 w-4' /> Tạo đơn mới
-        </Button>
+
+        {/* Filters Row */}
+        <div className='border-border mt-2 flex flex-wrap items-end gap-4 border-t pt-3 md:mt-0'>
+          <div className='flex w-full flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
+              Trạng thái
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[150px]'
+            >
+              <option value='ALL'>Tất cả</option>
+              <option value='PRE_ORDER'>Đặt trước</option>
+              <option value='CONFIRMED'>Chờ xác nhận</option>
+              <option value='IN_PROGRESS'>Đang phục vụ</option>
+              <option value='COMPLETED'>Hoàn thành</option>
+              <option value='CANCELLED'>Đã hủy</option>
+            </select>
+          </div>
+
+          <div className='flex w-full flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>Loại đơn</label>
+            <select
+              value={orderTypeFilter}
+              onChange={(e) => setOrderTypeFilter(e.target.value)}
+              className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[170px]'
+            >
+              <option value='ALL'>Tất cả</option>
+              <option value='RES'>Đặt bàn trước (RES)</option>
+              <option value='ORD'>Khách vãng lai (ORD)</option>
+            </select>
+          </div>
+
+          <div className='flex w-full flex-1 flex-col gap-1.5 sm:w-auto'>
+            <label className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>Thời gian</label>
+            <div className='flex flex-wrap items-center gap-2 sm:flex-nowrap'>
+              <select
+                value={dateFilterType}
+                onChange={(e) => setDateFilterType(e.target.value)}
+                className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-[150px]'
+              >
+                <option value='ALL'>Mọi lúc</option>
+                <option value='TODAY'>Hôm nay</option>
+                <option value='YESTERDAY'>Hôm qua</option>
+                <option value='CUSTOM'>Khoảng thời gian...</option>
+              </select>
+
+              {dateFilterType === 'CUSTOM' && (
+                <div className='flex flex-1 items-center gap-2'>
+                  <input
+                    type='date'
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-auto'
+                  />
+                  <span className='text-muted-foreground font-medium'>-</span>
+                  <input
+                    type='date'
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className='bg-background border-border focus:border-primary focus:ring-primary/20 w-full rounded-md border px-2 py-1.5 text-sm font-medium shadow-sm transition-colors outline-none focus:ring-1 sm:w-auto'
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -202,7 +336,9 @@ const OrderManagement = () => {
                       <td className='text-foreground px-6 py-4 font-medium'>{order.tableName || '-'}</td>
                       <td className='text-foreground px-6 py-4'>{itemsCount}</td>
                       <td className='text-foreground px-6 py-4 font-bold'>
-                        <span title={order.voucher ? `Voucher: ${order.voucher.code} - ${order.voucher.name}` : undefined}>
+                        <span
+                          title={order.voucher ? `Voucher: ${order.voucher.code} - ${order.voucher.name}` : undefined}
+                        >
                           {(order.finalPrice ?? order.totalPrice).toLocaleString()} VND
                         </span>
                       </td>
@@ -312,14 +448,20 @@ const OrderManagement = () => {
 
       <OrderDrawer
         isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={() => {
+          setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
+        }}
         order={selectedOrder}
+        reservationId={reservationIdForNewOrder}
         onPaymentClick={(order) => {
           setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
           setPaymentOrder(order)
         }}
         onCancelClick={(order) => {
           setIsDrawerOpen(false)
+          setReservationIdForNewOrder(null)
           handleCancelOrder(order)
         }}
       />
@@ -332,8 +474,40 @@ const OrderManagement = () => {
           queryClient.invalidateQueries({ queryKey: ['orders'] })
         }}
       />
+
+      {/* Cancel Modal */}
+      {cancelingOrder && (
+        <CancelModal
+          orderCode={cancelingOrder.code}
+          isPending={cancelOrderMutation.isPending}
+          onClose={() => setCancelingOrder(null)}
+          onConfirm={confirmCancelOrder}
+        />
+      )}
     </div>
   )
+}
+
+function OrdersRealtimeSubscription() {
+  useSubscription('/topic/orders', (message) => {
+    const updatedOrder = JSON.parse(message.body) as Order
+
+    queryClient.setQueryData(['orders'], (oldData: AxiosResponse) => {
+      if (!oldData) return oldData
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: {
+            ...oldData.data.data,
+            data: oldData.data.data.data.map((t: Order) => (t.id === updatedOrder.id ? { ...t, ...updatedOrder } : t))
+          }
+        }
+      }
+    })
+  })
+
+  return null
 }
 
 export default OrderManagement

@@ -7,3 +7,5 @@ package-lock.json
 .agent/
 frontend/package-lock.json
 
+# Backend configs
+backend/src/main/resources/application-dev.yml

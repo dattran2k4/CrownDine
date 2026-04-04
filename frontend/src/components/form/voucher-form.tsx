@@ -19,6 +19,7 @@ export function VoucherForm({ initialData, onSubmit, onCancel }: VoucherFormProp
     type: initialData?.type ?? 'PERCENTAGE',
     discountValue: initialData?.discountValue != null ? String(initialData.discountValue) : '',
     maxDiscountValue: initialData?.maxDiscountValue != null ? String(initialData.maxDiscountValue) : '',
+    minValue: initialData?.minValue != null ? String(initialData.minValue) : '',
     description: initialData?.description ?? ''
   })
 
@@ -28,12 +29,15 @@ export function VoucherForm({ initialData, onSubmit, onCancel }: VoucherFormProp
     const maxDiscountValue = formData.maxDiscountValue.trim()
       ? parseFloat(formData.maxDiscountValue)
       : undefined
+    const minValue = formData.minValue.trim() ? parseFloat(formData.minValue) : undefined
     if (Number.isNaN(discountValue) || discountValue <= 0) return
     if (maxDiscountValue !== undefined && (Number.isNaN(maxDiscountValue) || maxDiscountValue <= 0)) return
+    if (minValue !== undefined && (Number.isNaN(minValue) || minValue <= 0)) return
     onSubmit({
       ...formData,
       discountValue: formData.discountValue,
       maxDiscountValue: maxDiscountValue != null ? String(maxDiscountValue) : '',
+      minValue: minValue != null ? String(minValue) : '',
       description: formData.description || ''
     })
   }
@@ -103,6 +107,18 @@ export function VoucherForm({ initialData, onSubmit, onCancel }: VoucherFormProp
           />
         </div>
       )}
+      <div className='space-y-2'>
+        <Label htmlFor='voucher-min-value'>Giá trị đơn tối thiểu (VNĐ) - tùy chọn</Label>
+        <Input
+          id='voucher-min-value'
+          type='number'
+          min='1000'
+          step='1000'
+          placeholder='VD: 200000'
+          value={formData.minValue}
+          onChange={(e) => setFormData({ ...formData, minValue: e.target.value })}
+        />
+      </div>
       <div className='space-y-2'>
         <Label htmlFor='voucher-desc'>Mô tả</Label>
         <textarea

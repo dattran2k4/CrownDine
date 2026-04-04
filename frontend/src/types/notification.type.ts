@@ -21,5 +21,15 @@ export interface UnreadNotificationCount {
   unreadCount: number
 }
 
+export interface NotificationRealtimeResponse {
+  id: number
+  type: NotificationType
+  title: string
+  message: string
+  payload: string | null
+  createdAt: string
+  unreadCount: number
+}
+
 export type NotificationListResponse = ApiResponse<PageResponse<NotificationItem>>
 export type UnreadNotificationCountApiResponse = ApiResponse<UnreadNotificationCount>

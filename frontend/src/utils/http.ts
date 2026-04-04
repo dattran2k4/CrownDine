@@ -6,6 +6,7 @@ import type { ErrorResponse } from '@/types/utils.type'
 import { REFRESH_TOKEN_URL } from '@/apis/auth.api'
 import type { RefreshTokenResponse } from '@/types/auth.type'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { getCurrentLocale } from '@/utils/locale'
 
 class Http {
   instance: AxiosInstance
@@ -24,6 +25,12 @@ class Http {
     this.instance.interceptors.request.use(
       (config) => {
         const accessToken = useAuthStore.getState().accessToken
+        const locale = getCurrentLocale()
+
+        if (config.headers) {
+          config.headers['Accept-Language'] = locale
+        }
+
         if (accessToken && config.headers && config.url !== REFRESH_TOKEN_URL) {
           config.headers.Authorization = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`
         }

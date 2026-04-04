@@ -5,6 +5,7 @@ import com.crowndine.dto.request.VoucherAssignUsersRequest;
 import com.crowndine.dto.request.VoucherRequest;
 import com.crowndine.dto.request.VoucherValidateRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.voucher.UserVoucherService;
 import com.crowndine.service.voucher.VoucherService;
 import jakarta.validation.Valid;
@@ -25,7 +26,9 @@ import java.security.Principal;
 public class ApiVoucherController {
 
     private final VoucherService voucherService;
+    private final OrderVoucherService orderVoucherService;
     private final UserVoucherService userVoucherService;
+    private final com.crowndine.service.user.RewardPointService rewardPointService;
 
     @PostMapping
     public ApiResponse createVoucher(@Valid @RequestBody VoucherRequest request) {
@@ -90,7 +93,16 @@ public class ApiVoucherController {
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("Validate voucher successfully")
-                .data(userVoucherService.validateVoucher(request.getCode(), request.getOrderId(), principal.getName()))
+                .data(orderVoucherService.validateVoucherForOrder(request.getOrderId(), request.getCode(), principal.getName()))
+                .build();
+    }
+
+    @PostMapping("/{id}/exchange")
+    public ApiResponse exchangeVoucher(@Min(1) @PathVariable Long id, Principal principal) {
+        rewardPointService.exchangeVoucher(id, principal.getName());
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Đổi voucher thành công")
                 .build();
     }
 }

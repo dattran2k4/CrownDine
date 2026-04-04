@@ -3,7 +3,7 @@ import type { Item } from '@/types/item.type'
 
 export type OrderStatus = 'PRE_ORDER' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
 
-export type OrderDetailStatus = 'PENDING' | 'COOKING' | 'RESERVED' | 'CANCELLED'
+export type OrderDetailStatus = 'PENDING' | 'COOKING' | 'SERVED' | 'CANCELLED'
 
 export interface Order {
   id: number
@@ -23,6 +23,7 @@ export interface Order {
   }
   updatedAt: string
   createdAt: string
+  cancelReason?: string
 }
 
 export interface OrderDetail {
@@ -33,6 +34,7 @@ export interface OrderDetail {
   quantity: number
   status: OrderDetailStatus
   totalPrice: number
+  createdAt?: string
 }
 
 // Request Types

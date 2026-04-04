@@ -31,5 +31,8 @@ public class VoucherRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Giảm tối đa phải lớn hơn 0")
     private BigDecimal maxDiscountValue;
 
+    @DecimalMin(value = "0.0", inclusive = false, message = "Giá trị đơn tối thiểu phải lớn hơn 0")
+    private BigDecimal minValue;
+
     private String description;
 }

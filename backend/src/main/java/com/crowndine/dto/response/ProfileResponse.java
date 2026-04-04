@@ -17,6 +17,7 @@ public class ProfileResponse {
     private String lastName;
     private String email;
     private String phone;
+    private Integer rewardPoints;
     private String avatarUrl;
     private String role;
     private EGender gender;

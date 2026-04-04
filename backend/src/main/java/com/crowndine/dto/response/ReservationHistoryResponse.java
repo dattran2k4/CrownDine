@@ -14,6 +14,10 @@ import java.util.List;
 @Setter
 public class ReservationHistoryResponse {
     private Long reservationId;
+    private String reservationCode;
+    private String customerName;
+    private String guestName;
+    private String createdByStaffName;
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
@@ -26,4 +30,4 @@ public class ReservationHistoryResponse {
     private BigDecimal finalPrice;
     private List<OrderLineResponse> items;
     private boolean hasGeneralFeedback;
-}
+}

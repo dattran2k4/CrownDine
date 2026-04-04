@@ -2,6 +2,7 @@ import type { OrderStatus } from '@/types/order.type'
 import clsx from 'clsx'
 import { useStompClient } from 'react-stomp-hooks'
 import { toast } from 'sonner'
+import { useWebSocketEnabled } from '@/contexts/websocket-context'
 
 interface Props {
   orderId: number
@@ -9,8 +10,25 @@ interface Props {
 }
 
 export default function OrderStatusSelect({ orderId, currentStatus }: Props) {
-  const stompClient = useStompClient()
+  const isWebSocketEnabled = useWebSocketEnabled()
 
+  if (!isWebSocketEnabled) {
+    return <OrderStatusSelectView orderId={orderId} currentStatus={currentStatus} />
+  }
+
+  return <OrderStatusSelectWithSocket orderId={orderId} currentStatus={currentStatus} />
+}
+
+function OrderStatusSelectWithSocket({ orderId, currentStatus }: Props) {
+  const stompClient = useStompClient()
+  return <OrderStatusSelectView orderId={orderId} currentStatus={currentStatus} stompClient={stompClient} />
+}
+
+function OrderStatusSelectView({
+  orderId,
+  currentStatus,
+  stompClient
+}: Props & { stompClient?: ReturnType<typeof useStompClient> }) {
   const statusOptions: OrderStatus[] = ['PRE_ORDER', 'IN_PROGRESS', 'CONFIRMED', 'COMPLETED', 'CANCELLED']
 
   const handleChange = (newStatus: OrderStatus) => {

@@ -8,12 +8,11 @@ import com.crowndine.exception.InvalidDataException;
 import com.crowndine.exception.ResourceNotFoundException;
 import com.crowndine.model.Payment;
 import com.crowndine.repository.PaymentRepository;
-import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.OrderPaymentService;
 import com.crowndine.service.payment.AbstractPaymentStrategy;
 import com.crowndine.service.payment.PaymentPreparationService;
 import com.crowndine.service.payment.PreparedPayment;
-import com.crowndine.service.order.OrderService;
-import com.crowndine.service.reservation.ReservationService;
+import com.crowndine.service.reservation.ReservationLifecycleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,20 +32,21 @@ public class PayOSService extends AbstractPaymentStrategy {
     private final PayOSConfig payOSConfig;
     private final PayOS payOS;
     private final PaymentRepository paymentRepository;
-    private final OrderService orderService;
-    private final ReservationService reservationService;
+    private final OrderPaymentService orderPaymentService;
+    private final ReservationLifecycleService reservationLifecycleService;
 
     public PayOSService(PaymentPreparationService paymentPreparationService,
                         PayOSConfig payOSConfig,
                         PayOS payOS,
                         PaymentRepository paymentRepository,
-                        OrderService orderService, ReservationService reservationService) {
+                        OrderPaymentService orderPaymentService,
+                        ReservationLifecycleService reservationLifecycleService) {
         super(paymentPreparationService);
         this.payOSConfig = payOSConfig;
         this.payOS = payOS;
         this.paymentRepository = paymentRepository;
-        this.orderService = orderService;
-        this.reservationService = reservationService;
+        this.orderPaymentService = orderPaymentService;
+        this.reservationLifecycleService = reservationLifecycleService;
     }
 
     @Override
@@ -139,13 +139,13 @@ public class PayOSService extends AbstractPaymentStrategy {
         if (payment.getReservation() == null) {
             throw new InvalidDataException("Payment reservation not found");
         }
-        reservationService.confirmAfterDepositPaid(payment.getReservation());
+        reservationLifecycleService.confirmAfterDepositPaid(payment.getReservation());
     }
 
     private void handleOrderPaymentSuccess(Payment payment) {
         if (payment.getOrder() == null) {
             throw new InvalidDataException("Payment order not found");
         }
-        orderService.markAsPaid(payment.getOrder());
+        orderPaymentService.markOrderAsPaid(payment.getOrder());
     }
 }

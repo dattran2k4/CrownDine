@@ -46,6 +46,7 @@ export default function VoucherList() {
       type: 'PERCENTAGE' | 'FIXED_AMOUNT'
       discountValue: number
       maxDiscountValue?: number | null
+      minValue?: number | null
       description?: string | null
     }) => voucherApi.createVoucher(data),
     onSuccess: () => {
@@ -67,6 +68,7 @@ export default function VoucherList() {
         type: 'PERCENTAGE' | 'FIXED_AMOUNT'
         discountValue: number
         maxDiscountValue?: number | null
+        minValue?: number | null
         description?: string | null
       }
     }) => voucherApi.updateVoucher(id, data),
@@ -118,8 +120,10 @@ export default function VoucherList() {
     const maxDiscountValue = data.maxDiscountValue.trim()
       ? parseFloat(data.maxDiscountValue)
       : undefined
+    const minValue = data.minValue.trim() ? parseFloat(data.minValue) : undefined
     if (maxDiscountValue !== undefined && (Number.isNaN(maxDiscountValue) || maxDiscountValue <= 0))
       return
+    if (minValue !== undefined && (Number.isNaN(minValue) || minValue <= 0)) return
 
     const payload = {
       name: data.name.trim(),
@@ -127,6 +131,7 @@ export default function VoucherList() {
       type: data.type,
       discountValue,
       maxDiscountValue: maxDiscountValue ?? null,
+      minValue: minValue ?? null,
       description: data.description?.trim() || null
     }
 

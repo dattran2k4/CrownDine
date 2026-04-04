@@ -49,6 +49,13 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
                         : ETableStatus.AVAILABLE
         );
         table.setArea(area);
+        
+        table.setBaseDeposit(request.getDeposit() != null ? request.getDeposit() : java.math.BigDecimal.ZERO);
+        table.setPositionX(request.getX() != null ? request.getX() : 0);
+        table.setPositionY(request.getY() != null ? request.getY() : 0);
+        table.setWidth(request.getWidth() != null ? request.getWidth() : 60);
+        table.setHeight(request.getHeight() != null ? request.getHeight() : 60);
+        table.setRotation(request.getRotation() != null ? request.getRotation() : 0);
 
         return map(tableRepository.save(table));
     }
@@ -63,7 +70,17 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         table.setName(request.getName());
         table.setCapacity(request.getCapacity());
         table.setShape(request.getShape());
-        table.setStatus(request.getStatus());
+        
+        if (request.getStatus() != null) {
+            table.setStatus(request.getStatus());
+        }
+
+        if (request.getDeposit() != null) table.setBaseDeposit(request.getDeposit());
+        if (request.getX() != null) table.setPositionX(request.getX());
+        if (request.getY() != null) table.setPositionY(request.getY());
+        if (request.getWidth() != null) table.setWidth(request.getWidth());
+        if (request.getHeight() != null) table.setHeight(request.getHeight());
+        if (request.getRotation() != null) table.setRotation(request.getRotation());
 
         return map(tableRepository.save(table));
     }
@@ -130,6 +147,7 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         dto.setHeight(table.getHeight());
         dto.setRotation(table.getRotation());
         dto.setCapacity(table.getCapacity());
+        dto.setDeposit(table.getBaseDeposit());
         return dto;
     }
 }

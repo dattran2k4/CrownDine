@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import ChatWidget from '@/components/Chat/ChatWidget'
 
 import Footer from '@/components/Footer'
 import Header from '@/components/Header/HomeHeader'
@@ -40,6 +41,7 @@ const MainLayout = () => {
         <Outlet />
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   )
 }

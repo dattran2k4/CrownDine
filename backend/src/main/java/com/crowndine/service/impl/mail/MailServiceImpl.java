@@ -30,10 +30,12 @@ public class MailServiceImpl implements MailService {
     public void sendConfirmLink(String emailTo, String template, String endPointConfirmUser, String verifyCode) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED, StandardCharsets.UTF_8.name());
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    StandardCharsets.UTF_8.name());
             Context context = new Context();
 
-            String confirmLink = String.format("%s?verifyCode=%s", endPointConfirmUser, URLEncoder.encode(verifyCode, StandardCharsets.UTF_8));
+            String confirmLink = String.format("%s?verifyCode=%s", endPointConfirmUser,
+                    URLEncoder.encode(verifyCode, StandardCharsets.UTF_8));
 
             Map<String, Object> properties = new HashMap<>();
             properties.put("confirmLink", confirmLink);
@@ -49,6 +51,77 @@ public class MailServiceImpl implements MailService {
             mailSender.send(message);
         } catch (Exception e) {
             log.error("Failed to send confirm link email to {}: {}", emailTo, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void sendResetPasswordLink(String emailTo, String resetPasswordEndpoint, String resetPasswordToken) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    StandardCharsets.UTF_8.name());
+            Context context = new Context();
+
+            String resetPasswordLink = String.format("%s?token=%s", resetPasswordEndpoint, URLEncoder.encode(resetPasswordToken, StandardCharsets.UTF_8));
+
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("resetPasswordLink", resetPasswordLink);
+            properties.put("resetPasswordToken", resetPasswordToken);
+            context.setVariables(properties);
+
+            helper.setFrom(emailFrom, "CrownDine Restaurant");
+            helper.setTo(emailTo);
+            helper.setSubject("Đặt lại mật khẩu");
+            String html = templateEngine.process("email-reset-password.html", context);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Failed to send reset password email to {}: {}", emailTo, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void sendReservationSuccessEmail(String emailTo, Map<String, Object> reservationDetails) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    java.nio.charset.StandardCharsets.UTF_8.name());
+            Context context = new Context();
+            context.setVariables(reservationDetails);
+
+            helper.setFrom(emailFrom, "CrownDine Restaurant");
+            helper.setTo(emailTo);
+            helper.setSubject("Xác nhận đặt bàn thành công - CrownDine");
+            String html = templateEngine.process("reservation-confirmed", context);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Reservation success email sent to {}", emailTo);
+        } catch (Exception e) {
+            log.error("Failed to send reservation success email to {}: {}", emailTo, e.getMessage(), e);
+        }
+    }
+    @Override
+    public void sendOtpEmail(String emailTo, String otp) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    StandardCharsets.UTF_8.name());
+            Context context = new Context();
+            context.setVariable("otp", otp);
+
+            helper.setFrom(emailFrom, "CrownDine Restaurant");
+            helper.setTo(emailTo);
+            helper.setSubject("Mã xác thực OTP - CrownDine");
+            
+            String html = templateEngine.process("email-otp.html", context);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("OTP email sent successfully to {}", emailTo);
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {}: {}", emailTo, e.getMessage());
         }
     }
 }

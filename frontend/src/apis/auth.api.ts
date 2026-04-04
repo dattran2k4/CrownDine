@@ -12,6 +12,9 @@ const authApi = {
   login(body: { username: string; password: string }) {
     return http.post<AuthResponse>(LOGIN_URL, body)
   },
+  googleLogin(token: string) {
+    return http.post<AuthResponse>('auth/google-login', { token })
+  },
   register(body: {
     username: string
     password: string

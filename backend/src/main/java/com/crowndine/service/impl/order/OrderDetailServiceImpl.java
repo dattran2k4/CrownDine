@@ -2,9 +2,7 @@ package com.crowndine.service.impl.order;
 
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.common.enums.EOrderStatus;
-import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderItemRequest;
-import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.request.UpdateOrderDetailRequest;
 import com.crowndine.dto.response.UpdateStatusOrderDetailResponse;
 import com.crowndine.exception.InvalidDataException;
@@ -45,7 +43,6 @@ public class OrderDetailServiceImpl implements OrderDetailService {
 
         request.forEach(item -> {
             OrderDetail orderDetailItem = new OrderDetail();
-            order.addOrderDetail(orderDetailItem);
             if (item.getItemId() != null) {
                 orderDetailItem.setItem(itemRepository.findById(item.getItemId()).orElseThrow(() -> new ResourceNotFoundException("Item Not Found")));
             }
@@ -110,14 +107,14 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         Order order = detail.getOrder();
 
         if (detail.getStatus().equals(EOrderDetailStatus.COOKING) ||
-            detail.getStatus().equals(EOrderDetailStatus.SERVED) ||
-            detail.getStatus().equals(EOrderDetailStatus.CANCELLED)) {
+                detail.getStatus().equals(EOrderDetailStatus.SERVED) ||
+                detail.getStatus().equals(EOrderDetailStatus.CANCELLED)) {
             throw new InvalidDataException("Không thể xóa món khi đơn hàng đang ở trạng thái này.");
         }
 
         order.getOrderDetails().remove(detail);
         orderDetailRepository.delete(detail);
-        
+
         order.setTotalPrice(calculationService.calculateTotalOrder(order.getOrderDetails()));
         order.setFinalPrice(order.getTotalPrice());
         log.info("Deleted successfully order detail id {}", id);

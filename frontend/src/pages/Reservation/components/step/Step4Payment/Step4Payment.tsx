@@ -1,7 +1,8 @@
 import { RESTAURANT_CONFIG } from '@/pages/Reservation/data'
 import { formatCurrency } from '@/utils/utils'
 import { CreditCard, XCircle, Utensils, Loader2, Info } from 'lucide-react'
-import type { OrderDetailResponse } from '@/types/reservation.type'
+import type { ReservationCheckoutResponse } from '@/types/reservation.type'
+import { toast } from 'react-toastify'
 import type { ReservationTable as Table } from '@/types/reservation.type'
 import CountdownTimer from '@/pages/Reservation/components/CountdownTimer'
 import type { UserSummary } from '@/types/profile.type'
@@ -13,6 +14,7 @@ interface CartItem {
   name: string
   price: number
   quantity: number
+  note?: string
 }
 
 interface Props {
@@ -28,7 +30,7 @@ interface Props {
   onPay: () => void
   onCancel: () => void
   isProcessing: boolean
-  orderDetails: OrderDetailResponse | null
+  checkoutSummary: ReservationCheckoutResponse | null
   isLoadingOrderDetails: boolean
   expiratedAt: string | null
   voucherPreview: VoucherValidateResponse | null
@@ -41,7 +43,7 @@ const Step4Payment = ({
   onPay,
   onCancel,
   isProcessing,
-  orderDetails,
+  checkoutSummary,
   isLoadingOrderDetails,
   expiratedAt,
   voucherPreview,
@@ -55,12 +57,12 @@ const Step4Payment = ({
   const foodTotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
   // Sử dụng dữ liệu từ API nếu có, nếu không thì tính từ local state
-  const itemsTotal = orderDetails?.itemsTotal ?? foodTotal
-  const tableDeposit = orderDetails?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
+  const itemsTotal = checkoutSummary?.itemsTotal ?? foodTotal
+  const tableDeposit = checkoutSummary?.tableDeposit ?? RESTAURANT_CONFIG.depositAmount
   const previewFinalAmount = voucherPreview?.finalAmount ?? itemsTotal
 
-  // Tính depositAmount: nếu có orderDetails thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
-  const depositAmount = orderDetails?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
+  // Tính depositAmount: nếu có checkout summary thì dùng từ API, nếu không thì tính = 20% món + cọc bàn
+  const depositAmount = checkoutSummary?.depositAmount ?? itemsTotal * 0.2 + tableDeposit
   const discountedFoodDeposit = previewFinalAmount * 0.2
   const discountedRemainingAmount = previewFinalAmount - discountedFoodDeposit
   const discountedPayableNow =
@@ -70,7 +72,7 @@ const Step4Payment = ({
   const foodDeposit = itemsTotal * 0.2
 
   // Tính số tiền còn lại (80% món ăn)
-  const remainingAmount = orderDetails?.remainingAmount ?? itemsTotal * 0.8
+  const remainingAmount = checkoutSummary?.remainingAmount ?? itemsTotal * 0.8
 
   if (isLoadingOrderDetails) {
     return (
@@ -96,7 +98,7 @@ const Step4Payment = ({
             <CountdownTimer
               expiratedAt={expiratedAt}
               onExpire={() => {
-                alert('Hết phiên giao dịch! Vui lòng đặt lại.')
+                toast.error('Hết phiên giao dịch! Vui lòng đặt lại.')
                 window.location.reload()
               }}
             />
@@ -153,7 +155,11 @@ const Step4Payment = ({
               </div>
               <div className='rounded-lg bg-gray-50 p-3'>
                 <span className='mb-1 block text-xs text-gray-500'>Vị trí bàn</span>
-                <span className='font-semibold text-gray-900'>{bookingData.selectedTable?.name ?? '—'}</span>
+                <span className='font-semibold text-gray-900'>
+                  {bookingData.selectedTable?.name ?? '—'}
+                  {bookingData.selectedTable?.floorName && bookingData.selectedTable?.areaName ? 
+                    ` - ${bookingData.selectedTable.floorName} - ${bookingData.selectedTable.areaName}` : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -170,18 +176,28 @@ const Step4Payment = ({
               {cartItems.map((item) => (
                 <div
                   key={`${item.id}-${item.name}`}
-                  className='flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3'
+                  className='border-border flex flex-col rounded-lg border bg-white p-3'
                 >
-                  <div className='flex items-center gap-3'>
-                    <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
-                      {item.quantity}x
-                    </span>
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>{item.name}</p>
-                      <p className='text-xs text-gray-500'>{formatCurrency(item.price)} / phần</p>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-3'>
+                      <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white'>
+                        {item.quantity}x
+                      </span>
+                      <div>
+                        <p className='text-sm font-medium text-gray-900'>{item.name}</p>
+                        <p className='text-xs text-gray-500'>{formatCurrency(item.price)} / phần</p>
+                      </div>
                     </div>
+                    <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
                   </div>
-                  <span className='font-semibold text-gray-900'>{formatCurrency(item.price * item.quantity)}</span>
+
+                  {item.note && (
+                    <div className='mt-2 border-t border-dashed border-orange-200 pt-2'>
+                        <p className='text-[11px] italic text-orange-600 flex items-center gap-1'>
+                           <span className='font-bold bg-orange-100 px-1 rounded'>Ghi chú:</span> {item.note}
+                        </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -258,7 +274,7 @@ const Step4Payment = ({
           </div>
 
           <VoucherInput
-            orderId={orderDetails?.orderId}
+            orderId={checkoutSummary?.orderId ?? undefined}
             disabled={isProcessing}
             onPreviewChange={onVoucherPreviewChange}
           />

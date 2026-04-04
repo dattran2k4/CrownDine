@@ -15,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByGoogleId(String googleId);
+
     @EntityGraph(attributePaths = { "roles" })
     Optional<User> findByUsername(String username);
 
@@ -45,5 +47,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 WHERE r.name = com.crowndine.common.enums.ERole.STAFF
             """)
     java.util.List<User> findAllStaffs();
+
+    @Query("""
+                SELECT DISTINCT u
+                FROM User u
+                JOIN FETCH u.roles r
+                WHERE r.name = com.crowndine.common.enums.ERole.USER
+            """)
+    java.util.List<User> findAllCustomers();
 
 }

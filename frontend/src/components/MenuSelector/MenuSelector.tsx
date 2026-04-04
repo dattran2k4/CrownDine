@@ -1,6 +1,7 @@
 import comboApi from '@/apis/combo.api'
 import categoryApi from '@/apis/category.api'
 import itemApi from '@/apis/item.api'
+import favoritesApi from '@/apis/favorites.api'
 import type { Category } from '@/types/category.type'
 import type { Item } from '@/types/item.type'
 import { comboToCardItem, type MenuCardItem } from '@/types/item.type'
@@ -8,8 +9,9 @@ import type { Combo } from '@/types/combo.type'
 import { formatCurrency, getImageUrl } from '@/utils/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Heart } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 interface MenuSelectorProps {
   onSelectItem: (item: MenuCardItem, type: 'item' | 'combo') => void
@@ -18,6 +20,7 @@ interface MenuSelectorProps {
 export default function MenuSelector({ onSelectItem }: MenuSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+  const { isAuthenticated } = useAuthStore()
 
   // --- Fetching Data ---
   const { data: categoryData, isPending: categoriesLoading } = useQuery({
@@ -35,9 +38,16 @@ export default function MenuSelector({ onSelectItem }: MenuSelectorProps) {
     queryFn: () => comboApi.getCombos()
   })
 
+  const { data: favoriteData, isPending: favoritesLoading } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: () => favoritesApi.getMyFavorites(),
+    enabled: isAuthenticated
+  })
+
   const categories: Category[] = categoryData?.data?.data ?? []
   const rawItems: Item[] = itemData?.data?.data ?? []
   const combos: Combo[] = comboData?.data?.data ?? []
+  const favorites = favoriteData?.data?.data ?? []
 
   const categoryMap = useMemo(() => {
     const map: Record<number, string> = {}
@@ -58,31 +68,46 @@ export default function MenuSelector({ onSelectItem }: MenuSelectorProps) {
 
   const combosAsCardItems: MenuCardItem[] = useMemo(() => combos.map(comboToCardItem), [combos])
 
-  const categoryNames = useMemo(() => ['Tất cả', 'Combo', ...categories.map((c) => c.name)], [categories])
+  const categoryNames = useMemo(() => {
+    const names = ['Tất cả', 'Combo']
+    if (isAuthenticated) {
+      names.push('Yêu thích')
+    }
+    return [...names, ...categories.map((c) => c.name)]
+  }, [categories, isAuthenticated])
 
   // --- Filtering ---
   const filteredItems = useMemo(() => {
     return itemsWithCategory.filter((item) => {
-      const matchCategory = selectedCategory === 'Tất cả' || item.category === selectedCategory
+      let matchCategory = selectedCategory === 'Tất cả' || item.category === selectedCategory
+      
+      if (selectedCategory === 'Yêu thích') {
+        matchCategory = favorites.some(f => f.item?.id === item.id)
+      }
+
       const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
       return matchCategory && matchSearch
     })
-  }, [itemsWithCategory, searchQuery, selectedCategory])
+  }, [itemsWithCategory, searchQuery, selectedCategory, favorites])
 
   const filteredCombos = useMemo(() => {
     return combosAsCardItems.filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase())
-      // Combos show up when "All" or "Combo" is selected
-      const matchCategory = selectedCategory === 'Tất cả' || selectedCategory === 'Combo'
+      
+      let matchCategory = selectedCategory === 'Tất cả' || selectedCategory === 'Combo'
+      if (selectedCategory === 'Yêu thích') {
+        matchCategory = favorites.some(f => f.combo?.id === c.id)
+      }
+
       return matchCategory && matchSearch
     })
-  }, [combosAsCardItems, searchQuery, selectedCategory])
+  }, [combosAsCardItems, searchQuery, selectedCategory, favorites])
 
   const displayList = useMemo(() => {
     if (selectedCategory === 'Combo') {
       return filteredCombos.map((item) => ({ key: `combo-${item.id}`, item, type: 'combo' as const }))
     }
-    if (selectedCategory === 'Tất cả') {
+    if (selectedCategory === 'Tất cả' || selectedCategory === 'Yêu thích') {
       return [
         ...filteredCombos.map((item) => ({ key: `combo-${item.id}`, item, type: 'combo' as const })),
         ...filteredItems.map((item) => ({ key: `item-${item.id}`, item, type: 'item' as const }))
@@ -91,7 +116,7 @@ export default function MenuSelector({ onSelectItem }: MenuSelectorProps) {
     return filteredItems.map((item) => ({ key: `item-${item.id}`, item, type: 'item' as const }))
   }, [selectedCategory, filteredItems, filteredCombos])
 
-  if (categoriesLoading || itemsLoading || combosLoading) {
+  if (categoriesLoading || itemsLoading || combosLoading || (isAuthenticated && favoritesLoading)) {
     return (
       <div className='flex h-[400px] w-full items-center justify-center'>
         <p className='text-muted-foreground animate-pulse text-sm font-medium'>Đang tải thực đơn...</p>
@@ -120,12 +145,13 @@ export default function MenuSelector({ onSelectItem }: MenuSelectorProps) {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
                   selectedCategory === cat
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'bg-background hover:bg-muted text-foreground border-border'
                 }`}
               >
+                {cat === 'Yêu thích' && <Heart size={12} className={selectedCategory === cat ? 'fill-current' : 'text-red-500'} />}
                 {cat}
               </button>
             ))}

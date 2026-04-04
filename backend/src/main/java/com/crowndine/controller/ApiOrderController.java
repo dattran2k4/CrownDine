@@ -5,7 +5,9 @@ import com.crowndine.dto.request.OrderApplyVoucherRequest;
 import com.crowndine.dto.request.OrderItemBatchRequest;
 import com.crowndine.dto.request.OrderRequest;
 import com.crowndine.dto.response.ApiResponse;
+import com.crowndine.service.order.OrderStatusService;
 import com.crowndine.service.order.OrderService;
+import com.crowndine.service.order.OrderVoucherService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ import java.time.LocalDate;
 public class ApiOrderController {
 
     private final OrderService orderService;
+    private final OrderStatusService orderStatusService;
+    private final OrderVoucherService orderVoucherService;
 
     @GetMapping
     public ApiResponse getAllOrders(@RequestParam(required = false) LocalDate fromDate,
@@ -50,6 +54,18 @@ public class ApiOrderController {
     }
 
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @PostMapping("/reservation/{reservationId}")
+    public ApiResponse openOrderForReservation(@Min(1) @PathVariable Long reservationId,
+                                               @Valid @RequestBody OrderItemBatchRequest request,
+                                               Principal principal) {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Opened order for reservation successfully")
+                .data(orderService.openOrderForReservation(reservationId, request, principal.getName()))
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse updateOrder(@Min(1) @PathVariable Long id, @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
         return ApiResponse.builder()
@@ -61,8 +77,8 @@ public class ApiOrderController {
     @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
     @PostMapping("/{orderId}/details")
     public ApiResponse addOrderDetails(@Min(1) @PathVariable("orderId") Long id,
-            @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
-            orderService.appendItemsToOrder(id, request, principal.getName());
+                                       @Valid @RequestBody OrderItemBatchRequest request, Principal principal) {
+        orderService.appendItemsToOrder(id, request, principal.getName());
         return ApiResponse.builder()
                 .status(200)
                 .message("Added order details successfully")
@@ -71,12 +87,12 @@ public class ApiOrderController {
 
     @PostMapping("/{orderId}/voucher/apply")
     public ApiResponse applyVoucherToOrder(@Min(1) @PathVariable Long orderId,
-            @Valid @RequestBody OrderApplyVoucherRequest request,
-            Principal principal) {
+                                           @Valid @RequestBody OrderApplyVoucherRequest request,
+                                           Principal principal) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Applied voucher to order successfully")
-                .data(orderService.applyVoucherToOrder(orderId, request.getCode(), principal.getName()))
+                .data(orderVoucherService.applyVoucher(orderId, request.getCode(), principal.getName()))
                 .build();
     }
 
@@ -85,17 +101,19 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Removed voucher from order successfully")
-                .data(orderService.removeVoucherFromOrder(orderId, principal.getName()))
+                .data(orderVoucherService.removeVoucher(orderId, principal.getName()))
                 .build();
     }
 
     @PatchMapping("/{id}/status")
-    public ApiResponse updateOrderStatus(@Min(1) @PathVariable Long id, @RequestParam EOrderStatus status,
-            Principal principal) {
+    public ApiResponse updateOrderStatus(@Min(1) @PathVariable Long id, 
+                                         @RequestParam EOrderStatus status,
+                                         @RequestParam(required = false) String cancelReason,
+                                         Principal principal) {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully updated order status")
-                .data(orderService.updateOrderStatus(id, status))
+                .data(orderStatusService.updateOrderStatus(id, status, cancelReason))
                 .build();
     }
 
@@ -106,6 +124,16 @@ public class ApiOrderController {
         return ApiResponse.builder()
                 .status(200)
                 .message("Successfully mapped customer to order")
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('STAFF', 'ADMIN')")
+    @GetMapping("/kitchen")
+    public ApiResponse getKitchenOrders() {
+        return ApiResponse.builder()
+                .status(200)
+                .message("Successfully retrieved kitchen orders")
+                .data(orderService.getKitchenOrders())
                 .build();
     }
 }

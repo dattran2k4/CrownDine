@@ -229,6 +229,10 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
             WorkSchedule rootSchedule = workScheduleRepository.findById(templateId)
                     .orElseThrow(() -> new ResourceNotFoundException("Root Work Schedule Not Found"));
 
+            if (request.getWorkDate().equals(rootSchedule.getWorkDate())) {
+                advanceTemplateStartDate(rootSchedule);
+            }
+
             // Check request.staff existed in this shift and date
             if (workScheduleRepository.existsByStaffAndShiftAndWorkDateAndIdNot(staff, shift, request.getWorkDate(),
                     -1L)) {
@@ -293,6 +297,10 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
                 // Xóa 1 ca ảo cụ thể -> Tạo 1 bản ghi Exception (CANCELLED)
                 if (workDate == null) {
                     throw new InvalidDataException("Vui lòng cung cấp ngày làm việc để xóa ca ngoại lệ này.");
+                }
+
+                if (workDate.equals(rootSchedule.getWorkDate())) {
+                    advanceTemplateStartDate(rootSchedule);
                 }
 
                 WorkSchedule exceptionSchedule = workScheduleRepository
@@ -360,5 +368,27 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
                 .gender(user.getGender())
                 .avatarUrl(user.getAvatarUrl())
                 .build();
+    }
+
+    private void advanceTemplateStartDate(WorkSchedule rootSchedule) {
+        LocalDate nextDate = rootSchedule.getWorkDate().plusDays(1);
+        LocalDate endDate = rootSchedule.getEndDate() != null ? rootSchedule.getEndDate() : LocalDate.of(2099, 12, 31);
+        boolean found = false;
+        while (!nextDate.isAfter(endDate)) {
+            String dayOfWeekStr = String.valueOf(nextDate.getDayOfWeek().getValue());
+            if (rootSchedule.getDaysOfWeek() != null && rootSchedule.getDaysOfWeek().contains(dayOfWeekStr)) {
+                found = true;
+                break;
+            }
+            nextDate = nextDate.plusDays(1);
+        }
+
+        if (found) {
+            rootSchedule.setWorkDate(nextDate);
+            workScheduleRepository.saveAndFlush(rootSchedule);
+        } else {
+            workScheduleRepository.delete(rootSchedule);
+            workScheduleRepository.flush();
+        }
     }
 }

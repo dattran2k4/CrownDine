@@ -39,6 +39,7 @@ public class PreFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService customUserDetailsService;
 
     private final TokenRepository tokenRepository;
+    private final com.crowndine.common.i18n.MessageService messageService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -73,7 +74,7 @@ public class PreFilter extends OncePerRequestFilter {
             errorResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             errorResponse.setPath(request.getRequestURI());
             errorResponse.setError(e.getErrorCode().name());
-            errorResponse.setMessage(e.getMessage());
+            errorResponse.setMessage(messageService.resolveMessageOrKey(e.getMessage()));
 
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = objectMapper.writeValueAsString(errorResponse);

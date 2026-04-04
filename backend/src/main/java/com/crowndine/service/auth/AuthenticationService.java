@@ -16,10 +16,14 @@ public interface AuthenticationService {
 
     Long register(RegisterRequest request);
 
-    String forgotPassword(ForgotPasswordRequest request);
+    void forgotPassword(ForgotPasswordRequest request);
 
     boolean confirmRegister(String verifyCode);
 
-    void resetPassword(String verifyCode, ResetPasswordRequest request);
+    void verifyResetPasswordToken(String token);
+
+    TokenResponse googleLogin(com.crowndine.dto.request.GoogleLoginRequest request, HttpServletRequest httpServletRequest);
+
+    void resetPassword(String token, ResetPasswordRequest request);
 
 }

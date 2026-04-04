@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -98,7 +97,7 @@ public class FavoriteServiceImpl implements FavoriteService {
     public List<FavoriteResponse> getMyFavorites(String username) {
         User user = getUserByUsername(username);
         List<Favorite> favorites = favoriteRepository.findAllByUser(user);
-        return favorites.stream().map(this::mapToResponse).collect(Collectors.toList());
+        return favorites.stream().map(this::mapToResponse).toList();
     }
 
     @Override

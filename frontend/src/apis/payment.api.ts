@@ -1,5 +1,5 @@
-import type { ApiResponse } from '@/types/utils.type'
-import type { PaymentDetailResponse } from '@/types/payment.type'
+import type { ApiResponse, PageResponse } from '@/types/utils.type'
+import type { PaymentDetailResponse, PaymentFilterParams } from '@/types/payment.type'
 import http from '@/utils/http'
 
 const PAYMENT_URL = '/payments'
@@ -17,6 +17,10 @@ const paymentApi = {
 
   getPaymentByCode(code: string | number) {
     return http.get<ApiResponse<PaymentDetailResponse>>(`${PAYMENT_URL}/code/${code}`)
+  },
+
+  getPayments(params: PaymentFilterParams) {
+    return http.get<ApiResponse<PageResponse<PaymentDetailResponse>>>(`${PAYMENT_URL}`, { params })
   }
 }
 

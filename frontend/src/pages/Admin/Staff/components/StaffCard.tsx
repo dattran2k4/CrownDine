@@ -24,6 +24,19 @@ const RoleBadge = ({ role }: { role: string }) => {
   )
 }
 
+const StatusBadge = ({ status }: { status: EStatus }) => {
+  const isActive = status === EStatus.ACTIVE
+  const baseClasses = 'rounded-full px-2.5 py-0.5 text-xs font-medium'
+  const activeClasses = 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
+  const inactiveClasses = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+
+  return (
+    <span className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  )
+}
+
 interface StaffCardProps {
   staff: Staff
   onEdit?: (staff: Staff) => void
@@ -48,7 +61,10 @@ export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCard
             <h3 className='group-hover:text-primary mb-1 text-lg leading-none font-semibold transition-colors'>
               {`${staff.firstName} ${staff.lastName}` || 'Staff Member'}
             </h3>
-            <RoleBadge role={staff.role || 'Staff'} />
+            <div className='flex items-center gap-2 mt-2'>
+              <RoleBadge role={staff.role || 'Staff'} />
+              <StatusBadge status={staff.status} />
+            </div>
           </div>
         </div>
         <DropdownMenu>
@@ -104,7 +120,7 @@ export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCard
         </div>
         <div className='text-muted-foreground flex items-center text-sm'>
           <Calendar className='mr-2.5 h-3.5 w-3.5 opacity-70' />
-          Joined {staff.joinDate}
+          Joined {joinDate}
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentSummaryResponse response = new PaymentSummaryResponse();
         response.setId(payment.getId());
         response.setCode(payment.getCode());
-        response.setUsername(payment.getCreatedBy() != null ? payment.getCreatedBy().getUsername() : null);
+        response.setUsername(payment.getUser() != null ? payment.getUser().getUsername() : null);
         response.setOrderCode(payment.getOrder() != null ? payment.getOrder().getCode() : null);
         response.setReservationCode(payment.getReservation() != null ? payment.getReservation().getCode() : null);
         response.setAmount(payment.getAmount());
@@ -97,14 +97,14 @@ public class PaymentServiceImpl implements PaymentService {
         response.setSource(payment.getSource());
         response.setOrderCode(payment.getOrder() != null ? payment.getOrder().getCode() : null);
         response.setReservationCode(payment.getReservation() != null ? payment.getReservation().getCode() : null);
-        response.setUsername(payment.getCreatedBy() != null ? payment.getCreatedBy().getUsername() : null);
+        response.setUsername(payment.getUser() != null ? payment.getUser().getUsername() : null);
         response.setCreatedAt(payment.getCreatedAt());
         response.setUpdatedAt(payment.getUpdatedAt());
         return response;
     }
 
     private boolean canAccessPayment(Payment payment, String username) {
-        if (payment.getCreatedBy() != null && username.equals(payment.getCreatedBy().getUsername())) {
+        if (payment.getUser() != null && username.equals(payment.getUser().getUsername())) {
             return true;
         }
 

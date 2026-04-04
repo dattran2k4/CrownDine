@@ -179,7 +179,8 @@ const OrderManagement = () => {
   }
 
   const cancelOrderMutation = useMutation({
-    mutationFn: (orderId: number) => orderApi.updateOrderStatus(orderId, 'CANCELLED'),
+    mutationFn: ({ orderId, cancelReason }: { orderId: number; cancelReason: string }) => 
+      orderApi.updateOrderStatus(orderId, 'CANCELLED', cancelReason),
     onSuccess: () => {
       toast.success('Hủy đơn hàng thành công')
       queryClient.invalidateQueries({ queryKey: ['orders'] })
@@ -193,9 +194,9 @@ const OrderManagement = () => {
     setCancelingOrder(order)
   }
 
-  const confirmCancelOrder = () => {
+  const confirmCancelOrder = (reason: string) => {
     if (cancelingOrder) {
-      cancelOrderMutation.mutate(cancelingOrder.id, {
+      cancelOrderMutation.mutate({ orderId: cancelingOrder.id, cancelReason: reason }, {
         onSuccess: () => setCancelingOrder(null)
       })
     }

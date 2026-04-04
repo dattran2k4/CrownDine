@@ -102,4 +102,26 @@ public class MailServiceImpl implements MailService {
             log.error("Failed to send reservation success email to {}: {}", emailTo, e.getMessage(), e);
         }
     }
+    @Override
+    public void sendOtpEmail(String emailTo, String otp) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    StandardCharsets.UTF_8.name());
+            Context context = new Context();
+            context.setVariable("otp", otp);
+
+            helper.setFrom(emailFrom, "CrownDine Restaurant");
+            helper.setTo(emailTo);
+            helper.setSubject("Mã xác thực OTP - CrownDine");
+            
+            String html = templateEngine.process("email-otp.html", context);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("OTP email sent successfully to {}", emailTo);
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {}: {}", emailTo, e.getMessage());
+        }
+    }
 }

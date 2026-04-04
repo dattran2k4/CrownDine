@@ -38,6 +38,7 @@ import java.time.LocalDateTime;
 @Slf4j(topic = "RESERVATION-LIFECYCLE-SERVICE")
 public class ReservationLifecycleServiceImpl implements ReservationLifecycleService {
     private static final long HOLD_TABLE_MINUTES = 10;
+    private static final long CHECK_IN_WINDOW_MINUTES = 15;
 
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
@@ -80,6 +81,8 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             throw new InvalidDataException("reservation.check_in_only_confirmed");
         }
 
+        validateCheckInTimeWindow(reservation);
+
         reservation.setStatus(EReservationStatus.CHECKED_IN);
         reservationRepository.save(reservation);
 
@@ -89,6 +92,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
 
         log.info("Reservation id {} has been checked in successfully", reservationId);
+    }
+
+    private void validateCheckInTimeWindow(Reservation reservation) {
+        LocalDateTime startDateTime = reservationTimePolicy.toStartDateTime(reservation.getDate(), reservation.getStartTime());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime windowStart = startDateTime.minusMinutes(CHECK_IN_WINDOW_MINUTES);
+        LocalDateTime windowEnd = startDateTime.plusMinutes(CHECK_IN_WINDOW_MINUTES);
+
+        if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
+            throw new InvalidDataException("reservation.check_in_outside_window");
+        }
     }
 
     @Override

@@ -8,5 +8,9 @@ public interface OrderStatusService {
 
     UpdateStatusOrderResponse updateOrderStatus(Long orderId, EOrderStatus status);
 
+    UpdateStatusOrderResponse updateOrderStatus(Long orderId, EOrderStatus status, String cancelReason);
+
     Order transitionOrderStatus(Order order, EOrderStatus status);
+
+    Order transitionOrderStatus(Order order, EOrderStatus status, String cancelReason);
 }

@@ -52,7 +52,26 @@ export default function Reservation() {
     return nextValidTime || ''
   })
   const duration = 240
-  const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
+  const CLOSE_HOUR = RESTAURANT_CONFIG.closeHour // 22
+  const plannedEndTime = useMemo(() => {
+    const raw = addMinutesToTime(startTime, duration)
+    // So sánh bằng số phút để tránh lỗi khi vượt qua midnight
+    // VD: "00:30" > "22:00" là false theo string, nhưng thực tế là qua ngày
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + m
+    }
+    const startMinutes = toMinutes(startTime)
+    const rawMinutes = toMinutes(raw)
+    const closeMinutes = CLOSE_HOUR * 60
+    // Nếu raw vượt qua midnight (rawMinutes < startMinutes) hoặc vượt quá giờ đóng
+    const isOverMidnight = rawMinutes < startMinutes
+    const isOverClose = !isOverMidnight && rawMinutes > closeMinutes
+    if (isOverMidnight || isOverClose) {
+      return `${String(CLOSE_HOUR).padStart(2, '0')}:00`
+    }
+    return raw
+  }, [startTime, CLOSE_HOUR])
 
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [reservedTableId, setReservedTableId] = useState<string | null>(null)

@@ -23,6 +23,7 @@ export interface Order {
   }
   updatedAt: string
   createdAt: string
+  cancelReason?: string
 }
 
 export interface OrderDetail {

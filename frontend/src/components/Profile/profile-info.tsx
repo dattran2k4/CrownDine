@@ -77,10 +77,10 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
     <div className='bg-card border-border rounded-lg border p-8'>
       {/* Header */}
       <div className='mb-8 flex items-center justify-between'>
-        <h2 className='text-2xl font-bold'>My Information</h2>
+        <h2 className='text-2xl font-bold'>Thông Tin Của Tôi</h2>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)} className='bg-primary hover:bg-primary/90 text-white'>
-            Edit Profile
+            Chỉnh Sửa Hồ Sơ
           </Button>
         )}
       </div>
@@ -90,7 +90,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
         {/* First Name */}
         <div>
           <Label htmlFor='firstName' className='text-sm font-semibold'>
-            First Name
+            Họ
           </Label>
           <Input
             id='firstName'
@@ -105,7 +105,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
         {/* Last Name */}
         <div>
           <Label htmlFor='lastName' className='text-sm font-semibold'>
-            Last Name
+            Tên
           </Label>
           <Input
             id='lastName'
@@ -119,7 +119,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
         {/* Date of Birth */}
         <div>
           <Label htmlFor='dateOfBirth' className='text-sm font-semibold'>
-            Date of Birth
+            Ngày Sinh
           </Label>
           <Input
             id='dateOfBirth'
@@ -135,7 +135,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
         {/* Gender */}
         <div>
           <Label htmlFor='gender' className='text-sm font-semibold'>
-            Gender
+            Giới Tính
           </Label>
           <select
             id='gender'
@@ -147,9 +147,9 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
             /* 2. Style lại để giống với Input của Shadcn UI */
             className='border-border disabled:bg-foreground/5 bg-background focus:border-primary mt-2 block w-full rounded-lg border-2 p-2 text-sm transition-all focus:outline-none'
           >
-            <option value='male'>Male</option>
-            <option value='female'>Female</option>
-            <option value='other'>Other</option>
+            <option value='male'>Nam</option>
+            <option value='female'>Nữ</option>
+            <option value='other'>Khác</option>
           </select>
         </div>
       </div>
@@ -157,9 +157,9 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
       {/* Member Since */}
       <div className='border-border/50 mb-8 grid grid-cols-1 gap-6 border-b pb-8 md:grid-cols-2'>
         <div>
-          <Label className='text-foreground/70 text-sm font-semibold'>Member Since</Label>
+          <Label className='text-foreground/70 text-sm font-semibold'>Thành Viên Từ</Label>
           <p className='text-foreground mt-2 font-medium'>
-            {new Date(user.createdAt).toLocaleDateString('en-US', {
+            {new Date(user.createdAt).toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -167,9 +167,9 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
           </p>
         </div>
         <div>
-          <Label className='text-foreground/70 text-sm font-semibold'>Last Updated</Label>
+          <Label className='text-foreground/70 text-sm font-semibold'>Cập Nhật Gần Đây</Label>
           <p className='text-foreground mt-2 font-medium'>
-            {new Date(user.updatedAt).toLocaleDateString('en-US', {
+            {new Date(user.updatedAt).toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -182,7 +182,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
       {isEditing && (
         <div className='flex gap-4'>
           <Button onClick={handleSave} disabled={updateProfileMutation.isPending} className='bg-primary hover:bg-primary/90 flex-1 text-white'>
-            {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updateProfileMutation.isPending ? 'Đang lưu...' : 'Lưu Thay Đổi'}
           </Button>
           <Button
             onClick={() => {
@@ -197,7 +197,7 @@ const profile_info = ({ user, onSave }: ProfileInfoProps) => {
             variant='outline'
             className='border-foreground/20 flex-1 border-2'
           >
-            Cancel
+            Hủy
           </Button>
         </div>
       )}

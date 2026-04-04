@@ -22,11 +22,11 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
     onSuccess: (res) => {
       if (res.data?.data) {
         setUser({ ...user, avatar: res.data.data })
-        toast.success('Avatar updated successfully')
+        toast.success('Cập nhật ảnh đại diện thành công')
       }
     },
     onError: () => {
-      toast.error('Failed to update avatar')
+      toast.error('Cập nhật ảnh đại diện thất bại')
     }
   })
 
@@ -34,7 +34,7 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
     const file = e.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file')
+        toast.error('Vui lòng chọn file ảnh')
         return
       }
       uploadAvatarMutation.mutate(file)
@@ -42,12 +42,12 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
   }
 
   const tabs = [
-    { id: 'info', label: 'My Information', icon: UserIcon },
-    { id: 'reservations', label: 'Reservation History', icon: Clock },
-    { id: 'favorites', label: 'My Favorites', icon: Heart },
-    { id: 'reward-points', label: 'Reward Points', icon: Gift },
-    { id: 'vouchers', label: 'My Vouchers', icon: Ticket },
-    { id: 'security', label: 'Password & Security', icon: Lock }
+    { id: 'info', label: 'Thông Tin Của Tôi', icon: UserIcon },
+    { id: 'reservations', label: 'Lịch Sử Đặt Bàn', icon: Clock },
+    { id: 'favorites', label: 'Yêu Thích', icon: Heart },
+    { id: 'reward-points', label: 'Điểm Thưởng', icon: Gift },
+    { id: 'vouchers', label: 'Voucher Của Tôi', icon: Ticket },
+    { id: 'security', label: 'Mật Khẩu & Bảo Mật', icon: Lock }
   ]
   const getInitials = () => {
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
@@ -141,7 +141,7 @@ const ProfileSidebar = ({ user, activeTab, onTabChange }: ProfileSidebarProps) =
           <p className='text-foreground truncate font-medium'>{user.email}</p>
         </div>
         <div>
-          <p className='text-foreground/60'>Phone</p>
+          <p className='text-foreground/60'>Điện thoại</p>
           <p className='text-foreground font-medium'>{user.phone}</p>
         </div>
       </div>

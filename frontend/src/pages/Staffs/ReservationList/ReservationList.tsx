@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import reservationApi from '@/apis/reservation.api'
-import orderApi from '@/apis/order.api'
 import clsx from 'clsx'
 import { queryClient } from '@/main'
 import { toast } from 'sonner'
@@ -42,18 +41,12 @@ const ReservationList = () => {
   })
 
   const checkInMutation = useMutation({
-    mutationFn: async (reservation: StaffReservationResponse) => {
-      await reservationApi.checkInReservation(reservation.id, user?.id)
-      if (!reservation.orderId) {
-        await orderApi.openOrderForReservation(reservation.id, { items: [] }, user?.id)
-      }
-    },
+    mutationFn: async (reservation: StaffReservationResponse) =>
+      reservationApi.checkInReservation(reservation.id, user?.id),
     onSuccess: () => {
-      toast.success('Check in và tạo đơn thành công')
+      toast.success('Check in đặt bàn thành công')
+      setSelectedReservation(null)
       queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Không thể check in đặt bàn')
     }
   })
 

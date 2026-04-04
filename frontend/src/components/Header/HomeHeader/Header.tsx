@@ -203,9 +203,9 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant='ghost' size='icon' className='hover:bg-accent/10 relative cursor-pointer'>
                     <Heart className='h-5 w-5' />
-                    {favorites.length > 0 && (
+                    {(favorites?.length ?? 0) > 0 && (
                       <span className='bg-primary absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white'>
-                        {favorites.length}
+                        {favorites?.length}
                       </span>
                     )}
                   </Button>
@@ -213,17 +213,17 @@ const Header = () => {
                 <DropdownMenuContent className='border-border w-80 bg-card opacity-100 shadow-lg' align='end'>
                   <DropdownMenuLabel className='flex items-center justify-between'>
                     <span>Món ăn yêu thích</span>
-                    <span className='text-muted-foreground text-xs font-normal'>{favorites.length} món</span>
+                    <span className='text-muted-foreground text-xs font-normal'>{(favorites?.length ?? 0)} món</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className='max-h-87.5 overflow-y-auto'>
-                    {favorites.length === 0 ? (
+                    {(favorites?.length ?? 0) === 0 ? (
                       <div className='text-muted-foreground flex flex-col items-center justify-center py-8 text-sm'>
                         <Heart className='mb-2 h-8 w-8 opacity-20' />
                         <p>Chưa có món yêu thích nào</p>
                       </div>
                     ) : (
-                      favorites.map((fav) => {
+                      favorites?.map((fav) => {
                         const item = fav.item || fav.combo
                         if (!item) return null
                         const isCombo = !!fav.combo
@@ -266,7 +266,7 @@ const Header = () => {
                       })
                     )}
                   </div>
-                  {favorites.length > 0 && (
+                  {(favorites?.length ?? 0) > 0 && (
                     <>
                       <DropdownMenuSeparator />
                       <Link

@@ -23,7 +23,7 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => ({
     set({ isLoading: true })
     try {
       const response = await favoritesApi.getMyFavorites()
-      set({ favorites: response.data.data, isLoading: false })
+      set({ favorites: response.data.data || [], isLoading: false })
     } catch (error) {
       console.error('Failed to fetch favorites:', error)
       set({ isLoading: false })

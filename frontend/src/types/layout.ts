@@ -10,6 +10,8 @@ export type TableLayout = {
   rotation: number;
   capacity?: number;
   deposit?: number;
+  imageUrl?: string;
+  description?: string;
   areaName?: string;
   floorName?: string;
   floorNumber?: number;
@@ -61,11 +63,13 @@ export type AreaRequest = {
 export type TableRequest = {
   name: string;
   capacity?: number;
-  shape: "RECT" | "CIRCLE" | "SQUARE";
+  shape: "RECT" | "CIRCLE" | "SQUARE" | "DOOR" | "PLANT" | "WC";
   deposit?: number;
   width?: number;
   height?: number;
   x?: number;
   y?: number;
   rotation?: number;
+  imageUrl?: string;
+  description?: string;
 };

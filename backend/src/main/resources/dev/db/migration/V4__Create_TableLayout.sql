@@ -35,6 +35,8 @@ ALTER TABLE `restaurant_tables`
   ADD COLUMN `rotation` INT DEFAULT NULL,
   ADD COLUMN `shape` VARCHAR(50) DEFAULT NULL,
   ADD COLUMN `area_id` BIGINT DEFAULT NULL,
+  ADD COLUMN `image_url` VARCHAR(500) DEFAULT NULL,
+  ADD COLUMN `description` TEXT DEFAULT NULL,
   ADD CONSTRAINT `fk_restaurant_tables_area`
     FOREIGN KEY (`area_id`)
     REFERENCES `areas`(`id`)

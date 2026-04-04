@@ -5,7 +5,7 @@ spring:
   devtools:
     add-properties: true
   datasource:
-    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/crowndine
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/${DATABASE_NAME:crowndine}
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:123456}
     hikari: # Connection poll

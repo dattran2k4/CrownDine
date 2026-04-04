@@ -67,16 +67,29 @@ public class ApiStaffController {
                                 .build();
         }
 
-        // ================= DEACTIVATE =================
+        // ================= DELETE =================
         @DeleteMapping("/{id}")
         @PreAuthorize("hasAuthority('ADMIN')")
-        public ApiResponse deactivateStaff(@PathVariable Long id) {
+        public ApiResponse deleteStaff(@PathVariable Long id) {
 
-                staffService.deactivateStaff(id);
+                staffService.deleteStaff(id);
 
                 return ApiResponse.builder()
                                 .status(200)
-                                .message("Deactivate staff successfully")
+                                .message("Xóa nhân viên thành công")
+                                .build();
+        }
+
+        // ================= CHANGE STATUS =================
+        @PatchMapping("/{id}/status")
+        @PreAuthorize("hasAuthority('ADMIN')")
+        public ApiResponse changeStaffStatus(@PathVariable Long id, @RequestParam com.crowndine.common.enums.EUserStatus status) {
+
+                staffService.changeStaffStatus(id, status);
+
+                return ApiResponse.builder()
+                                .status(200)
+                                .message("Thay đổi trạng thái nhân viên thành công")
                                 .build();
         }
 

@@ -84,20 +84,39 @@ public class StaffServiceImpl implements StaffService {
         return buildProfileResponse(user);
     }
 
-    // ================= DEACTIVATE STAFF =================
+    // ================= DELETE STAFF =================
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deactivateStaff(Long userId) {
+    public void deleteStaff(Long userId) {
 
-        log.info("Processing deactivate staff with id {}", userId);
+        log.info("Processing HARD delete staff with id {}", userId);
+
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            userRepository.delete(user);
+            userRepository.flush(); // Cố tình flush để bắt luôn DataIntegrityViolationException nếu có
+            log.info("Successfully deleted staff with id {}", userId);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.warn("Cannot delete staff {} due to foreign key constraints", userId);
+            throw new InvalidDataException("Không thể xóa nhân viên này vì đã có dữ liệu ràng buộc (lịch làm việc, hóa đơn...). Vui lòng Khóa tài khoản thay vì xóa.");
+        }
+    }
+
+    // ================= CHANGE STAFF STATUS =================
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changeStaffStatus(Long userId, EUserStatus status) {
+
+        log.info("Processing change staff {} status to {}", userId, status);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        user.setStatus(EUserStatus.INACTIVE);
+        user.setStatus(status);
         userRepository.save(user);
 
-        log.info("Successfully deactivated staff with id {}", userId);
+        log.info("Successfully changed staff status with id {}", userId);
     }
 
     // ================= GET STAFF BY ID =================

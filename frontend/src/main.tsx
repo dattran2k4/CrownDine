@@ -63,7 +63,7 @@ createRoot(document.getElementById('root')!).render(
         <AppProvider>
           <AppWebSocketProvider>
             <RouterProvider router={router} />
-            <Toaster richColors position='top-right' />
+            <Toaster richColors position='top-right' offset='70px' />
           </AppWebSocketProvider>
         </AppProvider>
         <ReactQueryDevtools initialIsOpen={false} />

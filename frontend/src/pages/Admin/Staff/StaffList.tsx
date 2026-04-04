@@ -16,7 +16,7 @@ export default function StaffList() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  const { data: staffs = [], isLoading, isError } = useStaffs()
+  const { data: staffs = [] } = useStaffs()
   const { mutate: deleteStaff } = useDeleteStaff()
   const { mutate: toggleStatus } = useToggleStaffStatus()
 

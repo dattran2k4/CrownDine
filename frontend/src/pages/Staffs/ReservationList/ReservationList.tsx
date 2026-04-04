@@ -47,9 +47,6 @@ const ReservationList = () => {
       toast.success('Check in đặt bàn thành công')
       setSelectedReservation(null)
       queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Không thể check in đặt bàn')
     }
   })
 

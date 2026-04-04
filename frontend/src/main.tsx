@@ -33,7 +33,8 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
   }
 
   const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
-  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8080'
+  const defaultWsBaseUrl = import.meta.env.PROD ? 'wss://crowndine.onrender.com' : 'ws://localhost:8080'
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL || defaultWsBaseUrl
   const websocketUrl = rawAccessToken
     ? `${wsBaseUrl}/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
     : `${wsBaseUrl}/ws-restaurant`

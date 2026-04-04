@@ -12,6 +12,7 @@ type Props = {
   ) => void
   guests?: number // Số khách để kiểm tra capacity
   isAvailableInTimeSlot?: boolean // Bàn có available trong khung giờ đã chọn không
+  isPaid?: boolean // Nếu đã thanh toán, không cho chọn bàn mới
 }
 
 const STATUS_STYLE = {
@@ -35,7 +36,8 @@ export default function TableShape({
   onPointerDown,
   onResizeStart,
   guests,
-  isAvailableInTimeSlot = true
+  isAvailableInTimeSlot = true,
+  isPaid = false
 }: Props) {
   const statusKey = table.status as keyof typeof STATUS_STYLE
   const capacity = table.capacity || 2
@@ -174,9 +176,11 @@ export default function TableShape({
     ) : null
 
   // Xác định bàn có thể chọn được không
-  const isSelectable = statusKey === 'AVAILABLE' 
-    ? (isAvailableInTimeSlot && (guests === undefined || capacity >= guests))
-    : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED')
+  const isSelectable = isPaid
+    ? selected
+    : (statusKey === 'AVAILABLE'
+      ? (isAvailableInTimeSlot && (guests === undefined || capacity >= guests))
+      : (statusKey === 'OCCUPIED' || statusKey === 'RESERVED'))
   const isDisabled = !isSelectable
   
   const minDim = Math.min(width, height)

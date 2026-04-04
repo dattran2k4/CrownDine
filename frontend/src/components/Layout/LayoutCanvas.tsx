@@ -104,6 +104,11 @@ export default function LayoutCanvas({
     }
 
     // --- RESERVATION MODE FILTERS ---
+    // If already paid, don't allow selecting a new table
+    if (isPaid && selectedTableIds !== undefined && !selectedTableIds.includes(table.id)) {
+      return
+    }
+
     setSelectedId(table.id)
     onSelectTable?.(table)
   }
@@ -225,6 +230,7 @@ export default function LayoutCanvas({
               }
               guests={guests}
               isAvailableInTimeSlot={availableTableIds ? availableTableIds.has(t.id) : true}
+              isPaid={isPaid}
             />
           ))}
         </g>

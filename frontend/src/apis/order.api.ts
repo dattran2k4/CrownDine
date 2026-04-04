@@ -39,8 +39,12 @@ const orderApi = {
     return http.post<ApiResponse<any>>('payments/create', body)
   },
 
-  updateOrderStatus(orderId: number, status: OrderStatus) {
-    return http.patch<ApiResponse<any>>(`${TABLE_URL}/${orderId}/status?status=${status}`)
+  updateOrderStatus(orderId: number, status: OrderStatus, cancelReason?: string) {
+    let url = `${TABLE_URL}/${orderId}/status?status=${status}`
+    if (cancelReason) {
+      url += `&cancelReason=${encodeURIComponent(cancelReason)}`
+    }
+    return http.patch<ApiResponse<any>>(url)
   },
 
   applyVoucher(orderId: number, code: string) {

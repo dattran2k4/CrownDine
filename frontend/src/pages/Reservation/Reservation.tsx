@@ -52,7 +52,26 @@ export default function Reservation() {
     return nextValidTime || ''
   })
   const duration = 240
-  const plannedEndTime = useMemo(() => addMinutesToTime(startTime, duration), [startTime])
+  const CLOSE_HOUR = RESTAURANT_CONFIG.closeHour // 22
+  const plannedEndTime = useMemo(() => {
+    const raw = addMinutesToTime(startTime, duration)
+    // So sánh bằng số phút để tránh lỗi khi vượt qua midnight
+    // VD: "00:30" > "22:00" là false theo string, nhưng thực tế là qua ngày
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + m
+    }
+    const startMinutes = toMinutes(startTime)
+    const rawMinutes = toMinutes(raw)
+    const closeMinutes = CLOSE_HOUR * 60
+    // Nếu raw vượt qua midnight (rawMinutes < startMinutes) hoặc vượt quá giờ đóng
+    const isOverMidnight = rawMinutes < startMinutes
+    const isOverClose = !isOverMidnight && rawMinutes > closeMinutes
+    if (isOverMidnight || isOverClose) {
+      return `${String(CLOSE_HOUR).padStart(2, '0')}:00`
+    }
+    return raw
+  }, [startTime, CLOSE_HOUR])
 
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [reservedTableId, setReservedTableId] = useState<string | null>(null)
@@ -540,6 +559,7 @@ export default function Reservation() {
         {currentStep < 4 && (
           <div className='mt-8 flex justify-between border-t pt-6'>
             <button
+              type="button"
               onClick={() => setCurrentStep((c) => c - 1)}
               disabled={currentStep === 1}
               className='flex items-center gap-2 font-bold text-gray-500 transition-all hover:text-black disabled:opacity-0'
@@ -548,6 +568,7 @@ export default function Reservation() {
             </button>
 
             <button
+              type="button"
               onClick={handleNext}
               disabled={isCreatingReservation}
               className='bg-foreground text-primary flex items-center gap-2 rounded-lg px-8 py-3 font-bold transition-all hover:shadow-lg disabled:cursor-wait disabled:opacity-50'
@@ -567,6 +588,7 @@ export default function Reservation() {
         {currentStep === 4 && (
           <div className='mt-8 flex justify-between border-t pt-6'>
             <button
+              type="button"
               onClick={() => setCurrentStep(3)}
               disabled={isProcessing}
               className='flex items-center gap-2 font-bold text-gray-500 transition-all hover:text-black disabled:opacity-50'

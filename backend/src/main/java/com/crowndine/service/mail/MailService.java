@@ -8,4 +8,6 @@ public interface MailService {
     void sendResetPasswordLink(String emailTo, String resetPasswordEndpoint, String resetPasswordToken);
 
     void sendReservationSuccessEmail(String emailTo, Map<String, Object> reservationDetails);
+    
+    void sendOtpEmail(String emailTo, String otp);
 }

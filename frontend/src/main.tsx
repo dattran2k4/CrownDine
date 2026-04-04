@@ -33,9 +33,11 @@ function AppWebSocketProvider({ children }: { children: React.ReactNode }) {
   }
 
   const rawAccessToken = accessToken?.startsWith('Bearer ') ? accessToken.slice(7) : accessToken
+  const defaultWsBaseUrl = import.meta.env.PROD ? 'wss://crowndine.onrender.com' : 'ws://localhost:8080'
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL || defaultWsBaseUrl
   const websocketUrl = rawAccessToken
-    ? `ws://localhost:8080/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
-    : 'ws://localhost:8080/ws-restaurant'
+    ? `${wsBaseUrl}/ws-restaurant?access_token=${encodeURIComponent(rawAccessToken)}`
+    : `${wsBaseUrl}/ws-restaurant`
 
   return (
     <WebSocketEnabledProvider enabled={true}>
@@ -61,10 +63,12 @@ createRoot(document.getElementById('root')!).render(
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <QueryClientProvider client={queryClient}>
         <AppProvider>
-          <AppWebSocketProvider>
-            <RouterProvider router={router} />
-            <Toaster richColors position='top-right' />
-          </AppWebSocketProvider>
+          <ThemeProvider attribute='class' defaultTheme='light' disableTransitionOnChange>
+            <AppWebSocketProvider>
+              <RouterProvider router={router} />
+              <Toaster richColors position='top-right' />
+            </AppWebSocketProvider>
+          </ThemeProvider>
         </AppProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

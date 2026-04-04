@@ -1,12 +1,6 @@
-ALTER TABLE `vouchers`
-    ADD COLUMN `min_value` decimal(38,2) DEFAULT NULL AFTER `max_discount_value`;
+-- Đồng bộ các thay đổi schema mới từ nhánh dev sang migration cho môi trường prod.
 
-UPDATE `vouchers`
-SET `min_value` = `discount_value` + 20000
-WHERE `type` = 'FIXED_AMOUNT'
-  AND `discount_value` IS NOT NULL
-  AND `min_value` IS NULL;
-
+-- 1) Bổ sung cột audit cho các bảng đang sử dụng AbstractEntity hoặc đã được chuẩn hoá audit.
 ALTER TABLE `floors` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
 ALTER TABLE `areas` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
 ALTER TABLE `banners` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
@@ -33,4 +27,17 @@ ALTER TABLE `chat_conversations` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD 
 ALTER TABLE `chat_messages` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
 ALTER TABLE `favorites` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
 ALTER TABLE `notifications` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
+ALTER TABLE `point_histories` ADD COLUMN `created_by` VARCHAR(255) NULL, ADD COLUMN `updated_by` VARCHAR(255) NULL;
+
+-- 2) Bổ sung lý do hủy đơn hàng.
 ALTER TABLE `orders` ADD COLUMN `cancel_reason` VARCHAR(255) NULL;
+ALTER TABLE `reservations` ADD COLUMN `guest_phone` VARCHAR(15) NULL AFTER `guest_name`;
+
+-- 3) Hỗ trợ đăng nhập Google: google_id unique, phone/password cho phép NULL.
+ALTER TABLE `users`
+    ADD COLUMN `google_id` VARCHAR(255) NULL AFTER `phone`,
+    MODIFY COLUMN `phone` VARCHAR(11) NULL,
+    MODIFY COLUMN `password` VARCHAR(255) NULL;
+
+ALTER TABLE `users`
+    ADD CONSTRAINT `uk_users_google_id` UNIQUE (`google_id`);

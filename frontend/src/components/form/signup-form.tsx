@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import { GoogleIcon } from '@/components/ui/google-icon'
 import path from '@/constants/path'
 import { useForm } from 'react-hook-form'
@@ -17,6 +19,8 @@ import useSignup from '@/hooks/useSignup'
 
 export function SignupForm({ className, ...props }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -115,7 +119,22 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
                 <Label htmlFor='password' className='text-sm font-medium'>
                   Mật khẩu
                 </Label>
-                <Input type='password' id='password' placeholder='Nhập mật khẩu' {...register('password')} />
+                <div className='relative mt-1'>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    id='password'
+                    placeholder='Nhập mật khẩu'
+                    className='border-input h-10 rounded-lg pr-10'
+                    {...register('password')}
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setShowPassword(!showPassword)}
+                    className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+                  >
+                    {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className='text-destructive mt-1 text-xs break-words'>{errors.password.message}</p>
                 )}
@@ -124,13 +143,23 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
                 <Label htmlFor='confirmPassword' className='text-sm font-medium'>
                   Xác nhận mật khẩu
                 </Label>
-                <Input
-                  type='password'
-                  id='confirmPassword'
-                  placeholder='Nhập lại mật khẩu'
-                  autoComplete='new-password'
-                  {...register('confirmPassword')}
-                />
+                <div className='relative mt-1'>
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id='confirmPassword'
+                    placeholder='Nhập lại mật khẩu'
+                    autoComplete='new-password'
+                    className='border-input h-10 rounded-lg pr-10'
+                    {...register('confirmPassword')}
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className='text-foreground/60 hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2'
+                  >
+                    {showConfirmPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+                  </button>
+                </div>
                 {errors.confirmPassword && (
                   <p className='text-destructive mt-1 text-xs break-words'>{errors.confirmPassword.message}</p>
                 )}

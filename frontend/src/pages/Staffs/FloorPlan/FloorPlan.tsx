@@ -1,4 +1,3 @@
-import orderApi from '@/apis/order.api'
 import tableApi from '@/apis/table.api'
 import { queryClient } from '@/main'
 import type { Order } from '@/types/order.type'
@@ -33,12 +32,6 @@ const getTableBadge = (name: string) => {
 
 const FloorPlan = () => {
   const stompClient = useStompClient()
-
-  const { data: orders = [] } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => orderApi.getAllOrders({}),
-    select: (response) => response?.data?.data?.data ?? []
-  })
 
   // 1. Fetch dữ liệu ban đầu bằng React Query
   const { data: tableData, isLoading } = useQuery({

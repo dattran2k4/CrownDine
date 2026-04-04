@@ -12,7 +12,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+  const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null)
 
   // Load conversations on mount
   useEffect(() => {

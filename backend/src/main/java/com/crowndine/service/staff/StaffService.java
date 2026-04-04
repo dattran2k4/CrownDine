@@ -12,7 +12,9 @@ public interface StaffService {
 
     ProfileResponse updateStaff(Long userId, UpdateProfileRequest request);
 
-    void deactivateStaff(Long userId);
+    void deleteStaff(Long userId);
+
+    void changeStaffStatus(Long userId, com.crowndine.common.enums.EUserStatus status);
 
     ProfileResponse getStaffById(Long userId);
 

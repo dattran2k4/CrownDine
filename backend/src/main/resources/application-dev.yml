@@ -89,8 +89,8 @@ payos:
   client-id: 02745e9c-7c5a-4a1e-81d0-bb50281bec1f
   api-key: a189d0aa-4443-4b62-b1ff-ae64b057a0eb
   checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
-  return-url: http://localhost:5173/thanh-toan/thanh-cong
-  cancel-url: http://localhost:5173/thanh-toan/that-bai
+  return-url: ${PAYOS_RETURN_URL:http://localhost:5173/thanh-toan/thanh-cong}
+  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:5173/thanh-toan/that-bai}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
@@ -105,3 +105,9 @@ gemini:
 openrouter:
   api:
     key: ${OPENROUTER_API_KEY}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  websocket:
+    allowed-origin-patterns: ${WS_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173}

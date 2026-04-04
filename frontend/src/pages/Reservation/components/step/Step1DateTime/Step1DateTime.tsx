@@ -106,7 +106,7 @@ const Step1DateTime = ({
         <div>
           <p className='text-sm font-bold text-blue-700'>Khung giờ dự kiến: {startTime} - {plannedEndTime}</p>
           <p className='mt-1 text-xs text-blue-600'>
-            Giờ kết thúc sẽ được hệ thống tự tính theo mặc định khoảng 4 tiếng giữ bàn.
+            Giờ kết thúc tối đa đến <strong>22:00</strong> (giờ đóng cửa nhà hàng), mặc định giữ bàn tối đa 4 tiếng.
           </p>
         </div>
       </div>

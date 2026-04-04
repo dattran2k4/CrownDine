@@ -21,7 +21,7 @@ interface ScheduleByShiftTableProps {
 }
 
 export function ScheduleByShiftTable({ data, onCellClick }: ScheduleByShiftTableProps) {
-  const { shifts, cells, weekStart, weekEnd } = data
+  const { shifts, cells, weekStart } = data
   const weekDays = 7
   const start = new Date(weekStart)
   const dayLabels: { dayOfWeek: string; dateShort: string; date: string }[] = []

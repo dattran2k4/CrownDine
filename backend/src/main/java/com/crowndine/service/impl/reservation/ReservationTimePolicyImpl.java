@@ -27,7 +27,14 @@ public class ReservationTimePolicyImpl implements ReservationTimePolicy {
      */
     @Override
     public LocalDateTime calculatePlannedEndTime(LocalDateTime startDateTime) {
-        return startDateTime.plusHours(DEFAULT_RESERVATION_DURATION_HOURS);
+        LocalDateTime defaultEndDateTime = startDateTime.plusHours(DEFAULT_RESERVATION_DURATION_HOURS);
+        LocalDateTime closeDateTime = LocalDateTime.of(startDateTime.toLocalDate(), CLOSE_TIME);
+
+        if (!defaultEndDateTime.isBefore(closeDateTime)) {
+            return closeDateTime;
+        }
+
+        return defaultEndDateTime;
     }
 
     @Override

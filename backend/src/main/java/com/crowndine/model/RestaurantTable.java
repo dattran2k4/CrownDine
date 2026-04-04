@@ -47,6 +47,12 @@ public class RestaurantTable extends AbstractEntity<Long> {
     @Column(name = "rotation")
     private Integer rotation;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "area_id")
     private Area area;

@@ -6,6 +6,7 @@ import LayoutCanvas from '@/components/Layout/LayoutCanvas'
 import AreaCanvas from '@/components/Layout/AreaCanvas'
 import { Loader2, ArrowLeft, MapPin, Wallet, Table as TableIcon } from 'lucide-react'
 import { formatCurrency } from '@/utils/utils'
+import TableDetailDrawer from './TableDetailDrawer'
 
 interface Props {
   selectedTable: Table | null
@@ -23,6 +24,7 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
   const [activeLayout, setActiveLayout] = useState<FloorLayoutResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [availableTableIds, setAvailableTableIds] = useState<Set<number>>(new Set())
+  const [viewingTable, setViewingTable] = useState<TableLayout | null>(null)
 
   // 1. Fetch all floors on mount
   useEffect(() => {
@@ -92,18 +94,23 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
     setActiveAreaId(area.areaId)
   }
 
-  // Map TableLayout to Booking Table type when clicking on a table
+  // Mở ngăn kéo chi tiết bàn
   const handleSelectTable = (tableLayout: TableLayout) => {
     // Nếu đã thanh toán, không cho phép chọn bàn mới
-    if (isPaid) {
+    if (isPaid && selectedTable?.id !== tableLayout.id.toString()) {
       return
     }
 
-    // Không cho chọn bàn đã được đặt trong khung giờ này (chỉ áp dụng cho bàn AVAILABLE)
-    if (tableLayout.status === 'AVAILABLE' && !availableTableIds.has(tableLayout.id)) {
+    // Không cho xem chi tiết bàn đã được đặt (trừ bàn đang chọn)
+    if (tableLayout.status === 'AVAILABLE' && !availableTableIds.has(tableLayout.id) && selectedTable?.id !== tableLayout.id.toString()) {
       return
     }
 
+    setViewingTable(tableLayout)
+  }
+
+  // Xác nhận chọn bàn từ ngăn kéo
+  const handleConfirmSelect = (tableLayout: TableLayout) => {
     // Không cho chọn bàn AVAILABLE nhưng capacity < guests
     if (tableLayout.status === 'AVAILABLE') {
       const capacity = tableLayout.capacity || 2
@@ -112,19 +119,19 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
       }
     }
 
-    // Chỉ cho chọn bàn AVAILABLE, capacity >= guests, và chưa được đặt trong khung giờ này
     const mappedTable: Table = {
       id: tableLayout.id.toString(),
       name: tableLayout.name || `Bàn ${tableLayout.id}`,
       capacity: tableLayout.capacity || 2,
       status: tableLayout.status as 'AVAILABLE' | 'OCCUPIED' | 'RESERVED',
-      type: 'STANDARD', // Backend might not store type yet, fallback to STANDARD
+      type: 'STANDARD',
       areaName: tableLayout.areaName || activeLayout?.areas.find((a) => a.tables.some((t) => t.id === tableLayout.id))?.areaName,
       floorName: tableLayout.floorName || activeFloor?.name
     }
 
     toggleTable(mappedTable)
   }
+
   // Lấy thông tin hiển thị
   const activeFloor = floors.find((f) => f.id === activeFloorId)
   const activeArea = activeLayout?.areas.find((a) => a.areaId === activeAreaId)
@@ -351,6 +358,13 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
           </div>
         </div>
       </div>
+
+      <TableDetailDrawer
+        table={viewingTable}
+        onClose={() => setViewingTable(null)}
+        onSelect={handleConfirmSelect}
+        isSelected={selectedTable?.id === viewingTable?.id.toString()}
+      />
     </div>
   )
 }

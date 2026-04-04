@@ -56,6 +56,8 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         table.setWidth(request.getWidth() != null ? request.getWidth() : 60);
         table.setHeight(request.getHeight() != null ? request.getHeight() : 60);
         table.setRotation(request.getRotation() != null ? request.getRotation() : 0);
+        table.setImageUrl(request.getImageUrl());
+        table.setDescription(request.getDescription());
 
         return map(tableRepository.save(table));
     }
@@ -81,6 +83,9 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         if (request.getWidth() != null) table.setWidth(request.getWidth());
         if (request.getHeight() != null) table.setHeight(request.getHeight());
         if (request.getRotation() != null) table.setRotation(request.getRotation());
+        
+        if (request.getImageUrl() != null) table.setImageUrl(request.getImageUrl());
+        if (request.getDescription() != null) table.setDescription(request.getDescription());
 
         return map(tableRepository.save(table));
     }
@@ -148,6 +153,8 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         dto.setRotation(table.getRotation());
         dto.setCapacity(table.getCapacity());
         dto.setDeposit(table.getBaseDeposit());
+        dto.setImageUrl(table.getImageUrl());
+        dto.setDescription(table.getDescription());
         return dto;
     }
 }

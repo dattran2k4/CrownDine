@@ -10,6 +10,8 @@ export type TableLayout = {
   rotation: number;
   capacity?: number;
   deposit?: number;
+  imageUrl?: string;
+  description?: string;
   areaName?: string;
   floorName?: string;
   floorNumber?: number;
@@ -68,4 +70,6 @@ export type TableRequest = {
   x?: number;
   y?: number;
   rotation?: number;
+  imageUrl?: string;
+  description?: string;
 };

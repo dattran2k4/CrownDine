@@ -18,4 +18,8 @@ public class RestaurantTableResponse {
     private Integer capacity;
 
     private ETableShape shape;
+
+    private String imageUrl;
+
+    private String description;
 }

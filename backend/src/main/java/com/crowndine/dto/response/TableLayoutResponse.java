@@ -24,4 +24,7 @@ public class TableLayoutResponse {
     private Integer rotation;
     private Integer capacity;
     private BigDecimal deposit;
+
+    private String imageUrl;
+    private String description;
 }

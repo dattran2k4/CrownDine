@@ -9,6 +9,7 @@ import com.crowndine.service.notification.NotificationService;
 import com.crowndine.service.reservation.event.ReservationConfirmedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,6 +32,8 @@ public class ReservationConfirmedEventListener {
     private final ReservationRepository reservationRepository;
     private final MailService mailService;
     private final OrderDetailRepository orderDetailRepository;
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendBaseUrl;
 
     /**
      * Tạo notification và gửi email sau khi reservation đã commit thành công.
@@ -90,7 +93,7 @@ public class ReservationConfirmedEventListener {
         emailDetails.put("guestNumber", reservation.getGuestNumber());
         emailDetails.put("tableName", reservation.getTable() != null ? reservation.getTable().getName() : "N/A");
         emailDetails.put("note", reservation.getNote() != null ? reservation.getNote() : "Không có");
-        emailDetails.put("historyLink", "http://localhost:5173/profile");
+        emailDetails.put("historyLink", frontendBaseUrl + "/profile");
         emailDetails.put("items", items);
         emailDetails.put("totalPrice", totalPrice);
         emailDetails.put("discountPrice", discountPrice);

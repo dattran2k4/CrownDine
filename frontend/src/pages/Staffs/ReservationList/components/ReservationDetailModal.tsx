@@ -120,21 +120,29 @@ export default function ReservationDetailModal({
                  <ShoppingBag size={14} className='text-primary'/> Món ăn đặt trước
               </h4>
               <div className='bg-slate-50/50 rounded-2xl border border-slate-100 divide-y divide-slate-100 overflow-hidden'>
-                 {reservation.orderDetails.map((item: any, idx: number) => (
-                    <div key={idx} className='p-4 flex justify-between items-center'>
-                       <div className='flex items-center gap-3'>
-                          <span className='w-6 h-6 flex items-center justify-center bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500'>{item.quantity}x</span>
-                          <span className='font-bold text-sm text-slate-700'>{item.name}</span>
-                       </div>
-                       <span className='font-black text-primary text-sm'>{formatCurrency(item.unitPrice)}</span>
-                    </div>
-                 ))}
-                 <div className='p-4 bg-primary/5 flex justify-between items-center'>
-                    <span className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Tạm tính món ăn</span>
-                    <span className='text-lg font-black text-primary'>
-                       {formatCurrency(reservation.orderDetails.reduce((acc: number, i: any) => acc + (i.unitPrice * i.quantity), 0))}
-                    </span>
-                 </div>
+                  {reservation.orderDetails.map((orderDetail: any, idx: number) => {
+                    const name = orderDetail.item?.name || orderDetail.combo?.name || 'Món không tên'
+                    const unitPrice = orderDetail.item?.price || orderDetail.combo?.price || 0
+                    
+                    return (
+                      <div key={idx} className='p-4 flex justify-between items-center'>
+                         <div className='flex items-center gap-3'>
+                            <span className='w-6 h-6 flex items-center justify-center bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500'>{orderDetail.quantity}x</span>
+                            <span className='font-bold text-sm text-slate-700'>{name}</span>
+                         </div>
+                         <span className='font-black text-primary text-sm'>{formatCurrency(unitPrice)}</span>
+                      </div>
+                    )
+                  })}
+                  <div className='p-4 bg-primary/5 flex justify-between items-center'>
+                     <span className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Tạm tính món ăn</span>
+                     <span className='text-lg font-black text-primary'>
+                        {formatCurrency(reservation.orderDetails.reduce((acc: number, i: any) => {
+                          const price = i.item?.price || i.combo?.price || 0
+                          return acc + (price * i.quantity)
+                        }, 0))}
+                     </span>
+                  </div>
               </div>
            </div>
         )}

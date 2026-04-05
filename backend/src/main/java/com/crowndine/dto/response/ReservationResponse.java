@@ -27,4 +27,6 @@ public class ReservationResponse {
     private EReservationStatus status;
     private Long orderId;
     private List<OrderDetailResponse> orderDetails;
+    private String floorName;
+    private String areaName;
 }

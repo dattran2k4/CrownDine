@@ -122,7 +122,15 @@ public class ReservationServiceImpl implements ReservationService {
         response.setGuestNumber(reservation.getGuestNumber());
         response.setNote(reservation.getNote());
         response.setStatus(reservation.getStatus());
-        response.setTableName(reservation.getTable() != null ? reservation.getTable().getName() : null);
+        if (reservation.getTable() != null) {
+            response.setTableName(reservation.getTable().getName());
+            if (reservation.getTable().getArea() != null) {
+                response.setAreaName(reservation.getTable().getArea().getName());
+                if (reservation.getTable().getArea().getFloor() != null) {
+                    response.setFloorName(reservation.getTable().getArea().getFloor().getName());
+                }
+            }
+        }
 
         if (reservation.getUser() != null) {
             response.setCustomerName(reservation.getUser().getFullName());

@@ -138,4 +138,6 @@ export interface StaffReservationResponse {
   status: string
   orderId: number | null
   orderDetails: Array<any>
+  floorName?: string
+  areaName?: string
 }

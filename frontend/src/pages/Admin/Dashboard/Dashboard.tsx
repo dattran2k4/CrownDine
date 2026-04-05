@@ -47,20 +47,20 @@ const TimeRangeDropdown = ({
     <div className='relative'>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className='flex items-center gap-1.5 rounded border border-blue-100/50 bg-blue-50/50 px-3 py-1.5 text-xs font-bold text-blue-600 transition-all hover:bg-blue-50'
+        className='flex items-center gap-1.5 rounded border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-500 transition-all hover:bg-blue-500/20'
       >
         {selected}
         {isOpen ? (
-          <ChevronUp size={14} className='text-slate-400' />
+          <ChevronUp size={14} className='text-muted-foreground' />
         ) : (
-          <ChevronDown size={14} className='text-slate-400' />
+          <ChevronDown size={14} className='text-muted-foreground' />
         )}
       </button>
 
       {isOpen && (
         <>
           <div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} />
-          <div className='border-border animate-in fade-in zoom-in absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border bg-white shadow-2xl duration-200'>
+          <div className='border-border animate-in fade-in zoom-in absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-2xl duration-200'>
             <div className='py-1'>
               {options.map((range) => (
                 <button
@@ -69,10 +69,10 @@ const TimeRangeDropdown = ({
                     onSelect(range)
                     setIsOpen(false)
                   }}
-                  className='border-border/10 flex w-full items-center justify-between border-b px-4 py-2.5 text-left text-sm font-bold transition-colors last:border-b-0 hover:bg-blue-50/50'
+                  className='border-border/50 flex w-full items-center justify-between border-b px-4 py-2.5 text-left text-sm font-bold transition-colors last:border-b-0 hover:bg-muted'
                 >
-                  <span className={range === selected ? 'text-blue-600' : 'text-gray-700'}>{range}</span>
-                  {range === selected && <Check size={16} className='text-blue-600' strokeWidth={3} />}
+                  <span className={range === selected ? 'text-blue-600 dark:text-blue-500' : 'text-foreground'}>{range}</span>
+                  {range === selected && <Check size={16} className='text-blue-600 dark:text-blue-500' strokeWidth={3} />}
                 </button>
               ))}
             </div>
@@ -160,7 +160,7 @@ export default function Dashboard() {
       {/* Left Column (Main Content) */}
       <div className='space-y-6 lg:col-span-3'>
         {/* Sales Summary Cards */}
-        <Card className='border-none bg-white shadow-sm'>
+        <Card className='border-none shadow-sm'>
           <CardHeader className='pb-2'>
             <CardTitle className='text-muted-foreground text-sm font-semibold tracking-wider uppercase'>
               Kết quả bán hàng hôm nay
@@ -168,7 +168,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className='grid grid-cols-1 gap-6 md:grid-cols-3'>
             <div className='border-border/50 flex items-center gap-4 border-r pr-4 md:last:border-r-0'>
-              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600'>
+              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-500'>
                 <CircleDollarSign size={24} />
               </div>
               <div className='space-y-0.5'>
@@ -199,7 +199,7 @@ export default function Dashboard() {
             </div>
 
             <div className='border-border/50 flex items-center gap-4 border-r pr-4 md:last:border-r-0'>
-              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600'>
+              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600 dark:text-green-500'>
                 <Utensils size={24} />
               </div>
               <div className='space-y-0.5'>
@@ -214,7 +214,7 @@ export default function Dashboard() {
             </div>
 
             <div className='flex items-center gap-4'>
-              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 text-cyan-600'>
+              <div className='flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-500'>
                 <Users size={24} />
               </div>
               <div className='space-y-0.5'>
@@ -245,13 +245,13 @@ export default function Dashboard() {
         </Card>
 
         {/* Revenue Chart */}
-        <Card className='overflow-hidden border-none bg-white shadow-sm'>
+        <Card className='overflow-hidden border-none shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between py-4'>
             <div className='flex items-center gap-2'>
               <CardTitle className='text-foreground text-sm font-semibold tracking-wider uppercase'>
                 Doanh số {revenueTimeRange.toLowerCase()}
               </CardTitle>
-              <Badge variant='outline' className='border-blue-200 bg-blue-50 font-bold text-blue-600'>
+              <Badge variant='outline' className='border-blue-500/30 bg-blue-500/10 font-bold text-blue-600 dark:text-blue-500'>
                 {(revenueData?.rangeTotalAmount || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
@@ -290,13 +290,13 @@ export default function Dashboard() {
         </Card>
 
         {/* Customer Count Chart */}
-        <Card className='border-none bg-white shadow-sm'>
+        <Card className='border-none shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between py-4'>
             <div className='flex items-center gap-2'>
               <CardTitle className='text-foreground text-sm font-semibold tracking-wider uppercase'>
                 Số lượng khách {customerTimeRange.toLowerCase()}
               </CardTitle>
-              <Badge variant='outline' className='border-blue-200 bg-blue-50 font-bold text-blue-600'>
+              <Badge variant='outline' className='border-blue-500/30 bg-blue-500/10 font-bold text-blue-600 dark:text-blue-500'>
                 {(customerData?.rangeTotalCustomers || 0).toLocaleString('vi-VN')}
               </Badge>
             </div>
@@ -341,7 +341,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Top Products Chart */}
-        <Card className='border-none bg-white shadow-sm'>
+        <Card className='border-none shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between border-b py-4'>
             <div className='flex items-center gap-6'>
               <CardTitle className='text-foreground text-sm font-semibold tracking-wider uppercase'>
@@ -349,13 +349,13 @@ export default function Dashboard() {
               </CardTitle>
               <div className='flex items-center gap-4'>
                 <div
-                  className={`flex cursor-pointer items-center gap-1 text-xs font-bold uppercase transition-colors ${topProductsViewMode === 'revenue' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex cursor-pointer items-center gap-1 text-xs font-bold uppercase transition-colors ${topProductsViewMode === 'revenue' ? 'text-blue-600 dark:text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}
                   onClick={() => setTopProductsViewMode('revenue')}
                 >
                   Theo doanh thu {topProductsViewMode === 'revenue' && <Check size={12} strokeWidth={3} />}
                 </div>
                 <div
-                  className={`flex cursor-pointer items-center gap-1 text-xs font-bold uppercase transition-colors ${topProductsViewMode === 'quantity' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex cursor-pointer items-center gap-1 text-xs font-bold uppercase transition-colors ${topProductsViewMode === 'quantity' ? 'text-blue-600 dark:text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}
                   onClick={() => setTopProductsViewMode('quantity')}
                 >
                   Theo số lượng {topProductsViewMode === 'quantity' && <Check size={12} strokeWidth={3} />}
@@ -439,8 +439,8 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Activities */}
-        <Card className='flex h-[600px] flex-col border-none bg-white shadow-sm'>
-          <CardHeader className='sticky top-0 z-10 border-b bg-white py-4'>
+        <Card className='flex h-[600px] flex-col border-none shadow-sm'>
+          <CardHeader className='sticky top-0 z-10 border-b bg-card py-4'>
             <CardTitle className='text-foreground text-sm font-bold tracking-wider uppercase'>
               Các hoạt động gần đây
             </CardTitle>
@@ -457,10 +457,10 @@ export default function Dashboard() {
                     <div
                       className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                         activity.type === 'delete'
-                          ? 'bg-red-50 text-red-500'
+                          ? 'bg-red-500/10 text-red-500'
                           : activity.type === 'import'
-                            ? 'bg-green-50 text-green-500'
-                            : 'bg-blue-50 text-blue-500'
+                            ? 'bg-green-500/10 text-green-500'
+                            : 'bg-blue-500/10 text-blue-500'
                       }`}
                     >
                       {activity.type === 'delete' ? (
@@ -487,7 +487,7 @@ export default function Dashboard() {
                 ))
               )}
             </div>
-            <div className='sticky bottom-0 flex justify-center border-t bg-white p-4'>
+            <div className='sticky bottom-0 flex justify-center border-t bg-card p-4'>
               <button 
                 onClick={() => setIsActivityModalOpen(true)}
                 className='flex items-center gap-1 text-[11px] font-bold text-blue-600 uppercase hover:underline'
@@ -529,7 +529,7 @@ export default function Dashboard() {
                     <th className='px-6 py-4'>Lý do</th>
                   </tr>
                 </thead>
-                <tbody className='divide-border divide-y bg-white'>
+                <tbody className='divide-border divide-y bg-card text-card-foreground'>
                   {summaryResults?.recentActivities?.length ? (
                     summaryResults.recentActivities.map((activity: any) => (
                       <tr key={activity.id} className='hover:bg-muted/30 transition-colors'>
@@ -539,7 +539,7 @@ export default function Dashboard() {
                         </td>
                         <td className='text-foreground px-6 py-4'>
                           <div className='flex items-center gap-2'>
-                            <div className={`flex h-6 w-6 items-center justify-center rounded-full shrink-0 ${activity.type === 'delete' ? 'bg-red-50 text-red-500' : activity.type === 'import' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
+                            <div className={`flex h-6 w-6 items-center justify-center rounded-full shrink-0 ${activity.type === 'delete' ? 'bg-red-500/10 text-red-500' : activity.type === 'import' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
                               {activity.type === 'delete' ? <X size={12} /> : activity.type === 'import' ? <History size={12} /> : <CircleDollarSign size={12} />}
                             </div>
                             <span className='font-medium'>{activity.action}</span>

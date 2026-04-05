@@ -36,7 +36,7 @@ const WorkSchedule = ({ isAdmin = false }: WorkScheduleProps) => {
   return (
     <div className='bg-muted/10 h-full min-h-[calc(100vh-64px)] p-6'>
       <div className='mx-auto max-w-[1600px]'>
-        <div className='border-border rounded-t-xl border border-b-0 bg-white px-4 pt-2 shadow-sm'>
+        <div className='border-border rounded-t-xl border border-b-0 bg-card text-card-foreground px-4 pt-2 shadow-sm'>
           <ScheduleHeader
             isAdmin={isAdmin}
             currentDate={currentDate}

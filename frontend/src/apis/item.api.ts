@@ -2,7 +2,7 @@ import type { Item } from '@/types/item.type'
 import type { ApiResponse, PageResponse } from '@/types/utils.type'
 import http from '@/utils/http'
 
-const ITEM_URL = '/items'
+const ITEM_URL = 'items'
 
 export interface GetListItemsParams {
   categoryId?: number | null

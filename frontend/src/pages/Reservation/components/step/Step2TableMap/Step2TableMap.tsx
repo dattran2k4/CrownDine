@@ -31,10 +31,12 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
     const fetchFloors = async () => {
       try {
         const res = await layoutApi.getAllFloors()
-        const fetchedFloors = res.data.data
-        setFloors(fetchedFloors)
-        if (fetchedFloors.length > 0) {
-          setActiveFloorId(fetchedFloors[0].id)
+        const fetchedFloors = res.data?.data
+        if (Array.isArray(fetchedFloors)) {
+          setFloors(fetchedFloors)
+          if (fetchedFloors.length > 0) {
+            setActiveFloorId(fetchedFloors[0].id)
+          }
         }
       } catch (error) {
         console.error('Failed to load floors', error)
@@ -52,7 +54,9 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
     const fetchLayout = async () => {
       try {
         const res = await layoutApi.getFloorLayout(activeFloorId)
-        setActiveLayout(res.data.data)
+        if (res.data?.data) {
+          setActiveLayout(res.data.data)
+        }
         setActiveAreaId(null) // Reset area when floor changes
       } catch (error) {
         console.error('Failed to load layout details', error)
@@ -72,7 +76,8 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
           startTime,
           guestNumber: 1 // Lấy tất cả bàn trống (sức chứa >= 1) để frontend tự phân loại vàng/đỏ
         })
-        const availableIds = new Set(res.data.data.map((t: TableLayout) => t.id))
+        const availableData = res.data?.data || []
+        const availableIds = new Set(availableData.map((t: TableLayout) => t.id))
 
         // Nếu đã có bàn được chọn, thêm nó vào availableIds để hiển thị màu xanh
         // (vì bàn đã được đặt bởi reservation hiện tại nên không có trong available tables)
@@ -133,8 +138,8 @@ const Step2TableMap = ({ selectedTable, toggleTable, guests, date, startTime, is
   }
 
   // Lấy thông tin hiển thị
-  const activeFloor = floors.find((f) => f.id === activeFloorId)
-  const activeArea = activeLayout?.areas.find((a) => a.areaId === activeAreaId)
+  const activeFloor = floors ? floors.find((f) => f.id === activeFloorId) : undefined
+  const activeArea = activeLayout?.areas ? activeLayout.areas.find((a) => a.areaId === activeAreaId) : undefined
   const currentSelectedTable = selectedTable
 
   // Tìm khu vực của bàn đã chọn (nếu có)

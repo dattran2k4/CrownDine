@@ -137,6 +137,15 @@ public class RestaurantTableServiceImpl implements RestaurantTableService {
         RestaurantTableResponse response = new RestaurantTableResponse();
         BeanUtils.copyProperties(restaurantTable, response);
         response.setId(restaurantTable.getId());
+
+        if (restaurantTable.getArea() != null) {
+            response.setAreaId(restaurantTable.getArea().getId());
+            response.setAreaName(restaurantTable.getArea().getName());
+            if (restaurantTable.getArea().getFloor() != null) {
+                response.setFloorId(restaurantTable.getArea().getFloor().getId());
+                response.setFloorName(restaurantTable.getArea().getFloor().getName());
+            }
+        }
         return response;
     }
 

@@ -2,7 +2,7 @@ import type { Combo } from '@/types/combo.type'
 import type { ApiResponse } from '@/types/utils.type'
 import http from '@/utils/http'
 
-const COMBO_URL = '/combos'
+const COMBO_URL = 'combos'
 
 const comboApi = {
   getCombos() {

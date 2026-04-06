@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,14 +46,20 @@ public class ChatContextService {
         // Categories and Menu Items
         context.append("MENU:\n");
         List<Category> categories = categoryRepository.findAll();
+        List<Item> allAvailableItems = itemRepository.findAll().stream()
+                .filter(item -> item.getStatus() == EItemStatus.AVAILABLE)
+                .collect(Collectors.toList());
+        
+        // Map items by category ID for fast lookup
+        Map<Long, List<Item>> itemsByCategory = allAvailableItems.stream()
+                .filter(item -> item.getCategory() != null)
+                .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
+
         for (Category category : categories) {
+            List<Item> items = itemsByCategory.getOrDefault(category.getId(), java.util.Collections.emptyList());
+            if (items.isEmpty()) continue;
+
             context.append("\n").append(category.getName()).append(":\n");
-            List<Item> items = itemRepository.findAll().stream()
-                    .filter(item -> item.getCategory() != null && 
-                            item.getCategory().getId().equals(category.getId()) &&
-                            item.getStatus() == EItemStatus.AVAILABLE)
-                    .collect(Collectors.toList());
-            
             for (Item item : items) {
                 context.append("  - ").append(item.getName());
                 if (item.getDescription() != null && !item.getDescription().isEmpty()) {

@@ -267,9 +267,9 @@ const Step4Payment = ({
                     <button
                         onClick={onCancel}
                         disabled={isProcessing}
-                        className='w-full py-1 text-[10px] font-bold text-gray-300 hover:text-red-500 transition-colors'
+                        className='w-full rounded-xl bg-red-500 py-3.5 text-xs font-black text-white hover:bg-red-600 active:scale-[0.98] disabled:opacity-70 shadow-sm transition-all'
                     >
-                        Hủ quy trình đặt bàn
+                        Huỷ quy trình đặt bàn
                     </button>
                 </div>
             </div>

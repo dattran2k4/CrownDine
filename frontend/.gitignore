@@ -25,7 +25,7 @@ dist-ssr
 
 package-lock.json
 *.env
-.env
+.env.development
 .env.*
 dev.env
 prod.env

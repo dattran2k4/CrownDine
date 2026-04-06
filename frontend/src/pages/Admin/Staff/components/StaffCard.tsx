@@ -45,7 +45,6 @@ interface StaffCardProps {
 }
 
 export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCardProps) {
-  const joinDate = staff.joinDate ? new Date(staff.joinDate).toLocaleDateString() : 'N/A'
   return (
     <div className='group bg-card hover:bg-muted/40 border-border relative rounded-xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md'>
       <div className='mb-4 flex items-start justify-between'>
@@ -61,7 +60,7 @@ export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCard
             <h3 className='group-hover:text-primary mb-1 text-lg leading-none font-semibold transition-colors'>
               {`${staff.firstName} ${staff.lastName}` || 'Staff Member'}
             </h3>
-            <div className='flex items-center gap-2 mt-2'>
+            <div className='mt-2 flex items-center gap-2'>
               <RoleBadge role={staff.role || 'Staff'} />
               <StatusBadge status={staff.status} />
             </div>
@@ -114,13 +113,13 @@ export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCard
           <Mail className='mr-2.5 h-3.5 w-3.5 opacity-70' />
           {staff.email}
         </div>
-        <div className='text-muted-foreground flex items-center text-sm'>
+        <div className='text-muted-foreground itegitms-center flex text-sm'>
           <Phone className='mr-2.5 h-3.5 w-3.5 opacity-70' />
           {staff.phone}
         </div>
         <div className='text-muted-foreground flex items-center text-sm'>
           <Calendar className='mr-2.5 h-3.5 w-3.5 opacity-70' />
-          Joined {joinDate}
+          Joined {staff.joinDate ? new Date(staff.joinDate).toLocaleDateString() : 'N/A'}
         </div>
       </div>
     </div>

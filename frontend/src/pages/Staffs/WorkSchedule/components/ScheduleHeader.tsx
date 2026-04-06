@@ -68,7 +68,7 @@ export function ScheduleHeader({
       <h1 className='text-xl font-bold'>Lịch làm việc</h1>
       <div className='flex flex-1 items-center justify-end gap-3'>
         <div className='relative w-64' ref={dropdownRef}>
-          <div className='border-input ring-offset-background flex min-h-10 w-full cursor-pointer items-center justify-between rounded-md border bg-white px-3 py-1.5 text-sm'>
+          <div className='border-input ring-offset-background flex min-h-10 w-full cursor-pointer items-center justify-between rounded-md border bg-card px-3 py-1.5 text-sm'>
             <div
               className='flex flex-1 flex-wrap items-center gap-2 overflow-hidden'
               onClick={() => setIsDropdownOpen(true)}
@@ -107,7 +107,7 @@ export function ScheduleHeader({
           </div>
 
           {isDropdownOpen && (
-            <div className='bg-popover text-popover-foreground absolute top-full left-0 z-50 mt-1 w-full rounded-md border bg-white shadow-md outline-none'>
+            <div className='bg-popover text-popover-foreground absolute top-full left-0 z-50 mt-1 w-full rounded-md border shadow-md outline-none'>
               <div className='max-h-60 overflow-auto p-1'>
                 {filteredStaffs.length === 0 ? (
                   <div className='text-muted-foreground py-6 text-center text-sm'>Không tìm thấy nhân viên.</div>
@@ -146,7 +146,7 @@ export function ScheduleHeader({
           )}
         </div>
 
-        <div className='border-border hover:bg-muted/5 flex h-10 items-center gap-1 rounded-md border bg-white px-1 transition-colors'>
+        <div className='border-border hover:bg-muted/50 flex h-10 items-center gap-1 rounded-md border bg-card px-1 transition-colors'>
           <Button variant='ghost' size='icon' onClick={onPrevWeek} className='hover:bg-muted h-8 w-8 rounded-sm p-0'>
             <ChevronLeft className='h-4 w-4' />
           </Button>
@@ -158,20 +158,20 @@ export function ScheduleHeader({
           </Button>
         </div>
 
-        <Button variant='outline' className='bg-white' onClick={onThisWeek}>
+        <Button variant='outline' onClick={onThisWeek}>
           Tuần này
         </Button>
-        <Button variant='outline' className='flex items-center gap-2 bg-white'>
+        <Button variant='outline' className='flex items-center gap-2'>
           <User className='h-4 w-4' />
           Xem theo nhân viên
         </Button>
 
         {isAdmin && (
           <>
-            <Button variant='outline' className='flex items-center gap-2 bg-white'>
+            <Button variant='outline' className='flex items-center gap-2'>
               <Upload className='h-4 w-4' /> Import
             </Button>
-            <Button variant='outline' className='flex items-center gap-2 bg-white'>
+            <Button variant='outline' className='flex items-center gap-2'>
               <Download className='h-4 w-4' /> Xuất file
             </Button>
           </>

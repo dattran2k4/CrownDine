@@ -20,7 +20,7 @@ interface ScheduleCellProps {
 
 export function ScheduleCell({ isAdmin = false, shifts = [], dateStr, onAdd, onDelete }: ScheduleCellProps) {
   return (
-    <td className='border-borde hover:bg-muted/5 relative h-full min-h-[80px] border-r bg-white p-2 align-top transition-colors'>
+    <td className='border-border hover:bg-muted/50 relative h-full min-h-[80px] border-r bg-card p-2 align-top transition-colors'>
       <div className='relative z-10 flex h-full flex-col gap-1.5'>
         {shifts.map((shift) => (
           <ShiftItem

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Gift, Award, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { User, PointHistory } from '@/types/profile.type'

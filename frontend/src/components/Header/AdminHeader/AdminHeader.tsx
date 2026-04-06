@@ -1,4 +1,4 @@
-import { Children, useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, Moon, Sun, LogOut, User, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'

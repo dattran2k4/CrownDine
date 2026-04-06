@@ -32,7 +32,6 @@ interface StaffCardProps {
 }
 
 export function StaffCard({ staff, onDelete, onEdit, ontoggleStatus }: StaffCardProps) {
-  const joinDate = staff.joinDate ? new Date(staff.joinDate).toLocaleDateString() : 'N/A'
   return (
     <div className='group bg-card hover:bg-muted/40 border-border relative rounded-xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md'>
       <div className='mb-4 flex items-start justify-between'>

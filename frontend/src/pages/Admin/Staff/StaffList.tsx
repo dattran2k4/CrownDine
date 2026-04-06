@@ -12,7 +12,7 @@ export default function StaffList() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  const { data: staffs = [], isLoading, isError } = useStaffs()
+  const { data: staffs = [] } = useStaffs()
 
   // Filter staff based on search
   // Filter staff based on search

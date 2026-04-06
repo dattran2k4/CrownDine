@@ -11,7 +11,7 @@ import type {
 } from '@/types/reservation.type'
 import http from '@/utils/http'
 
-const RESERVATION_URL = '/reservations'
+const RESERVATION_URL = 'reservations'
 
 const reservationApi = {
   getReservationHistory(params: { page?: number; size?: number }) {

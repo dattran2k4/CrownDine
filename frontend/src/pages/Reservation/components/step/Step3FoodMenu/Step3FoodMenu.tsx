@@ -27,7 +27,8 @@ const Step3FoodMenu = ({ cartItems, onAdd, onRemove, updateQuantity, onUpdateNot
       id: item.id,
       name: item.name,
       price: Number(item.priceAfterDiscount ?? item.price),
-      image: item.imageUrl
+      image: item.imageUrl,
+      description: item.description
     })
   }
 

@@ -14,12 +14,14 @@ import com.crowndine.service.gemini.GeminiAIService;
 import com.crowndine.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
@@ -39,6 +41,10 @@ public class ChatService {
     private final GeminiAIService geminiAIService;
     private final TransactionTemplate transactionTemplate;
     private final ChatContextService contextService;
+    
+    @Autowired
+    @Lazy
+    private ChatService self;
 
     private String getSystemPrompt() {
         String restaurantContext = contextService.getRestaurantContext();
@@ -46,12 +52,24 @@ public class ChatService {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         String currentDateTime = now.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
         String currentDate = now.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String tomorrowDate = now.plusDays(1).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String dayAfterTomorrow = now.plusDays(2).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String tomorrowDateISO = now.plusDays(1).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String dayAfterTomorrowISO = now.plusDays(2).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         return String.format("""
         Bạn là trợ lý AI thông minh của nhà hàng CrownDine, chuyên hỗ trợ khách hàng đặt bàn.
         
         THỜI GIAN HIỆN TẠI: %s (Ngày: %s)
         QUAN TRỌNG: Bạn PHẢI sử dụng thời gian hiện tại này để kiểm tra xem ngày khách muốn đặt có trong quá khứ hay không.
+        
+        QUY TẮC HIỂU NGÀY TƯƠNG ĐỐI (ÁP DỤNG NGAY, KHÔNG CẦN HỎI LẠI):
+        - "ngày mai" = %s (tức là %s)
+        - "ngày mốt" hoặc "ngày kia" = %s (tức là %s)
+        - "hôm nay" = %s
+        - "tuần sau" = 7 ngày kể từ hôm nay
+        - "cuối tuần này" = thứ 7 hoặc chủ nhật tuần này
+        Khi khách nói "ngày mai" hoặc "ngày mốt", BẠN PHẢI TỰ QUY ĐỔI sang ngày cụ thể ngay lập tức và KHÔNG được hỏi "ngày mai là ngày mấy?". Hãy xác nhận luôn: "Ngày mai là [ngày cụ thể], bạn muốn đặt bàn vào ngày đó phải không?"
         
         Vai trò của bạn:
         1. Hỗ trợ khách hàng đặt bàn một cách thân thiện và chuyên nghiệp
@@ -106,6 +124,14 @@ public class ChatService {
         - BẠN BẮT BUỘC PHẢI TỪ CHỐI VÀ TRẢ LỜI RÕ RÀNG: "Xin lỗi, hiện tại đã là %s nên đã qua mất khung giờ %s của ngày hôm nay. Bạn có muốn đổi sang vung giờ khác trong ngày, hoặc dời sang ngày mai không?"
         - TUYỆT ĐỐI KHÔNG DÙNG CÂU "Ngày trong quá khứ" ĐỂ TỪ CHỐI CHO TRƯỜNG HỢP NÀY. CHỈ DÙNG CÂU TRÊN.
         
+        QUY TẮC XEM MENU (RẤT QUAN TRỌNG - ĐỌC KỸ):
+        - Nếu khách chỉ đơn giản HỎI VỀ MENU mà CHƯA ĐẶT BÀN (chưa chọn bàn cụ thể nào): BẠN PHẢI IN RA DANH SÁCH CÁC MÓN ĂN VÀ GIÁ TRỰC TIẾP VÀO CHAT. TUYỆT ĐỐI KHÔNG hỏi "có muốn chuyển trang" trong trường hợp này.
+        - Ví dụ: Khách nói "xem menu", "cho tôi xem thực đơn", "menu có gì?" -> HÃY IN MENU NGAY, không hỏi chuyển trang.
+        - Khi khách HỎI VỀ MỘT MÓN CỤ THỂ (ví dụ: "xem món phở", "phở giá bao nhiêu", "combo nào ngon", "món bò"): BẠN PHẢI TRẢ LỜI THÔNG TIN VỀ MÓN ĐÓ (tên, giá, mô tả). TUYỆT ĐỐI KHÔNG hỏi chuyển trang thanh toán.
+        - Lưu ý: khách có thể gõ typo như "xe món phở" thay vì "xem món phở" -> hãy hiểu đúng ý khách và trả lời thông tin món ăn.
+        - Chỉ hỏi chuyển sang trang Đặt món (bước 3) trong trường hợp: Khách đã chọn bàn cụ thể -> bạn đã xác nhận thông tin bàn -> khách trả lời CÓ với câu hỏi "có muốn xem menu không?".
+        - Chỉ hỏi chuyển sang trang thanh toán (bước 4) trong trường hợp: Khách đã chọn bàn cụ thể -> bạn đã xác nhận thông tin bàn -> khách trả lời KHÔNG với câu hỏi "có muốn xem menu không?".
+
         QUY TRÌNH ĐẶT BÀN (SAU KHI KHÁCH ĐÃ TỰ CHỌN XONG MỘT BÀN CỤ THỂ):
         Ngay sau khi KHÁCH đã chọn xong 1 bàn cụ thể (ví dụ khách nói "Tôi chọn bàn 01"), hãy nói CÙNG TRONG 1 LƯỢT CHAT (Không được gộp thêm bước khác):
         
@@ -120,10 +146,11 @@ public class ChatService {
            - Ví dụ: "Tôi đã xếp cho bạn Bàn 01 tại Tầng 1. Bạn có muốn xem menu và chọn món ăn trước không?"
            - CHỜ KHÁCH TRẢ LỜI CÓ HAY KHÔNG.
 
-        3. Xử lý yêu cầu XEM MENU của khách:
+        3. Xử lý yêu cầu XEM MENU SAU KHI ĐÃ CHỌN BÀN:
+           - ĐÂY LÀ BƯỚC CHỈ ÁP DỤNG KHI KHÁCH ĐÃ CHỌN BÀN VÀ VỪA ĐƯỢC HỎI "Có muốn xem menu không?".
            - TẠI Bước 2, KHI BẠN ĐANG HỎI "BẠN CÓ MUỐN XEM MENU KHÔNG?", BẠN TUYỆT ĐỐI CHƯA ĐƯỢC PHÉP TẠO LINK CHUYỂN HƯỚNG.
-           - Ở lượt chat sau: Nếu khách trả lời CÓ muốn xem menu, BẠN HÃY IN RA DANH SÁCH CÁC MÓN ĂN VÀ MỨC GIÁ TRONG NHÀ HÀNG để khách xem trực tiếp. TUYỆT ĐỐI CHƯA ĐƯỢC TẠO LINK CHUYỂN TRANG.
-           - Sau khi khách đã xem menu hoặc nhờ bạn tư vấn xong, BẠN BẮT BUỘC PHẢI HỎI: "Bạn có muốn chuyển sang trang Đặt món trực quan để tự tay thêm món vào giỏ hàng và thanh toán không?".
+           - Ở lượt chat sau: Nếu khách trả lời CÓ muốn xem menu, BẠN PHẢI HỎI NGAY: "Bạn có muốn chuyển sang trang Đặt món để xem menu và tự chọn món trực tiếp không?" TUYỆT ĐỐI KHÔNG được in danh sách menu vào chat.
+           - Nếu khách đồng ý chuyển sang trang Đặt món -> tạo link bước 3 ngay lập tức.
            - Ở lượt chat sau: Nếu khách trả lời KHÔNG muốn xem menu từ Bước 2: Bạn BẮT BUỘC PHẢI HỎI TIẾP: "Bạn có muốn chuyển đến trang thanh toán đặt cọc để hoàn tất giữ bàn ngay bây giờ không?". VẪN TUYỆT ĐỐI CHƯA ĐƯỢC TẠO LINK.
 
         4. Xử lý câu trả lời chuyển trang (Bước 3 / Bước 4):
@@ -180,8 +207,11 @@ public class ChatService {
         
         VÍ DỤ FLOW KHI KHÁCH XÁC NHẬN:
         
-        Tình huống 1: Khách muốn đặt món
-        Khách: "có, tôi muốn đặt món"
+        Tình huống 1: Khách muốn xem menu
+        AI: "Bạn có muốn xem menu và chọn món ăn trước không?"
+        Khách: "có"
+        AI: "Bạn có muốn chuyển sang trang Đặt món để xem menu và tự chọn món trực tiếp không?"
+        Khách: "có" hoặc "đồng ý" hoặc "ok"
         AI: "Tuyệt vời! Tôi sẽ chuyển bạn đến trang đặt món ngay bây giờ.
         /reservation?step=3&tableName=Bàn 01&date=2025-01-20&startTime=16:00&guests=2"
         (Link ở dòng riêng sẽ tự động được xử lý, không hiển thị cho khách)
@@ -198,9 +228,14 @@ public class ChatService {
         - Link phải ở trên một dòng riêng sau câu trả lời chính
         - KHÔNG được chỉ xác nhận lại thông tin mà không có link
         - Link sẽ tự động được xử lý và không hiển thị cho khách
+        - TUYỆT ĐỐI KHÔNG in danh sách menu vào chat trong bất kỳ trường hợp nào
         
         DỮ LIỆU NHÀ HÀNG (SỬ DỤNG ĐỂ TRẢ LỜI):
-        """, currentDateTime, currentDate, currentDateTime, currentDate, currentDateTime, currentDate, currentDate) + restaurantContext;
+        """, currentDateTime, currentDate,
+                tomorrowDate, tomorrowDateISO,
+                dayAfterTomorrow, dayAfterTomorrowISO,
+                currentDate,
+                currentDateTime, currentDate, currentDateTime, currentDate, currentDateTime, currentDate, currentDate) + restaurantContext;
     }
 
     @Transactional
@@ -266,13 +301,18 @@ public class ChatService {
                 conversationRepository.save(conversation);
             }
 
-            // Process AI response asynchronously (fire and forget)
-            try {
-                processAIResponse(conversation.getId(), user.getId());
-            } catch (Exception e) {
-                log.error("Error triggering async AI response processing", e);
-                // Don't fail the request if async processing fails
-            }
+            // Process AI response asynchronously after transaction commits
+            // This ensures the user message is visible to the background thread
+            final Long conversationId = conversation.getId();
+            final Long userId = user.getId();
+            
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("Transaction committed, triggering async AI response for conversation: {}", conversationId);
+                    self.processAIResponse(conversationId, userId);
+                }
+            });
 
             return mapToMessageResponse(userMessage);
         } catch (ResourceNotFoundException e) {
@@ -551,8 +591,8 @@ public class ChatService {
         text = text.replaceAll("(?m)^(.*?Giờ muốn đến.*?):\\s*$", "$1");
         text = text.replaceAll("(?m)^(.*?Yêu cầu đặc biệt.*?):\\s*$", "$1");
 
-        // Add line break before common question patterns, EXCEPT when they are already bullet points or on a new line
-        text = text.replaceAll("(?<!\\n)(?<!-\\s)(Số lượng khách|Ngày muốn đặt|Giờ muốn đến|Bạn có yêu cầu|Vui lòng cho tôi|Có yêu cầu đặc biệt|Yêu cầu đặc biệt)", "\n$1");
+        // Add line break before common question patterns, EXCEPT when already on a new line, bullet point, or numbered list item
+        text = text.replaceAll("(?<!\\n)(?<!\\. )(?<!-\\s)(Số lượng khách|Ngày muốn đặt|Giờ muốn đến|Bạn có yêu cầu|Vui lòng cho tôi|Có yêu cầu đặc biệt|Yêu cầu đặc biệt)", "\n$1");
 
         // Add line break after periods if followed by capital letter (new sentence), but NOT for numbers (e.g. "1. Bàn")
         text = text.replaceAll("(\\p{L})\\.\\s+([A-ZĐ])", "$1.\n\n$2");
@@ -563,8 +603,8 @@ public class ChatService {
         // Format table listings - ensure each table detail is on a new line
         text = text.replaceAll("(Bàn [^\\n]+)\\s+ở\\s+(tầng|Tầng)\\s+(\\d+),\\s+(khu vực|Khu vực)\\s+([^\\n\\.]+)", "$1\n   - $2 $3, $4 $5");
 
-        // Add line break before "Bạn thích" or similar questions after table list
-        text = text.replaceAll("([^\\n])(Bạn thích|Bạn muốn|Bạn có muốn)", "$1\n\n$2");
+        // Add line break before "Bạn thích" or similar questions, but NOT when part of a numbered list (e.g. "2. Bạn muốn")
+        text = text.replaceAll("(?<!\\d\\. )(?<!\\n)([^\\n\\d\\.\\s])(Bạn thích|Bạn muốn|Bạn có muốn)", "$1\n\n$2");
 
         // Clean up multiple consecutive line breaks (max 2)
         text = text.replaceAll("\\n{3,}", "\n\n");

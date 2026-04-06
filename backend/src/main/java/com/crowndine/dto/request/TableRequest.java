@@ -22,4 +22,7 @@ public class TableRequest {
     private Integer x;
     private Integer y;
     private Integer rotation;
+
+    private String imageUrl;
+    private String description;
 }

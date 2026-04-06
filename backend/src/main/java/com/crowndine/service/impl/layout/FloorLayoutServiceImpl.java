@@ -117,6 +117,8 @@ public class FloorLayoutServiceImpl implements FloorLayoutService {
         dto.setRotation(table.getRotation());
         dto.setCapacity(table.getCapacity());
         dto.setDeposit(table.getBaseDeposit());
+        dto.setImageUrl(table.getImageUrl());
+        dto.setDescription(table.getDescription());
 
         return dto;
     }

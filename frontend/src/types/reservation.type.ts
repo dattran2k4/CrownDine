@@ -87,12 +87,14 @@ export type PreOrderItem = MenuItemIdentity & {
   type: 'item'
   price: number
   image: string
+  description?: string
 }
 
 export type PreOrderCombo = ComboIdentity & {
   type: 'combo'
   price: number
   image: string
+  description?: string
 }
 
 export type PreOrderEntry = PreOrderItem | PreOrderCombo
@@ -136,4 +138,6 @@ export interface StaffReservationResponse {
   status: string
   orderId: number | null
   orderDetails: Array<any>
+  floorName?: string
+  areaName?: string
 }

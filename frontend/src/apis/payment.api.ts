@@ -2,7 +2,7 @@ import type { ApiResponse, PageResponse } from '@/types/utils.type'
 import type { PaymentDetailResponse, PaymentFilterParams } from '@/types/payment.type'
 import http from '@/utils/http'
 
-const PAYMENT_URL = '/payments'
+const PAYMENT_URL = 'payments'
 
 export interface CreatePaymentRequest {
   reservationCode?: string

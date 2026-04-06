@@ -494,7 +494,7 @@ export default function Reservation() {
 
   return (
     <div className='bg-background text-foreground min-h-screen px-4 py-10 font-sans md:px-8'>
-      <div className='mx-auto max-w-5xl'>
+      <div className='mx-auto max-w-6xl'>
         {/* Header Title */}
         <div className='mb-8 text-center md:text-left'>
           <h1 className='mb-2 text-3xl font-bold'>Đặt Bàn Trực Tuyến</h1>
@@ -505,7 +505,7 @@ export default function Reservation() {
         <Progress currentStep={currentStep} steps={['Thời gian', 'Chọn bàn', 'Món ăn', 'Thanh toán']} />
 
         {/* Main Content Area */}
-        <div className='bg-card min-h-100'>
+        <div className='min-h-100'>
           {currentStep === 1 && (
             <Step1DateTime
               guests={guests}
@@ -559,6 +559,7 @@ export default function Reservation() {
         {currentStep < 4 && (
           <div className='mt-8 flex justify-between border-t pt-6'>
             <button
+              type="button"
               onClick={() => setCurrentStep((c) => c - 1)}
               disabled={currentStep === 1}
               className='flex items-center gap-2 font-bold text-gray-500 transition-all hover:text-black disabled:opacity-0'
@@ -567,6 +568,7 @@ export default function Reservation() {
             </button>
 
             <button
+              type="button"
               onClick={handleNext}
               disabled={isCreatingReservation}
               className='bg-foreground text-primary flex items-center gap-2 rounded-lg px-8 py-3 font-bold transition-all hover:shadow-lg disabled:cursor-wait disabled:opacity-50'
@@ -586,6 +588,7 @@ export default function Reservation() {
         {currentStep === 4 && (
           <div className='mt-8 flex justify-between border-t pt-6'>
             <button
+              type="button"
               onClick={() => setCurrentStep(3)}
               disabled={isProcessing}
               className='flex items-center gap-2 font-bold text-gray-500 transition-all hover:text-black disabled:opacity-50'

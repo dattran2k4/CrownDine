@@ -16,7 +16,7 @@ const ProfileFavorites = () => {
     )
   }
 
-  if (favorites.length === 0) {
+  if (favorites?.length === 0) {
     return (
       <div className='bg-card border-border flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center shadow-sm'>
         <div className='bg-primary/10 mb-6 flex h-20 w-20 items-center justify-center rounded-full'>
@@ -44,7 +44,7 @@ const ProfileFavorites = () => {
       </div>
 
       <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
-        {favorites.map((fav) => {
+        {favorites?.map((fav) => {
           const isCombo = !!fav.combo
           const itemData = isCombo ? comboToCardItem(fav.combo!) : fav.item
           if (!itemData) return null

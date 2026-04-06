@@ -13,6 +13,10 @@ import type { Table } from '@/types/table.type'
 interface ReservationCalendarViewProps {
   onOpenCreateModal: () => void
   onSelectReservation: (res: StaffReservationResponse) => void
+  statusFilter?: string
+  activeFloor?: string
+  activeArea?: string
+  onSlotClick?: (data: { tableId: number; startTime: string; date: string }) => void
 }
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8) // 08:00 to 22:00
@@ -26,7 +30,14 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Đã hủy', color: 'bg-red-500' }
 }
 
-const ReservationCalendarView = ({ onOpenCreateModal, onSelectReservation }: ReservationCalendarViewProps) => {
+const ReservationCalendarView = ({ 
+  onOpenCreateModal, 
+  onSelectReservation,
+  statusFilter,
+  activeFloor,
+  activeArea,
+  onSlotClick
+}: ReservationCalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -38,26 +49,25 @@ const ReservationCalendarView = ({ onOpenCreateModal, onSelectReservation }: Res
     select: (res) => res.data?.data || []
   })
 
-  // Group tables by Floor (if possible, otherwise just one group)
+  // Group tables by Floor & Area filter
   const groupedTables = useMemo(() => {
     const groups: Record<string, Table[]> = {}
     
-    tablesData.forEach((t: Table) => {
-      // Logic: If table name is "201", group to "Tầng 2". If "Bàn 1", group to "Khu vực 1"
-      let floor = 'Khu vực chính'
-      if (t.name.match(/^[1-9]\d{2}/)) { // Starts with 3 digits like 1xx, 2xx
-         floor = `Tầng ${t.name.charAt(0)}`
-      } else if (t.name.toLowerCase().includes('lầu')) {
-         const match = t.name.match(/lầu\s*(\d+)/i)
-         if (match) floor = `Tầng ${match[1]}`
-      }
-      
+    // 1. Filter tables by Floor & Area
+    const filteredTables = tablesData.filter((t: Table) => {
+       if (activeFloor && activeFloor !== 'Tất cả' && t.floorName !== activeFloor) return false
+       if (activeArea && activeArea !== 'Tất cả' && t.areaName !== activeArea) return false
+       return true
+    })
+
+    filteredTables.forEach((t: Table) => {
+      const floor = t.floorName || 'Khu vực chính'
       if (!groups[floor]) groups[floor] = []
       groups[floor].push(t)
     })
     
     return groups
-  }, [tablesData])
+  }, [tablesData, activeFloor, activeArea])
 
   const { data: reservations = [] as StaffReservationResponse[] } = useQuery({
     queryKey: ['staff-reservations-calendar', dateStr],
@@ -66,13 +76,25 @@ const ReservationCalendarView = ({ onOpenCreateModal, onSelectReservation }: Res
   })
 
   const filteredReservations = useMemo(() => {
-    if (!searchTerm) return reservations
-    return reservations.filter((r: StaffReservationResponse) => 
-      r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      r.phone?.includes(searchTerm) || 
-      r.code?.includes(searchTerm)
-    )
-  }, [reservations, searchTerm])
+    let result = reservations
+    
+    // 1. Status Filter
+    if (statusFilter) {
+      result = result.filter(r => r.status === statusFilter)
+    }
+
+    // 2. Search Term
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase()
+      result = result.filter((r: StaffReservationResponse) => 
+        r.customerName.toLowerCase().includes(lowerSearch) || 
+        r.phone?.includes(searchTerm) || 
+        r.code?.includes(lowerSearch)
+      )
+    }
+
+    return result
+  }, [reservations, searchTerm, statusFilter])
 
   const getTimeOffset = (timeStr: string) => {
     if (!timeStr) return 0
@@ -214,7 +236,12 @@ const ReservationCalendarView = ({ onOpenCreateModal, onSelectReservation }: Res
                              <div 
                                 key={hour} 
                                 style={{ width: `${COLUMN_WIDTH}px` }} 
-                                className='flex-shrink-0 border-r border-slate-200/50 h-full'
+                                className='flex-shrink-0 border-r border-slate-200/50 h-full cursor-cell hover:bg-primary/5 transition-all'
+                                onClick={() => onSlotClick?.({
+                                  tableId: Number(table.id),
+                                  startTime: `${hour.toString().padStart(2, '0')}:00`,
+                                  date: dateStr
+                                })}
                              ></div>
                           ))}
 

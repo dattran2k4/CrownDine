@@ -141,46 +141,11 @@ export default function AreaCanvas({
   const activeSelectedId = selectedAreaId !== undefined ? selectedAreaId : localSelectedId
 
   // Calculate absolute viewBox bounds for width/height
-  let minX = 0,
-    minY = 0,
-    maxX = 1200,
-    maxY = 600
-
-  if (layout.areas && layout.areas.length > 0) {
-    layout.areas.forEach((a) => {
-      const ax = a.x ?? 50
-      const ay = a.y ?? 50
-      const aw = a.width ?? 400
-      const ah = a.height ?? 300
-
-      if (ax < minX) minX = ax
-      if (ay < minY) minY = ay
-      if (ax + aw > maxX) maxX = ax + aw
-      if (ay + ah > maxY) maxY = ay + ah
-
-      if (a.tables && a.tables.length > 0) {
-        a.tables.forEach((t) => {
-          const tx = ax + (t.x ?? 0)
-          const ty = ay + (t.y ?? 0)
-          const tw = t.width ?? 60
-          const th = t.height ?? 60
-
-          if (tx < minX) minX = tx
-          if (ty < minY) minY = ty
-          if (tx + tw > maxX) maxX = tx + tw
-          if (ty + th > maxY) maxY = ty + th
-        })
-      }
-    })
-  }
-
-  if (minX < 0) minX -= 50
-  if (minY < 0) minY -= 50
-  if (maxX > 1200) maxX += 50
-  if (maxY > 600) maxY += 100
-
-  const VBWidth = Math.max(1200, maxX - minX)
-  const VBHeight = Math.max(600, maxY - minY)
+  // Setup fixed viewBox for consistent background across all pages
+  const minX = 0
+  const minY = 0
+  const VBWidth = 1200
+  const VBHeight = 1000 // Fixed height for standard layout
 
   const currentViewBoxStr = `${minX} ${minY} ${VBWidth} ${VBHeight}`
   const viewBoxStr = freezeViewBox ?? currentViewBoxStr

@@ -9,7 +9,7 @@ import type {
 import type { ApiResponse } from '@/types/utils.type'
 import http from '@/utils/http'
 
-const LAYOUT_URL = '/layout'
+const LAYOUT_URL = 'layout'
 
 export type FloorRecord = {
   id: number
@@ -90,7 +90,7 @@ const layoutApi = {
     startTime: string
     guestNumber: number
   }) {
-    return http.get<ApiResponse<TableLayout[]>>('/restaurant-tables/available', {
+    return http.get<ApiResponse<TableLayout[]>>('restaurant-tables/available', {
       params
     })
   }

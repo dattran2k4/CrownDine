@@ -5,7 +5,7 @@ spring:
   devtools:
     add-properties: true
   datasource:
-    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/crowndine
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/${DATABASE_NAME:crowndine}
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:123456}
     hikari: # Connection poll
@@ -26,11 +26,11 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   mail:
-    from: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
+    from: ${MAIL_USERNAME}
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:dattqde181019@fpt.edu.vn}
-    password: ${MAIL_PASSWORD:krdmwfrkaizzvgwb}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -56,30 +56,58 @@ springdoc:
   swagger-ui:
     enabled: false
 
+openapi:
+  service:
+    api-docs: backend-service
+    server: http://localhost:${server.port}
+    title: Backend service
+    version: 1.0.0
+
 jwt:
-  access-key: OwOw+8t/PROzQ2jr+ecXe3MGrp5RDjwEN4sj56pd4uo=
-  refresh-key: mvBb/s/xhkDlzsYQbMcutG8W9AB2Noqb8GWJapqs66Y=
-  reset-password-key: pKj6Yk3A2tR9mNv5QeL1sWx8BzUd4Hf0JcVa7Pn2XmQ=
+  access-key: ${JWT_ACCESS_KEY}
+  refresh-key: ${JWT_REFRESH_KEY}
+  reset-password-key: ${JWT_RESET_PASSWORD_KEY}
   # 15 phút
-  access-key-expiration: 900000
+  access-key-expiration: ${JWT_ACCESS_KEY_EXPIRATION:900000}
   # 7 ngày
-  refresh-key-expiration: 604800000
+  refresh-key-expiration: ${JWT_REFRESH_KEY_EXPIRATION:604800000}
   # 10 phút
-  reset-password-key-expiration: 600000
+  reset-password-key-expiration: ${JWT_RESET_PASSWORD_KEY_EXPIRATION:600000}
 
 #Clooudinary
 cloudinary:
-  cloud_name: dk1urarrc
-  api_key: 654243287352318
-  api_secret: IJAoDwzp8EaLRI7KJKYwYHqXqbo
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_API_SECRET}
 
 #PayOS
 payos:
-  client-id: 02745e9c-7c5a-4a1e-81d0-bb50281bec1f
-  api-key: a189d0aa-4443-4b62-b1ff-ae64b057a0eb
-  checksum-key: 5304c2338d683c8eb7d9734b2ccdecb52016e029d464946f11b8a653971eefc1
-  return-url: http://localhost:5173/thanh-toan/thanh-cong
-  cancel-url: http://localhost:5173/thanh-toan/that-bai
+  client-id: ${PAYOS_CLIENT_ID}
+  api-key: ${PAYOS_API_KEY}
+  checksum-key: ${PAYOS_CHECKSUM_KEY}
+  return-url: ${PAYOS_RETURN_URL}
+  cancel-url: ${PAYOS_CANCEL_URL}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
+gemini:
+  api:
+    keys: ${GEMINI_API_KEYS}
+    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent}
+  model: ${GEMINI_MODEL:models/gemini-2.0-flash-001}
+
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY}
+
+app:
+  frontend-url: ${FRONTEND_BASE_URL:https://crown-dine.vercel.app}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://crown-dine.vercel.app}
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://crown-dine.vercel.app,https://*.vercel.app}
+  websocket:
+    allowed-origin-patterns: ${WS_ALLOWED_ORIGIN_PATTERNS:https://crown-dine.vercel.app}
 
 logging:
   level:

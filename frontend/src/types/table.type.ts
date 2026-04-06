@@ -8,4 +8,8 @@ export interface Table {
   status: ETableStatus
   capacity: number
   shape: ETableShape
+  areaId?: number
+  areaName?: string
+  floorId?: number
+  floorName?: string
 }

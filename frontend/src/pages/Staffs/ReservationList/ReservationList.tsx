@@ -12,7 +12,7 @@ import { PlusCircle, Search, Check } from 'lucide-react'
 import CreateReservationModal from './components/CreateReservationModal'
 import ReservationCalendarView from './components/ReservationCalendarView'
 import ReservationDetailModal from './components/ReservationDetailModal'
-import { Input } from '@/components/ui/input'
+import tableApi from '@/apis/table.api'
 
 type ViewMode = 'LIST' | 'CALENDAR'
 
@@ -29,16 +29,32 @@ const ReservationList = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [viewMode, setViewMode] = useState<ViewMode>('CALENDAR')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedReservation, setSelectedReservation] = useState<StaffReservationResponse | null>(null)
+  const [initialBookingData, setInitialBookingData] = useState<any>(null)
+  
+  // Advanced Filter states
+  const [statusFilter, setStatusFilter] = useState('')
+  const [activeFloor, setActiveFloor] = useState('Tất cả')
+  const [activeArea, setActiveArea] = useState('Tất cả')
 
-  const { data } = useQuery({
+  const { data: reservations } = useQuery({
     queryKey: ['staff-reservations', statusFilter],
     queryFn: () => reservationApi.getAllReservations({ status: statusFilter || undefined, size: 100 }),
     select: (res) => res.data?.data?.data || []
   })
+
+  // Fetch Tables once for filter data
+  const { data: tableData } = useQuery({
+    queryKey: ['tables-filter'],
+    queryFn: () => tableApi.getAllTables()
+  })
+
+  const rawTables = tableData?.data.data || []
+
+  // Filter UI data
+  const floors = ['Tất cả', ...Array.from(new Set(rawTables.map((t: any) => t.floorName).filter(Boolean)))]
+  const areas = ['Tất cả', ...Array.from(new Set((rawTables as any[]).filter(t => activeFloor === 'Tất cả' || t.floorName === activeFloor).map(t => t.areaName).filter(Boolean)))]
 
   const checkInMutation = useMutation({
     mutationFn: async (reservation: StaffReservationResponse) =>
@@ -58,13 +74,17 @@ const ReservationList = () => {
     }
   })
 
-  const filteredReservations = (data || []).filter((r: StaffReservationResponse) => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      (r.code && r.code.toLowerCase().includes(searchLower)) ||
-      (r.customerName && r.customerName.toLowerCase().includes(searchLower)) ||
-      (r.phone && r.phone.includes(searchLower))
-    )
+  const filteredReservations = (reservations || []).filter((r: StaffReservationResponse) => {
+    // 1. Status Filter
+    if (statusFilter && r.status !== statusFilter) return false
+
+    // 2. Floor Filter
+    if (activeFloor !== 'Tất cả' && r.floorName !== activeFloor) return false
+
+    // 3. Area Filter
+    if (activeArea !== 'Tất cả' && r.areaName !== activeArea) return false
+
+    return true
   })
 
   return (
@@ -78,38 +98,63 @@ const ReservationList = () => {
          </div>
          
          <div className='p-6 space-y-8 overflow-y-auto'>
-            {/* Search group */}
-            <div>
-               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1'>Tìm kiếm</label>
-               <Input 
-                  className='h-10 bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary'
-                  placeholder='Tên, SĐT, mã đơn...'
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-               />
-            </div>
-
             {/* Status checkboxes */}
             <div>
-               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1'>Trạng thái</label>
-               <div className='space-y-2.5'>
+               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1 tracking-widest'>Trạng thái đơn</label>
+               <div className='space-y-1.5'>
                   {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                    <label key={k} className='flex items-center gap-3 cursor-pointer group'>
-                       <input 
-                         type='checkbox' 
-                         className='w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer'
-                         checked={statusFilter === k || !statusFilter}
-                         onChange={() => setStatusFilter(statusFilter === k ? '' : k)}
-                       />
-                       <span className='text-sm text-slate-600 group-hover:text-slate-900 transition-colors'>{v}</span>
-                    </label>
+                    <button 
+                      key={k} 
+                      onClick={() => setStatusFilter(statusFilter === k ? '' : k)}
+                      className={clsx(
+                         'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all',
+                         statusFilter === k ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'
+                      )}
+                    >
+                       <span>{v}</span>
+                       {statusFilter === k && <Check size={12} />}
+                    </button>
+                  ))}
+               </div>
+            </div>
+
+            {/* Floor filter */}
+            <div>
+               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1 tracking-widest'>Tầng / Lầu</label>
+               <select 
+                 className='w-full h-10 bg-slate-50 border-slate-200 rounded-lg text-sm px-3 outline-none cursor-pointer font-bold text-slate-700'
+                 value={activeFloor}
+                 onChange={(e) => {
+                   setActiveFloor(e.target.value)
+                   setActiveArea('Tất cả')
+                 }}
+               >
+                  {floors.map(f => <option key={f} value={f}>{f}</option>)}
+               </select>
+            </div>
+
+            {/* Area filter */}
+            <div>
+               <label className='block text-[10px] font-black text-slate-400 uppercase mb-3 px-1 tracking-widest'>Khu vực / Phòng</label>
+               <div className='flex flex-wrap gap-2'>
+                  {areas.map(a => (
+                    <button
+                      key={a}
+                      onClick={() => setActiveArea(a)}
+                      className={clsx(
+                        'px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight transition-all border',
+                        activeArea === a ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-slate-100 text-slate-400 hover:border-orange-300 hover:text-orange-500'
+                      )}
+                    >
+                      {a}
+                    </button>
                   ))}
                </div>
             </div>
 
             {/* Table count */}
             <div className='pt-6 border-t border-slate-100'>
-               <label className='block text-[10px] font-bold text-slate-400 uppercase mb-3 px-1'>Hiển thị</label>
+               <label className='block text-[10px] font-bold text-slate-400 uppercase mb-3 px-1'>Bản ghi hiển thị</label>
                <select className='w-full h-10 bg-slate-50 border-slate-200 rounded-lg text-sm px-2 outline-none cursor-pointer'>
                   <option>15 bản ghi</option>
                   <option>30 bản ghi</option>
@@ -160,6 +205,13 @@ const ReservationList = () => {
              <ReservationCalendarView 
                onOpenCreateModal={() => setIsCreateModalOpen(true)} 
                onSelectReservation={(res) => setSelectedReservation(res)}
+               statusFilter={statusFilter}
+               activeFloor={activeFloor}
+               activeArea={activeArea}
+               onSlotClick={(data) => {
+                 setInitialBookingData(data)
+                 setIsCreateModalOpen(true)
+               }}
              />
            ) : (
              <div className='bg-white flex-1 overflow-hidden flex flex-col h-full border-b border-slate-200'>
@@ -282,8 +334,16 @@ const ReservationList = () => {
 
       <CreateReservationModal 
         isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          setInitialBookingData(null)
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['staff-reservations'] })
+          queryClient.invalidateQueries({ queryKey: ['staff-reservations-calendar'] })
+          queryClient.invalidateQueries({ queryKey: ['tables-filter'] })
+        }}
+        initialData={initialBookingData}
       />
 
       <ReservationDetailModal

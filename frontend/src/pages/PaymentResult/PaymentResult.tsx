@@ -1,5 +1,7 @@
 import path from '@/constants/path'
+import { PAYMENT_RESULT_QUERY_PARAM_KEYS } from '@/constants/queryParams'
 import paymentApi from '@/apis/payment.api'
+import useQueryParams from '@/hooks/useQueryParams'
 import { formatCurrency } from '@/utils/utils'
 import {
   getPaymentResultFromSession,
@@ -9,71 +11,114 @@ import {
 import { CheckCircle2, Home, Receipt, RefreshCw, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-function parseBoolean(value: string | null): boolean | undefined {
-  if (value === null) return undefined
+function parseBoolean(value?: string): boolean | undefined {
+  if (!value) return undefined
   return value === 'true'
+}
+
+type PaymentUiOutcome = 'success' | 'failed' | 'cancelled' | 'verifying'
+
+function getCallbackOutcome(result: PaymentResultStorageData | null): PaymentUiOutcome {
+  if (!result) return 'verifying'
+  if (result.cancel) return 'cancelled'
+
+  const callbackCode = result.code?.trim()
+  const callbackStatus = result.status?.trim()
+
+  // PayOS status: PAID, PENDING, PROCESSING, CANCELLED
+  if (callbackStatus === 'PAID') {
+    return 'success'
+  }
+
+  if (callbackStatus === 'CANCELLED') {
+    return 'cancelled'
+  }
+
+  if (callbackStatus === 'PENDING' || callbackStatus === 'PROCESSING') {
+    return 'verifying'
+  }
+
+  // PayOS code: 00 success, 01 invalid params
+  if (callbackCode === '00') {
+    return 'verifying'
+  }
+
+  if (callbackCode === '01') {
+    return 'failed'
+  }
+
+  if (callbackCode) {
+    return 'failed'
+  }
+
+  return 'verifying'
+}
+
+function getDbOutcome(status?: string): PaymentUiOutcome | null {
+  if (!status) return null
+  if (status === 'SUCCESS') return 'success'
+  if (status === 'FAILED') return 'failed'
+  if (status === 'PENDING') return 'verifying'
+  return null
 }
 
 export default function PaymentResult() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchParams] = useSearchParams()
+  const queryParams = useQueryParams()
 
   const callbackResult = useMemo<PaymentResultStorageData | null>(() => {
-    if (!searchParams.toString()) {
+    if (Object.keys(queryParams).length === 0) {
       return null
     }
 
     return {
-      code: searchParams.get('code') ?? undefined,
-      paymentId: searchParams.get('id') ?? undefined,
-      cancel: parseBoolean(searchParams.get('cancel')),
-      status: searchParams.get('status') ?? undefined,
-      orderCode: searchParams.get('orderCode') ?? undefined
+      code: queryParams[PAYMENT_RESULT_QUERY_PARAM_KEYS.code],
+      paymentId: queryParams[PAYMENT_RESULT_QUERY_PARAM_KEYS.paymentId],
+      cancel: parseBoolean(queryParams[PAYMENT_RESULT_QUERY_PARAM_KEYS.cancel]),
+      status: queryParams[PAYMENT_RESULT_QUERY_PARAM_KEYS.status],
+      orderCode: queryParams[PAYMENT_RESULT_QUERY_PARAM_KEYS.orderCode]
     }
-  }, [searchParams])
+  }, [queryParams])
 
-  const stateResult = (location.state as PaymentResultStorageData | null) ?? null
   const storedResult = typeof window !== 'undefined' ? getPaymentResultFromSession() : null
   const paymentResult = useMemo<PaymentResultStorageData | null>(() => {
     if (callbackResult) {
-      return {
-        ...storedResult,
-        ...stateResult,
-        ...callbackResult
-      }
+      const isSamePayment =
+        !!storedResult &&
+        ((callbackResult.orderCode && storedResult.orderCode === callbackResult.orderCode) ||
+          (callbackResult.code && storedResult.code === callbackResult.code))
+
+      return isSamePayment ? { ...storedResult, ...callbackResult } : callbackResult
     }
 
-    return stateResult ?? storedResult
-  }, [callbackResult, stateResult, storedResult])
+    return storedResult
+  }, [callbackResult, storedResult])
 
   const paymentCode = paymentResult?.orderCode
-  const { data: paymentDetail } = useQuery({
+  const { data: paymentDetail, isFetching: isPaymentDetailFetching } = useQuery({
     queryKey: ['payment-detail-by-code', paymentCode],
     queryFn: () => paymentApi.getPaymentByCode(paymentCode!),
     enabled: Boolean(paymentCode),
+    refetchInterval: location.pathname === path.paymentSuccess ? 1500 : false,
+    refetchIntervalInBackground: false,
     select: (response) => response.data.data
   })
 
   useEffect(() => {
     if (!callbackResult) return
 
-    setPaymentResultToSession({
-      ...storedResult,
-      ...stateResult,
-      ...callbackResult
-    })
-    navigate(location.pathname, {
-      replace: true,
-      state: {
-        ...storedResult,
-        ...stateResult,
-        ...callbackResult
-      }
-    })
-  }, [callbackResult, location.pathname, navigate, stateResult, storedResult])
+    const isSamePayment =
+      !!storedResult &&
+      ((callbackResult.orderCode && storedResult.orderCode === callbackResult.orderCode) ||
+        (callbackResult.code && storedResult.code === callbackResult.code))
+    const nextResult = isSamePayment ? { ...storedResult, ...callbackResult } : callbackResult
+
+    setPaymentResultToSession(nextResult)
+    navigate(location.pathname, { replace: true })
+  }, [callbackResult, location.pathname, navigate, storedResult])
 
   const mergedPaymentResult = useMemo(() => {
     if (!paymentDetail) {
@@ -97,15 +142,41 @@ export default function PaymentResult() {
     setPaymentResultToSession(mergedPaymentResult)
   }, [mergedPaymentResult, paymentDetail])
 
-  const isSuccessPath = location.pathname === path.paymentSuccess
-  const isSuccess = isSuccessPath && mergedPaymentResult?.status === 'SUCCESS' && mergedPaymentResult?.cancel !== true
+  const isFailurePath = location.pathname === path.paymentFailure
 
-  const title = isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa hoàn tất'
+  const callbackOutcome = useMemo(() => getCallbackOutcome(paymentResult), [paymentResult])
+  const dbOutcome = useMemo(() => getDbOutcome(paymentDetail?.status), [paymentDetail?.status])
+
+  const optimisticOutcome: PaymentUiOutcome =
+    callbackOutcome === 'verifying' && isFailurePath ? 'failed' : callbackOutcome
+
+  const uiOutcome: PaymentUiOutcome = dbOutcome && dbOutcome !== 'verifying' ? dbOutcome : optimisticOutcome
+
+  const isSuccess = uiOutcome === 'success'
+  const isVerifying = uiOutcome === 'verifying' || (dbOutcome === 'verifying' && isPaymentDetailFetching)
+  const isCancelled = uiOutcome === 'cancelled'
+
+  const title = isVerifying
+    ? 'Đang xác nhận thanh toán'
+    : isSuccess
+      ? 'Thanh toán thành công'
+      : 'Thanh toán chưa hoàn tất'
   const description = isSuccess
     ? 'Cảm ơn bạn đã hoàn tất thanh toán tiền cọc. CrownDine đã ghi nhận giao dịch của bạn và sẽ chuẩn bị trải nghiệm tốt nhất cho buổi đặt bàn này.'
-    : 'Thanh toán chưa hoàn tất hoặc đã bị hủy. Bạn có thể quay lại để thử lại hoặc chọn phương thức khác.'
+    : isVerifying
+      ? 'Hệ thống đang đồng bộ kết quả thanh toán từ cổng thanh toán. Vui lòng đợi trong giây lát.'
+      : 'Thanh toán chưa hoàn tất hoặc đã bị hủy. Bạn có thể quay lại để thử lại hoặc chọn phương thức khác.'
 
-  const displayStatus = isSuccess ? 'Đã thanh toán' : mergedPaymentResult?.cancel ? 'Đã hủy' : 'Chưa hoàn tất'
+  const displayStatus = isVerifying
+    ? 'Đang xác nhận'
+    : isSuccess
+      ? 'Đã thanh toán'
+      : isCancelled
+        ? 'Đã hủy'
+        : 'Chưa hoàn tất'
+
+  const hasMismatchBetweenCallbackAndDb =
+    dbOutcome !== null && dbOutcome !== 'verifying' && callbackOutcome !== 'verifying' && callbackOutcome !== dbOutcome
   const transactionDate = mergedPaymentResult?.paidAt
     ? new Intl.DateTimeFormat('vi-VN', {
         dateStyle: 'full',
@@ -120,12 +191,18 @@ export default function PaymentResult() {
     <div className='bg-background text-foreground min-h-screen px-4 py-16'>
       <div className='mx-auto max-w-2xl'>
         <div className='overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm'>
-          <div className={`px-8 py-10 ${isSuccess ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+          <div className={`px-8 py-10 ${isSuccess ? 'bg-emerald-50' : isVerifying ? 'bg-amber-50' : 'bg-rose-50'}`}>
             <div className='flex items-center gap-4'>
               <div
-                className={`flex h-14 w-14 items-center justify-center rounded-full ${isSuccess ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}
+                className={`flex h-14 w-14 items-center justify-center rounded-full ${isSuccess ? 'bg-emerald-500 text-white' : isVerifying ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'}`}
               >
-                {isSuccess ? <CheckCircle2 size={28} /> : <XCircle size={28} />}
+                {isSuccess ? (
+                  <CheckCircle2 size={28} />
+                ) : isVerifying ? (
+                  <RefreshCw size={28} className='animate-spin' />
+                ) : (
+                  <XCircle size={28} />
+                )}
               </div>
               <div>
                 <h1 className='text-2xl font-bold text-neutral-900'>{title}</h1>
@@ -173,7 +250,14 @@ export default function PaymentResult() {
               <p className='mt-2 text-base font-semibold text-neutral-900'>{transactionDate}</p>
             </div>
 
-            {!isSuccess && (
+            {hasMismatchBetweenCallbackAndDb && (
+              <div className='rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800'>
+                Kết quả trả về từ cổng thanh toán khác với dữ liệu hệ thống. Giao diện đang ưu tiên trạng thái trong DB
+                để đảm bảo chính xác.
+              </div>
+            )}
+
+            {!isSuccess && !isVerifying && (
               <div className='rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800'>
                 Nếu bạn đã thanh toán nhưng chưa thấy cập nhật, hãy chờ thêm trong giây lát rồi kiểm tra lại lịch sử đặt
                 bàn của bạn.
@@ -197,7 +281,7 @@ export default function PaymentResult() {
                 Xem hồ sơ
               </Link>
 
-              {!isSuccess && (
+              {!isSuccess && !isVerifying && !isFailurePath && (
                 <Link
                   to={path.reservation}
                   className='inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-rose-700 transition hover:bg-rose-100'

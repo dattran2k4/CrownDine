@@ -22,4 +22,9 @@ public class RestaurantTableResponse {
     private String imageUrl;
 
     private String description;
+
+    private Long areaId;
+    private String areaName;
+    private Long floorId;
+    private String floorName;
 }

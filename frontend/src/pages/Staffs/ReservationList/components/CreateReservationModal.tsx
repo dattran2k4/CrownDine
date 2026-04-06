@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,11 @@ interface CreateReservationModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  initialData?: {
+    tableId?: string | number
+    startTime?: string
+    date?: string
+  }
 }
 
 interface CartItem {
@@ -29,7 +34,7 @@ interface CartItem {
 
 type ModalTab = 'INFO' | 'MENU'
 
-export default function CreateReservationModal({ isOpen, onClose, onSuccess }: CreateReservationModalProps) {
+export default function CreateReservationModal({ isOpen, onClose, onSuccess, initialData }: CreateReservationModalProps) {
   const [activeTab, setActiveTab] = useState<ModalTab>('INFO')
   const [guestName, setGuestName] = useState('')
   const [guestPhone, setGuestPhone] = useState('')
@@ -48,6 +53,17 @@ export default function CreateReservationModal({ isOpen, onClose, onSuccess }: C
       note: ''
     }
   })
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData(prev => ({
+        ...prev,
+        date: initialData.date || prev.date,
+        startTime: initialData.startTime || prev.startTime,
+        tableId: initialData.tableId?.toString() || prev.tableId
+      }))
+    }
+  }, [isOpen, initialData])
 
   // --- Queries ---
   const { data: tableData } = useQuery({

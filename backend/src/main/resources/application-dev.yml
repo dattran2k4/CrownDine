@@ -17,7 +17,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    locations: classpath:dev/db/migration
+    locations: classpath:/db/migration
   jpa:
     show-sql: false
     hibernate:

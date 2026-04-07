@@ -7,7 +7,6 @@ INSERT INTO shifts (name, start_time, end_time, created_at, updated_at)
 VALUES ('Ca sáng', '08:00:00', '14:00:00', NOW(), NOW()),
        ('Ca chiều', '14:00:00', '22:00:00', NOW(), NOW());
 
-
 INSERT INTO categories (name, slug, description, created_at, updated_at)
 VALUES ('Món súp', 'mon-sup', 'Các món súp', NOW(), NOW()),
        ('Món khai vị', 'mon-khai-vi', 'Các món khai vị', NOW(), NOW()),
@@ -158,7 +157,6 @@ VALUES
 (5, 53, 2, NOW(), NOW());
 
 
-
 INSERT INTO vouchers (name, code, description, type, discount_value, max_discount_value, created_at, updated_at)
 VALUES
     ('Giảm 10%', 'CD10', 'Giảm 10% tổng bill', 'PERCENTAGE', 10.00, 50000.00, NOW(), NOW()),
@@ -234,157 +232,21 @@ VALUES (2, 1, NOW(), NOW()),
        (2, 2, NOW(), NOW()),
        (3, 1, NOW(), NOW());
 
--- Seed tối thiểu bàn để các bản ghi reservations/orders trong V2 luôn pass FK.
-INSERT INTO restaurant_tables (id, name, capacity, status, base_deposit, shape, created_at, updated_at)
-VALUES (1, 'Bàn 1', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
-       (2, 'Bàn 2', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
-       (3, 'Bàn 3', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
-       (4, 'Bàn 4', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW());
-
-INSERT INTO reservations
-(id, customer_id, restaurant_table_id, date, start_time, end_time, guest_number, note, status, expirated_at, code, created_at, updated_at)
-VALUES
-    (1, 2, 3, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '19:00:00', '20:30:00', 4, 'Sinh nhật', 'CONFIRMED', DATE_ADD(NOW(), INTERVAL 30 MINUTE), 'RES-SEED-000001', NOW(), NOW()),
-    (2, 3, 2, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '18:00:00', '19:00:00', 2, NULL, 'PENDING', DATE_ADD(NOW(), INTERVAL 30 MINUTE), 'RES-SEED-000002', NOW(), NOW());
-
-INSERT INTO orders
-(id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at)
-VALUES
--- Order gắn với reservation 1
-(1, 2, 1, 3, 1, 318000.00, 30000.00, 288000.00, 'ORD-SEED-000001', 'CONFIRMED', NOW(), NOW()),
--- Order walk-in (không reservation), gắn table 2
-(2, 3, NULL, 2, 2, 239000.00, 50000.00, 189000.00, 'ORD-SEED-000002', 'CONFIRMED', NOW(), NOW());
-
--- DỮ LIỆU SEED CHO DASHBOARD: HÔM NAY, HÔM QUA, 7 NGÀY QUA, THÁNG NÀY, THÁNG TRƯỚC
--- Lưu ý: Sử dụng CURDATE() và DATE_SUB() để dữ liệu luôn phản ánh đúng theo thời điểm hiện tại khi chạy script.
-
--- 1. HÔM NAY (TODAY): Các mốc thời gian từ 7g-22g
-INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at) VALUES
-(3, 2, NULL, 1, NULL, 150000.00, 0, 150000.00, 'ORD-SEED-000003', 'COMPLETED', CONCAT(CURDATE(), ' 07:30:00'), CONCAT(CURDATE(), ' 07:30:00')),
-(4, 3, NULL, 2, NULL, 280000.00, 0, 280000.00, 'ORD-SEED-000004', 'COMPLETED', CONCAT(CURDATE(), ' 09:15:00'), CONCAT(CURDATE(), ' 09:15:00')),
-(5, 1, NULL, 3, NULL, 550000.00, 0, 550000.00, 'ORD-SEED-000005', 'COMPLETED', CONCAT(CURDATE(), ' 12:45:00'), CONCAT(CURDATE(), ' 12:45:00')),
-(6, 2, NULL, 4, NULL, 320000.00, 0, 320000.00, 'ORD-SEED-000006', 'COMPLETED', CONCAT(CURDATE(), ' 15:20:00'), CONCAT(CURDATE(), ' 15:20:00')),
-(7, 3, NULL, 1, NULL, 850000.00, 0, 850000.00, 'ORD-SEED-000007', 'COMPLETED', CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),
-(8, 1, NULL, 2, NULL, 620000.00, 0, 620000.00, 'ORD-SEED-000008', 'COMPLETED', CONCAT(CURDATE(), ' 21:10:00'), CONCAT(CURDATE(), ' 21:10:00')),
-(9, 2, NULL, 3, NULL, 400000.00, 0, 400000.00, 'ORD-SEED-000009', 'COMPLETED', CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00'));
-
--- 2. HÔM QUA (YESTERDAY): Các mốc thời gian từ 8g-22g
-INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at) VALUES
-(10, 1, NULL, 1, NULL, 200000.00, 0, 200000.00, 'ORD-SEED-000010', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00')),
-(11, 2, NULL, 2, NULL, 420000.00, 0, 420000.00, 'ORD-SEED-000011', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 11:30:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 11:30:00')),
-(12, 3, NULL, 3, NULL, 350000.00, 0, 350000.00, 'ORD-SEED-000012', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 14:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 14:00:00')),
-(13, 1, NULL, 4, NULL, 620000.00, 0, 620000.00, 'ORD-SEED-000013', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00')),
-(14, 2, NULL, 1, NULL, 950000.00, 0, 950000.00, 'ORD-SEED-000014', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 19:30:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 19:30:00')),
-(15, 3, NULL, 2, NULL, 580000.00, 0, 580000.00, 'ORD-SEED-000015', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00'));
-
--- 3. 7 NGÀY QUA (LAST 7 DAYS - Không tính hôm nay và hôm qua)
-INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at) VALUES
-(16, 1, NULL, 1, NULL, 1200000.00, 0, 1200000.00, 'ORD-SEED-000016', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00')),
-(17, 2, NULL, 2, NULL, 1500000.00, 0, 1500000.00, 'ORD-SEED-000017', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 13:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 13:00:00')),
-(18, 3, NULL, 3, NULL, 900000.00, 0, 900000.00, 'ORD-SEED-000018', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 4 DAY), ' 18:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 4 DAY), ' 18:00:00')),
-(19, 1, NULL, 4, NULL, 1800000.00, 0, 1800000.00, 'ORD-SEED-000019', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 19:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 19:00:00')),
-(20, 2, NULL, 1, NULL, 1100000.00, 0, 1100000.00, 'ORD-SEED-000020', 'COMPLETED', CONCAT(DATE_SUB(CURDATE(), INTERVAL 6 DAY), ' 12:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 6 DAY), ' 12:00:00'));
-
--- 4. THÁNG NÀY (THIS MONTH - Các ngày đầu tháng)
-INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at) VALUES
-(21, 1, NULL, 2, NULL, 2500000.00, 0, 2500000.00, 'ORD-SEED-000021', 'COMPLETED', CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 1 DAY, ' 12:00:00'), CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 1 DAY, ' 12:00:00')),
-(22, 3, NULL, 3, NULL, 3200000.00, 0, 3200000.00, 'ORD-SEED-000022', 'COMPLETED', CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 5 DAY, ' 18:00:00'), CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 5 DAY, ' 18:00:00'));
-
--- 5. THÁNG TRƯỚC (LAST MONTH): Một vài ngày cố định
-INSERT INTO orders (id, user_id, reservation_id, restaurant_table_id, voucher_id, total_price, discount_price, final_price, code, status, created_at, updated_at) VALUES
-(23, 1, NULL, 1, NULL, 1000000.00, 0, 1000000.00, 'ORD-SEED-000023', 'COMPLETED', CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 25 DAY), ' 12:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 25 DAY), ' 12:00:00')),
-(24, 2, NULL, 2, NULL, 1200000.00, 0, 1200000.00, 'ORD-SEED-000024', 'COMPLETED', CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 15 DAY), ' 13:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 15 DAY), ' 13:00:00')),
-(25, 3, NULL, 3, NULL, 1800000.00, 0, 1800000.00, 'ORD-SEED-000025', 'COMPLETED', CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 10 DAY), ' 18:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 10 DAY), ' 18:00:00')),
-(26, 1, NULL, 4, NULL, 2200000.00, 0, 2200000.00, 'ORD-SEED-000026', 'COMPLETED', CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 5 DAY), ' 19:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 5 DAY), ' 19:00:00')),
-(27, 2, NULL, 1, NULL, 1500000.00, 0, 1500000.00, 'ORD-SEED-000027', 'COMPLETED', CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 1 DAY), ' 20:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 1 DAY), ' 20:00:00'));
-
-INSERT INTO order_details
-(order_id, item_id, combo_id, quantity, total_price, note, created_at, updated_at)
-VALUES
--- Order 1: gọi món lẻ
-(1, 6,  NULL, 1, 229000.00, 'Ít cay', NOW(), NOW()),
-(1, 7,  NULL, 1,  39000.00, NULL,    NOW(), NOW()),
-(1, 9,  NULL, 1,  35000.00, 'Ít đá', NOW(), NOW()),
-(1, 11, NULL, 1,  25000.00, NULL,    NOW(), NOW()),
-
--- Order 2: gọi combo
-(2, NULL, 4,   1, 219000.00, 'Không hành', NOW(), NOW()),
--- thêm 1 coca lẻ
-(2, 10, NULL,  1,  19000.00, NULL, NOW(), NOW());
-
--- DATA CHO TOP PRODUCTS (Order Details cho các đơn dashboard)
-INSERT INTO order_details (order_id, item_id, combo_id, quantity, total_price, created_at, updated_at) VALUES
--- Hôm nay (Orders 3-9)
-(3, 4, NULL, 1, 150000.00, CONCAT(CURDATE(), ' 07:30:00'), CONCAT(CURDATE(), ' 07:30:00')),  -- Bò bít tết
-(4, 3, NULL, 2, 280000.00, CONCAT(CURDATE(), ' 09:15:00'), CONCAT(CURDATE(), ' 09:15:00')),  -- Gà chiên mắm
-(5, 6, NULL, 1, 550000.00, CONCAT(CURDATE(), ' 12:45:00'), CONCAT(CURDATE(), ' 12:45:00')),  -- Lẩu thái
-(6, 8, NULL, 2, 320000.00, CONCAT(CURDATE(), ' 15:20:00'), CONCAT(CURDATE(), ' 15:20:00')),  -- Tôm hấp
-(7, 1, NULL, 1, 35000.00, CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),   -- Súp cua (MỚI)
-(7, 2, NULL, 1, 45000.00, CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),   -- Salad (MỚI)
-(7, 9, NULL, 2, 70000.00, CONCAT(CURDATE(), ' 18:50:00'), CONCAT(CURDATE(), ' 18:50:00')),   -- Trà đào (MỚI)
-(8, 3, NULL, 5, 620000.00, CONCAT(CURDATE(), ' 21:10:00'), CONCAT(CURDATE(), ' 21:10:00')),  -- Gà chiên mắm
-(9, 6, NULL, 2, 400000.00, CONCAT(CURDATE(), ' 19:30:00'), CONCAT(CURDATE(), ' 19:30:00')),  -- Lẩu thái
-
--- Hôm qua (Orders 10-15)
-(10, 4, NULL, 2, 200000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00')),
-(11, 3, NULL, 4, 420000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 11:30:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 11:30:00')),
-(12, 6, NULL, 1, 350000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 14:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 14:00:00')),
-(13, 8, NULL, 4, 620000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00')),
-(14, 5, NULL, 3, 300000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 19:30:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 19:30:00')), -- Heo quay (MỚI)
-(15, 7, NULL, 5, 195000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00')), -- Rau muống (MỚI)
-(15, 10, NULL, 5, 95000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 21:45:00')), -- Coca (MỚI)
-
--- 7 ngày qua (Orders 16-20)
-(16, 4, NULL, 3, 567000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00')),
-(16, 11, NULL, 2, 50000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 12:00:00')), -- Bánh flan (MỚI)
-(17, NULL, 1, 2, 578000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 13:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 13:00:00')), -- Combo 1 (MỚI)
-(18, NULL, 2, 1, 159000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 4 DAY), ' 18:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 4 DAY), ' 18:00:00')), -- Combo 2 (MỚI)
-(19, NULL, 3, 1, 229000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 19:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 19:00:00')), -- Combo 3 (MỚI)
-(20, NULL, 4, 1, 219000.00, CONCAT(DATE_SUB(CURDATE(), INTERVAL 6 DAY), ' 12:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 6 DAY), ' 12:00:00')), -- Combo 4 (MỚI)
-
--- Tháng này (Orders 21-22)
-(21, 6, NULL, 8, 2500000.00, CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 1 DAY, ' 12:00:00'), CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 1 DAY, ' 12:00:00')),
-(22, 4, NULL, 15, 3200000.00, CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 5 DAY, ' 18:00:00'), CONCAT(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) + INTERVAL 5 DAY, ' 18:00:00')),
-
--- Tháng trước (Orders 23-27)
-(23, 3, NULL, 10, 1000000.00, CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 25 DAY), ' 12:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 25 DAY), ' 12:00:00')),
-(24, 6, NULL, 4, 1200000.00, CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 15 DAY), ' 13:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 15 DAY), ' 13:00:00')),
-(25, 8, NULL, 12, 1800000.00, CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 10 DAY), ' 18:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 10 DAY), ' 18:00:00')),
-(26, 4, NULL, 15, 2200000.00, CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 5 DAY),  ' 19:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 5 DAY),  ' 19:00:00')),
-(27, 3, NULL, 15, 1500000.00, CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 1 DAY),  ' 20:00:00'), CONCAT(DATE_SUB(LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), INTERVAL 1 DAY),  ' 20:00:00'));
-
-INSERT INTO payments
-(id, code, reservation_id, order_id, user_id, source, target, type, method, status, amount, transaction_code, created_at, updated_at)
-VALUES
-    (1, 20260316000001, 1, NULL, 3, 'CLIENT_APP', 'RESERVATION', 'DEPOSIT', 'PAYOS', 'SUCCESS', 100000.00, 'RSV-DEPOSIT-0001', NOW(), NOW()),
-    (2, 20260316000002, NULL, 2, 2, 'POS_COUNTER', 'ORDER', 'SETTLEMENT', 'CASH', 'SUCCESS', 189000.00, 'ORD-SETTLE-0002', NOW(), NOW());
 
 INSERT INTO work_schedules (staff_id, shift_id, status, work_date, note, created_at, updated_at)
 VALUES
     (2, 1, 'APPROVED', '2026-02-28', NULL, NOW(), NOW()),
     (2, 2, 'APPROVED', '2026-02-28', NULL, NOW(), NOW());
 
-INSERT INTO attendances (work_schedule_id, user_id, check_in_at, check_out_at, note, status, attendance_type, created_at, updated_at)
+INSERT INTO attendances (work_schedule_id, check_in_at, check_out_at, note, created_at, updated_at)
 VALUES
-    (1, 2, '2026-02-28 08:05:00', '2026-02-28 14:00:00', 'Đúng giờ', 'ON_TIME', 'WORKING', NOW(), NOW()),
-    (2, 2, '2026-02-28 14:10:00', NULL, 'Bận xử lý khách đông', 'MISSING_PUNCH', 'WORKING', NOW(), NOW());
+    (1, '2026-02-28 08:05:00', '2026-02-28 14:00:00', 'Đúng giờ', NOW(), NOW()),
+    (2, '2026-02-28 14:10:00', NULL, 'Bận xử lý khách đông', NOW(), NOW());
 
-INSERT INTO feedbacks (user_id, item_id, order_id, rating, comment, is_featured, status, created_at, updated_at) VALUES
-    (2, 4, 1, 5, 'Không gian nhà hàng sang trọng, bò bít tết mềm và thơm.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 2 DAY), NOW()),
-    (3, 1, 2, 5, 'Lần đầu trải nghiệm và rất ấn tượng với món súp cua.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 5 DAY), NOW()),
-    (1, 3, 3, 4, 'Gà chiên mắm ngon, da giòn, rất đáng thử.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 7 DAY), NOW()),
-    (2, 8, 4, 5, 'Tôm hấp tươi và giữ được vị ngọt tự nhiên.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 3 DAY), NOW()),
-    (3, 11, 5, 5, 'Bánh flan là món kết thúc bữa ăn rất trọn vẹn.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 1 DAY), NOW());
-
-INSERT INTO feedbacks (guest_name, guest_email, item_id, rating, comment, is_featured, status, created_at, updated_at) VALUES
-    ('Nguyễn Văn A', 'vanna@example.com', 6, 5, 'Thực đơn đa dạng, nhiều lựa chọn hấp dẫn và phục vụ tốt.', b'1', 'APPROVED', DATE_SUB(NOW(), INTERVAL 4 DAY), NOW());
-
-INSERT INTO feedbacks (user_id, combo_id, order_id, rating, comment, status, created_at, updated_at) VALUES
-    (2, 1, 17, 5, 'Combo rất hời cho 2 người, đủ no và hợp vị.', 'APPROVED', NOW(), NOW()),
-    (3, 2, 18, 4, 'Combo gà mắm kết hợp khá cân bằng và dễ ăn.', 'APPROVED', NOW(), NOW()),
-    (1, 3, 19, 5, 'Beef steak set ổn, món lên đẹp và đồng đều.', 'APPROVED', NOW(), NOW()),
-    (3, 4, 20, 5, 'Combo hải sản tươi, đúng chất healthy.', 'APPROVED', NOW(), NOW()),
-    (2, 5, NULL, 5, 'Combo tráng miệng nhẹ nhàng, hợp cho buổi chiều.', 'APPROVED', NOW(), NOW());
+INSERT INTO feedbacks (user_id, item_id, rating, comment, created_at, updated_at) VALUES
+                                                                                          (2, 6, 5, 'Lẩu ngon, nước đậm vị', NOW(), NOW()),
+                                                                                          (3, 8, 4, 'Tôm tươi, hơi ít',      NOW(), NOW()),
+                                                                                          (2, 11, 5, 'Flan mềm, vừa ngọt',   NOW(), NOW());
 
 INSERT INTO reviews (customer_id, comment, created_at, updated_at) VALUES
                                                               (3, 'Không gian ổn, phục vụ nhanh', NOW(), NOW()),

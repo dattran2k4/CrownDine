@@ -16,13 +16,13 @@ import com.crowndine.service.CalculationService;
 import com.crowndine.service.OrderPricingResult;
 import com.crowndine.service.order.OrderVoucherService;
 import com.crowndine.service.voucher.VoucherService;
+import com.crowndine.service.voucher.UserVoucherValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
@@ -38,6 +38,7 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
     private final UserVoucherRepository userVoucherRepository;
     private final CalculationService calculationService;
     private final VoucherService voucherService;
+    private final UserVoucherValidator userVoucherValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -84,7 +85,7 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
             User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("user.not_found"));
             UserVoucher userVoucher = userVoucherRepository.findByVoucher_IdAndCustomer_Id(voucher.getId(), user.getId()).orElseThrow(() -> new InvalidDataException("voucher.not_assigned_to_user"));
 
-            validateUserVoucherAvailability(userVoucher);
+            userVoucherValidator.validateAvailability(userVoucher);
             usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
             usageLimit = userVoucher.getUsageLimit();
         }
@@ -219,15 +220,4 @@ public class OrderVoucherServiceImpl implements OrderVoucherService {
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE));
     }
 
-    private void validateUserVoucherAvailability(UserVoucher userVoucher) {
-        if (userVoucher.getExpiredAt() != null && !userVoucher.getExpiredAt().isAfter(LocalDateTime.now())) {
-            throw new InvalidDataException("voucher.expired");
-        }
-
-        int usageCount = userVoucher.getUsageCount() == null ? 0 : userVoucher.getUsageCount();
-        Integer usageLimit = userVoucher.getUsageLimit();
-        if (usageLimit != null && usageCount >= usageLimit) {
-            throw new InvalidDataException("voucher.usage_exhausted");
-        }
-    }
 }

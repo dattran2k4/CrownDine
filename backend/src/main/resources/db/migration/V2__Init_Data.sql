@@ -234,6 +234,13 @@ VALUES (2, 1, NOW(), NOW()),
        (2, 2, NOW(), NOW()),
        (3, 1, NOW(), NOW());
 
+-- Seed tối thiểu bàn để các bản ghi reservations/orders trong V2 luôn pass FK.
+INSERT INTO restaurant_tables (id, name, capacity, status, base_deposit, shape, created_at, updated_at)
+VALUES (1, 'Bàn 1', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
+       (2, 'Bàn 2', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
+       (3, 'Bàn 3', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW()),
+       (4, 'Bàn 4', 4, 'AVAILABLE', 0.00, 'RECT', NOW(), NOW());
+
 INSERT INTO reservations
 (id, customer_id, restaurant_table_id, date, start_time, end_time, guest_number, note, status, expirated_at, code, created_at, updated_at)
 VALUES

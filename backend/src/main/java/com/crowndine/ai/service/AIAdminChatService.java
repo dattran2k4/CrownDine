@@ -2,8 +2,8 @@ package com.crowndine.ai.service;
 
 import com.crowndine.ai.tool.AIToolNames;
 import com.crowndine.ai.tool.method.AdminProductMethodTools;
-import com.crowndine.exception.AiRateLimitException;
-import com.crowndine.exception.AiServiceException;
+import com.crowndine.presentation.exception.AiRateLimitException;
+import com.crowndine.presentation.exception.AiServiceException;
 import com.google.genai.errors.ApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.client.ChatClient;

@@ -1,11 +1,11 @@
-package com.crowndine.service;
+package com.crowndine.core.service;
 
 import com.crowndine.common.enums.EOrderDetailStatus;
 import com.crowndine.common.enums.EVoucherType;
-import com.crowndine.model.Order;
-import com.crowndine.model.OrderDetail;
-import com.crowndine.model.Voucher;
-import com.crowndine.service.impl.CalculationServiceImpl;
+import com.crowndine.core.entity.Order;
+import com.crowndine.core.entity.OrderDetail;
+import com.crowndine.core.entity.Voucher;
+import com.crowndine.core.service.impl.CalculationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

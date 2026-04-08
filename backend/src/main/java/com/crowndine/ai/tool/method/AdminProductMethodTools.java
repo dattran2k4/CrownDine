@@ -3,7 +3,7 @@ package com.crowndine.ai.tool.method;
 import com.crowndine.ai.schema.request.TopSellingCombosRequest;
 import com.crowndine.ai.schema.response.TopSellingCombosResponse;
 import com.crowndine.ai.tool.AIToolNames;
-import com.crowndine.service.combo.ComboService;
+import com.crowndine.core.service.combo.ComboService;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
 

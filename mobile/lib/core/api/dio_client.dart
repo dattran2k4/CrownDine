@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../constants/api_constants.dart';
+import 'interceptors/error_interceptor.dart';
 
 class DioClient {
   DioClient({List<Interceptor> interceptors = const []})
@@ -15,6 +16,7 @@ class DioClient {
           headers: const {Headers.acceptHeader: Headers.jsonContentType},
         ),
       ) {
+    dio.interceptors.add(ErrorInterceptor());
     dio.interceptors.addAll(interceptors);
   }
 

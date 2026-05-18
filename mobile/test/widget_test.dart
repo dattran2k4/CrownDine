@@ -10,5 +10,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('CrownDine'), findsOneWidget);
+    expect(find.text('Go to login'), findsOneWidget);
   });
 }

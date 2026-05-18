@@ -98,6 +98,13 @@ class _ErrorBody {
       return _ErrorBody(code: code?.toString(), message: message?.toString());
     }
 
+    if (data case {
+      'error': final Object? code,
+      'message': final Object? message,
+    }) {
+      return _ErrorBody(code: code?.toString(), message: message?.toString());
+    }
+
     if (data case {'error': final Object? message}) {
       return _ErrorBody(message: message?.toString());
     }

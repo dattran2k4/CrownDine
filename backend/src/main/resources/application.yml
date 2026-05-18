@@ -21,7 +21,7 @@ management:
         include: "*"
 
 endpoint:
-  confirmUser: ${app.base-url}/auth/verify-register
+  confirmUser: ${app.base-url}/api/auth/verify-register
   endPointResetPassword: ${app.base-url}/api/auth/reset-password
 
 logging:

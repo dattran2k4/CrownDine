@@ -6,6 +6,10 @@ abstract final class ApiConstants {
   static const Duration sendTimeout = Duration(seconds: 15);
 
   static const String loginEndpoint = '/auth/login';
+  static const String googleLoginEndpoint = '/auth/google-login';
   static const String refreshTokenEndpoint = '/auth/refresh-token';
   static const String logoutEndpoint = '/auth/logout';
+  static const String registerEndpoint = '/auth/register';
+
+  static const Set<String> publicEndpoints = {loginEndpoint, googleLoginEndpoint, refreshTokenEndpoint, registerEndpoint};
 }

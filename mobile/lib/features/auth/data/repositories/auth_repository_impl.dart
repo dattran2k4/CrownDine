@@ -1,4 +1,5 @@
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/utils/debug_log.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../dto/login_request_dto.dart';
@@ -22,6 +23,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final tokenResponse = await _remoteDataSource.login(
       LoginRequestDto(username: username, password: password),
     );
+    appDebugLog('Login token response mapped to DTO.');
     final session = tokenResponse.toDomain();
 
     await _secureStorageService.saveTokens(
@@ -57,11 +59,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return null;
     }
 
-    return AuthSession(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      username: '',
-    );
+    return AuthSession(accessToken: accessToken, refreshToken: refreshToken);
   }
 
   @override

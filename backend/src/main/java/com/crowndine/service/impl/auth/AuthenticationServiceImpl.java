@@ -89,6 +89,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .username(authentication.getName())
                 .build();
     }
 

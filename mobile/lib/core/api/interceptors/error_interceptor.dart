@@ -1,14 +1,19 @@
 import 'package:dio/dio.dart';
 
 import '../../exceptions/app_exception.dart';
+import '../../utils/debug_log.dart';
 
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    // Dio vẫn cần lỗi ở dạng DioException. Mình giữ nguyên dạng đó, nhưng đặt
+    // AppException vào err.error để các layer phía trên có thể bóc ra dùng.
     handler.reject(_toAppException(err));
   }
 
   DioException _toAppException(DioException err) {
+    // Lỗi mạng và lỗi HTTP ban đầu đều là DioException. Hàm này chuyển chúng
+    // thành nhóm lỗi chuẩn của app như NetworkException, UnauthorizedException.
     final appException = switch (err.type) {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
@@ -27,11 +32,22 @@ class ErrorInterceptor extends Interceptor {
         UnknownException(statusCode: err.response?.statusCode, details: err),
     };
 
+    appDebugLog(
+      'Dio error mapped to ${appException.runtimeType}. '
+      'path=${err.requestOptions.path}, '
+      'type=${err.type}, '
+      'status=${err.response?.statusCode}, '
+      'response=${err.response?.data}',
+      error: appException,
+    );
+
     return err.copyWith(error: appException);
   }
 
   AppException _fromResponse(DioException err) {
     final statusCode = err.response?.statusCode;
+    // Backend hiện trả lỗi dạng:
+    // { "status": 401, "error": "Unauthorized", "message": "..." }
     final errorBody = _ErrorBody.from(err.response?.data);
     final message = errorBody.message;
     final code = errorBody.code;

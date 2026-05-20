@@ -10,7 +10,7 @@ TokenResponseDto _$TokenResponseDtoFromJson(Map<String, dynamic> json) =>
     TokenResponseDto(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
-      username: json['username'] as String,
+      username: json['username'] as String?,
     );
 
 Map<String, dynamic> _$TokenResponseDtoToJson(TokenResponseDto instance) =>

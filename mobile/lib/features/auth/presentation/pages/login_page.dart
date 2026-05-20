@@ -82,10 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // Gợi ý hệ điều hành mở bàn phím phù hợp cho email/username.
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Username',
-                ),
+                decoration: const InputDecoration(labelText: 'Username'),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -94,18 +91,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 obscureText: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Password',
-                ),
+                decoration: const InputDecoration(labelText: 'Password'),
               ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: isLoading ? null : _submit,
                 child: isLoading
-                    ? const SizedBox.square(
+                    ? SizedBox.square(
                         dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       )
                     : const Text('Sign in'),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme/app_theme.dart';
 import 'router.dart';
 
 class CrownDineApp extends ConsumerWidget {
@@ -13,10 +14,7 @@ class CrownDineApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CrownDine',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFB3261E)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       routerConfig: router,
     );
   }

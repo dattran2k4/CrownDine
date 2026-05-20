@@ -9,6 +9,7 @@ services:
     env_file:
       - dev.env
     environment:
+      DATABASE_USERNAME: user
       DATABASE_HOST: crowndine_db
       REDIS_HOST: crowndine_redis
       RABBITMQ_HOST: crowndine_rabbitmq

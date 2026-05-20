@@ -9,9 +9,9 @@ import '../dto/token_response_dto.dart';
 abstract interface class AuthRemoteDataSource {
   Future<TokenResponseDto> login(LoginRequestDto request);
 
-  Future<TokenResponseDto> refreshToken();
+  Future<TokenResponseDto> refreshToken({required String refreshToken});
 
-  Future<void> logout();
+  Future<void> logout({required String refreshToken});
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -40,10 +40,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<TokenResponseDto> refreshToken() async {
+  Future<TokenResponseDto> refreshToken({required String refreshToken}) async {
     return runApiCall(() async {
       final response = await _dio.post<Map<String, dynamic>>(
         ApiConstants.refreshTokenEndpoint,
+        options: Options(
+          headers: {ApiConstants.refreshTokenHeader: refreshToken},
+        ),
       );
 
       return TokenResponseDto.fromJson(response.data ?? const {});
@@ -51,9 +54,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({required String refreshToken}) async {
     return runApiCall(() async {
-      await _dio.post<void>(ApiConstants.logoutEndpoint);
+      await _dio.post<void>(
+        ApiConstants.logoutEndpoint,
+        options: Options(
+          headers: {ApiConstants.refreshTokenHeader: refreshToken},
+        ),
+      );
     });
   }
 }

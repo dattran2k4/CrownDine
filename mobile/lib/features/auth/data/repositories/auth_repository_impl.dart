@@ -1,3 +1,4 @@
+import '../../../../core/exceptions/app_exception.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../../core/utils/debug_log.dart';
 import '../../domain/entities/auth_session.dart';
@@ -36,7 +37,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthSession> refreshToken() async {
-    final tokenResponse = await _remoteDataSource.refreshToken();
+    final refreshToken = await _secureStorageService.getRefreshToken();
+
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _secureStorageService.clearTokens();
+      throw const UnauthorizedException();
+    }
+
+    final tokenResponse = await _remoteDataSource.refreshToken(
+      refreshToken: refreshToken,
+    );
     final session = tokenResponse.toDomain();
 
     await _secureStorageService.saveTokens(
@@ -64,8 +74,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    final refreshToken = await _secureStorageService.getRefreshToken();
+
     try {
-      await _remoteDataSource.logout();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _remoteDataSource.logout(refreshToken: refreshToken);
+      }
+    } catch (error, stackTrace) {
+      appDebugLog(
+        'Remote logout failed. Clearing local tokens anyway.',
+        error: error,
+        stackTrace: stackTrace,
+      );
     } finally {
       await _secureStorageService.clearTokens();
     }

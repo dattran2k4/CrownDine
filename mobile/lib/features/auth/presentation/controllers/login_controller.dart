@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/exceptions/app_exception.dart';
 import '../../../../core/utils/debug_log.dart';
 import '../../providers/auth_providers.dart';
+import 'auth_session_controller.dart';
 
 final loginControllerProvider = AsyncNotifierProvider<LoginController, void>(
   LoginController.new,
@@ -33,9 +34,10 @@ class LoginController extends AsyncNotifier<void> {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
-      await ref
+      final session = await ref
           .read(authRepositoryProvider)
           .login(username: trimmedUsername, password: password);
+      ref.read(authSessionControllerProvider.notifier).setSession(session);
 
       appDebugLog('Login succeeded for username=$trimmedUsername');
     });

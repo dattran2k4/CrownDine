@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../app/router.dart';
 import '../controllers/login_controller.dart';
 import '../widgets/login_error_dialog.dart';
 
@@ -24,8 +22,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void initState() {
     super.initState();
 
-    // ref.listen tạo side-effect như show dialog hoặc điều hướng. Không đặt nó
-    // trong build(), vì build có thể chạy nhiều lần và dễ đăng ký nhiều listener.
+    // ref.listen tạo side-effect như show dialog. Không đặt nó trong build(),
+    // vì build có thể chạy nhiều lần và dễ đăng ký nhiều listener.
     _loginSubscription = ref.listenManual(loginControllerProvider, (
       previous,
       next,
@@ -35,9 +33,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         return;
       }
 
-      if (previous?.isLoading == true && next is AsyncData<void>) {
-        context.goNamed(AppRoute.home.name);
-      }
+      // Login thành công sẽ được router guard xử lý dựa trên AuthSession state.
     });
   }
 
@@ -51,8 +47,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Controller trả về AsyncValue: loading thì khóa form, error thì hiện modal,
-    // success thì điều hướng sang Home.
+    // Controller trả về AsyncValue: loading thì khóa form, error thì hiện modal.
+    // Thành công sẽ cập nhật AuthSession, router guard tự điều hướng sang Home.
     final loginState = ref.watch(loginControllerProvider);
     final isLoading = loginState.isLoading;
 

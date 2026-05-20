@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../app/router.dart';
+import '../../../auth/presentation/controllers/logout_controller.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logoutState = ref.watch(logoutControllerProvider);
+    final isLoggingOut = logoutState.isLoading;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('CrownDine'),
         actions: [
           TextButton(
-            onPressed: () => context.goNamed(AppRoute.login.name),
-            child: const Text('Sign out'),
+            onPressed: isLoggingOut
+                ? null
+                : () => ref.read(logoutControllerProvider.notifier).logout(),
+            child: isLoggingOut
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Sign out'),
           ),
         ],
       ),

@@ -12,6 +12,12 @@ abstract final class ApiConstants {
   static const String refreshTokenEndpoint = '/auth/refresh-token';
   static const String logoutEndpoint = '/auth/logout';
   static const String registerEndpoint = '/auth/register';
+  static const String profileEndpoint = '/users/profile';
 
-  static const Set<String> publicEndpoints = {loginEndpoint, googleLoginEndpoint, refreshTokenEndpoint, registerEndpoint};
+  static const Set<String> publicEndpoints = {
+    loginEndpoint,
+    googleLoginEndpoint,
+    refreshTokenEndpoint,
+    registerEndpoint,
+  };
 }

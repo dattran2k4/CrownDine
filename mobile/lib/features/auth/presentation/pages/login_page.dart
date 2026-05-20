@@ -29,7 +29,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       next,
     ) {
       if (next.hasError) {
-        _showLoginError(next.error);
+        // Đợi frame kế tiếp để UI kịp render trạng thái hết loading trước,
+        // rồi mới mở dialog. Nếu mở ngay trong listener, nút có thể còn spinner.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _showLoginError(next.error);
+          }
+        });
         return;
       }
 

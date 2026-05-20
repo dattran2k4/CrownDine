@@ -6,7 +6,7 @@ import '../data/sources/auth_remote_data_source.dart';
 import '../domain/repositories/auth_repository.dart';
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
-  return AuthRemoteDataSource(ref.watch(dioProvider));
+  return AuthRemoteDataSourceImpl(ref.watch(dioProvider));
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

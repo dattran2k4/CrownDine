@@ -6,11 +6,20 @@ import '../../../../core/utils/debug_log.dart';
 import '../dto/login_request_dto.dart';
 import '../dto/token_response_dto.dart';
 
-class AuthRemoteDataSource {
-  const AuthRemoteDataSource(this._dio);
+abstract interface class AuthRemoteDataSource {
+  Future<TokenResponseDto> login(LoginRequestDto request);
+
+  Future<TokenResponseDto> refreshToken();
+
+  Future<void> logout();
+}
+
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  const AuthRemoteDataSourceImpl(this._dio);
 
   final Dio _dio;
 
+  @override
   Future<TokenResponseDto> login(LoginRequestDto request) async {
     return runApiCall(() async {
       appDebugLog('Calling login endpoint for username=${request.username}');
@@ -30,6 +39,7 @@ class AuthRemoteDataSource {
     });
   }
 
+  @override
   Future<TokenResponseDto> refreshToken() async {
     return runApiCall(() async {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -40,6 +50,7 @@ class AuthRemoteDataSource {
     });
   }
 
+  @override
   Future<void> logout() async {
     return runApiCall(() async {
       await _dio.post<void>(ApiConstants.logoutEndpoint);

@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/controllers/auth_session_controller.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/menu/presentation/pages/menu_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/reservation/presentation/pages/reservation_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
+import 'customer_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authSessionControllerProvider);
@@ -50,10 +54,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoute.login.name,
         builder: (context, state) => const LoginPage(),
       ),
-      GoRoute(
-        path: AppRoute.home.path,
-        name: AppRoute.home.name,
-        builder: (context, state) => const HomePage(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return CustomerShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.home.path,
+                name: AppRoute.home.name,
+                builder: (context, state) => const HomePage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.menu.path,
+                name: AppRoute.menu.name,
+                builder: (context, state) => const MenuPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.reserve.path,
+                name: AppRoute.reserve.name,
+                builder: (context, state) => const ReservationPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.profile.path,
+                name: AppRoute.profile.name,
+                builder: (context, state) => const ProfilePage(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
@@ -62,7 +104,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 enum AppRoute {
   splash('/splash'),
   login('/login'),
-  home('/home');
+  home('/home'),
+  menu('/menu'),
+  reserve('/reserve'),
+  profile('/profile');
 
   const AppRoute(this.path);
 

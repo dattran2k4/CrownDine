@@ -1,39 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../auth/presentation/controllers/logout_controller.dart';
+import '../../../../app/router.dart';
 import '../widgets/home_featured_dishes_section.dart';
 import '../widgets/home_hero_section.dart';
 import '../widgets/home_quick_actions_section.dart';
 import '../widgets/home_story_section.dart';
 import '../widgets/home_visit_section.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final logoutState = ref.watch(logoutControllerProvider);
-    final isLoggingOut = logoutState.isLoading;
-
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('CrownDine'),
-        actions: [
-          // Tạm để logout ở Home. Khi có Profile tab, nút này sẽ chuyển sang Profile.
-          TextButton(
-            onPressed: isLoggingOut
-                ? null
-                : () => ref.read(logoutControllerProvider.notifier).logout(),
-            child: isLoggingOut
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Sign out'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('CrownDine')),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -42,32 +23,17 @@ class HomePage extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate.fixed([
                   HomeHeroSection(
-                    onReservePressed: () => _showComingSoon(
-                      context,
-                      'Tab Reservation sẽ xử lý đặt bàn.',
-                    ),
-                    onMenuPressed: () => _showComingSoon(
-                      context,
-                      'Tab Menu sẽ có search, filter và category.',
-                    ),
+                    onReservePressed: () => context.go(AppRoute.reserve.path),
+                    onMenuPressed: () => context.go(AppRoute.menu.path),
                   ),
                   const SizedBox(height: 18),
                   HomeQuickActionsSection(
-                    onMenuTap: () => _showComingSoon(
-                      context,
-                      'Mình sẽ làm tab Menu sau Home.',
-                    ),
-                    onReserveTap: () => _showComingSoon(
-                      context,
-                      'Mình sẽ làm tab Reservation sau.',
-                    ),
+                    onMenuTap: () => context.go(AppRoute.menu.path),
+                    onReserveTap: () => context.go(AppRoute.reserve.path),
                   ),
                   const SizedBox(height: 28),
                   HomeFeaturedDishesSection(
-                    onViewMenuPressed: () => _showComingSoon(
-                      context,
-                      'Tab Menu sẽ được làm ở bước tiếp theo.',
-                    ),
+                    onViewMenuPressed: () => context.go(AppRoute.menu.path),
                   ),
                   const SizedBox(height: 28),
                   const HomeStorySection(),
@@ -80,11 +46,5 @@ class HomePage extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static void _showComingSoon(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

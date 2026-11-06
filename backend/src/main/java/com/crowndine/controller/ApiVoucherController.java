@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,7 @@ public class ApiVoucherController {
     private final com.crowndine.service.user.RewardPointService rewardPointService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse createVoucher(@Valid @RequestBody VoucherRequest request) {
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
@@ -61,11 +63,22 @@ public class ApiVoucherController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse updateVoucher(@Min(1) @PathVariable Long id, @Valid @RequestBody VoucherRequest request) {
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("Update voucher successfully")
                 .data(voucherService.updateVoucher(id, request))
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ApiResponse deleteVoucher(@Min(1) @PathVariable Long id) {
+        voucherService.deleteVoucher(id);
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Delete voucher successfully")
                 .build();
     }
 

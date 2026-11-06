@@ -16,4 +16,6 @@ public interface VoucherService {
     Voucher getVoucherByCode(String code);
 
     VoucherResponse updateVoucher(Long id, VoucherRequest request);
+
+    void deleteVoucher(Long id);
 }

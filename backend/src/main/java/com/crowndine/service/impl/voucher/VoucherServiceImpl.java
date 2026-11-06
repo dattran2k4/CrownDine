@@ -124,6 +124,16 @@ public class VoucherServiceImpl implements VoucherService {
         return toResponse(updatedVoucher);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteVoucher(Long id) {
+        Voucher voucher = getVoucher(id);
+        if (!voucher.getOrders().isEmpty() || !voucher.getUserVouchers().isEmpty()) {
+            throw new InvalidDataException("Voucher đã được sử dụng hoặc cấp cho khách, không thể xóa");
+        }
+        voucherRepository.delete(voucher);
+    }
+
     private Voucher getVoucher(Long id) {
         return voucherRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Voucher not found"));
     }

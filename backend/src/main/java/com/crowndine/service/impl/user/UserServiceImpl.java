@@ -1,5 +1,6 @@
 package com.crowndine.service.impl.user;
 
+import com.crowndine.common.enums.ERole;
 import com.crowndine.dto.request.ChangePasswordRequest;
 import com.crowndine.dto.request.UpdateProfileRequest;
 import com.crowndine.dto.response.ProfileResponse;
@@ -91,8 +92,7 @@ public class UserServiceImpl implements UserService {
                 .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
-                // Only getting the first role's name as a string for simplicity
-                .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                .role(primaryRole(user))
                 .createdAt(user.getCreatedAt().toLocalDate())
                 .updatedAt(user.getUpdatedAt().toLocalDate())
                 .build();
@@ -119,8 +119,7 @@ public class UserServiceImpl implements UserService {
                 .rewardPoints(user.getRewardPoints())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
-                // Only getting the first role's name as a string for simplicity
-                .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                .role(primaryRole(user))
                 .createdAt(user.getCreatedAt().toLocalDate())
                 .updatedAt(user.getUpdatedAt().toLocalDate())
                 .build();
@@ -155,6 +154,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
+    private String primaryRole(User user) {
+        if (user.getRoles().stream().anyMatch(role -> role.getName() == ERole.ADMIN)) {
+            return ERole.ADMIN.name();
+        }
+        if (user.getRoles().stream().anyMatch(role -> role.getName() == ERole.STAFF)) {
+            return ERole.STAFF.name();
+        }
+        if (user.getRoles().stream().anyMatch(role -> role.getName() == ERole.USER)) {
+            return ERole.USER.name();
+        }
+        return null;
+    }
+
     @Override
     public List<ProfileResponse> getAllCustomers() {
         return userRepository.findAllCustomers().stream()
@@ -168,7 +180,7 @@ public class UserServiceImpl implements UserService {
                         .phone(user.getPhone())
                         .dateOfBirth(user.getDateOfBirth())
                         .avatarUrl(user.getAvatarUrl())
-                        .role(user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getName().name())
+                        .role(primaryRole(user))
                         .createdAt(user.getCreatedAt().toLocalDate())
                         .updatedAt(user.getUpdatedAt().toLocalDate())
                         .build())

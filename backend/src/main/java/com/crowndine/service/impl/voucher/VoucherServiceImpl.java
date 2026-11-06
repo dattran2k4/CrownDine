@@ -52,6 +52,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setMaxDiscountValue(request.getMaxDiscountValue());
         voucher.setMinValue(request.getMinValue());
         voucher.setDescription(request.getDescription());
+        voucher.setPointsRequired(request.getPointsRequired());
 
         validateVoucherBusinessRules(voucher);
 
@@ -117,6 +118,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setMaxDiscountValue(request.getMaxDiscountValue());
         voucher.setMinValue(request.getMinValue());
         voucher.setDescription(request.getDescription());
+        voucher.setPointsRequired(request.getPointsRequired());
 
         validateVoucherBusinessRules(voucher);
 

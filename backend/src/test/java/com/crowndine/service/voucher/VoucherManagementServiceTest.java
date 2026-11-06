@@ -1,6 +1,8 @@
 package com.crowndine.service.voucher;
 
 import com.crowndine.exception.InvalidDataException;
+import com.crowndine.common.enums.EVoucherType;
+import com.crowndine.dto.request.VoucherRequest;
 import com.crowndine.model.Order;
 import com.crowndine.model.UserVoucher;
 import com.crowndine.model.Voucher;
@@ -10,7 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,11 +22,37 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class VoucherManagementServiceTest {
     @Mock
     VoucherRepository repository;
+
+    private VoucherRequest rewardRequest() {
+        VoucherRequest request = new VoucherRequest();
+        ReflectionTestUtils.setField(request, "name", "Quà 50 điểm");
+        ReflectionTestUtils.setField(request, "code", "REWARD50");
+        ReflectionTestUtils.setField(request, "type", EVoucherType.FIXED_AMOUNT);
+        ReflectionTestUtils.setField(request, "discountValue", BigDecimal.valueOf(50000));
+        ReflectionTestUtils.setField(request, "pointsRequired", 50);
+        return request;
+    }
+
+    @Test
+    void adminCanCreateAndUpdatePointPrice() {
+        when(repository.save(org.mockito.ArgumentMatchers.any(Voucher.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        VoucherServiceImpl service = new VoucherServiceImpl(repository);
+        assertEquals(50, service.createVoucher(rewardRequest()).getPointsRequired());
+
+        Voucher existing = new Voucher();
+        existing.setId(7L);
+        when(repository.findById(7L)).thenReturn(Optional.of(existing));
+        VoucherRequest updated = rewardRequest();
+        ReflectionTestUtils.setField(updated, "pointsRequired", 100);
+        assertEquals(100, service.updateVoucher(7L, updated).getPointsRequired());
+    }
 
     @Test
     void unusedVoucherCanBeDeleted() {

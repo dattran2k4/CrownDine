@@ -83,6 +83,7 @@ public class ApiVoucherController {
     }
 
     @PostMapping("/{id}/assign-users")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse assignUsers(@Min(1) @PathVariable Long id,
                                    @Valid @RequestBody VoucherAssignUsersRequest request) {
         return ApiResponse.builder()
@@ -93,6 +94,7 @@ public class ApiVoucherController {
     }
 
     @GetMapping("/{id}/assignments")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse getAssignments(@Min(1) @PathVariable Long id) {
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())

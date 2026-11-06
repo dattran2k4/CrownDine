@@ -28,6 +28,7 @@ public class ApiUserController {
     private final RewardPointService rewardPointService;
 
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN')")
     public ApiResponse getListUsers() {
         return ApiResponse.builder()
                 .status(200)

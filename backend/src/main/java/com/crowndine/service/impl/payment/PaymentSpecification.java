@@ -58,7 +58,7 @@ public class PaymentSpecification {
             predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), request.getFromDate().atStartOfDay()));
         }
         if (request.getToDate() != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), request.getToDate().atTime(23, 59, 59)));
+            predicates.add(cb.lessThan(root.get("createdAt"), request.getToDate().plusDays(1).atStartOfDay()));
         }
     }
 
@@ -71,14 +71,14 @@ public class PaymentSpecification {
         }
 
         String keyword = "%" + request.getSearch().trim().toLowerCase() + "%";
-        var createdByJoin = root.join("createdBy", JoinType.LEFT);
+        var userJoin = root.join("user", JoinType.LEFT);
         var orderJoin = root.join("order", JoinType.LEFT);
         var reservationJoin = root.join("reservation", JoinType.LEFT);
 
         predicates.add(cb.or(
                 cb.like(cb.lower(root.get("transactionCode")), keyword),
                 cb.like(cb.lower(root.get("code").as(String.class)), keyword),
-                cb.like(cb.lower(createdByJoin.get("username")), keyword),
+                cb.like(cb.lower(userJoin.get("username")), keyword),
                 cb.like(cb.lower(orderJoin.get("code")), keyword),
                 cb.like(cb.lower(reservationJoin.get("code")), keyword)
         ));
